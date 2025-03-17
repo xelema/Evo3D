@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"voxel","l":"BlockType"},{"p":"voxel","l":"Chunk"},{"p":"voxel","l":"Direction"},{"p":"voxel","l":"Face"},{"p":"voxel","l":"InputHandler"},{"p":"voxel","l":"Main"},{"p":"voxel","l":"MeshBuilder"},{"p":"voxel","l":"VoxelWorld"}];updateSearchResults();
