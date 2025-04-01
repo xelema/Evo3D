@@ -1,8 +1,11 @@
 package voxel;
 
-import com.jme3.math.Vector3f;
-import com.jme3.math.ColorRGBA;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
 
 /**
  * Représente une face de bloc à ajouter au maillage.
@@ -17,6 +20,20 @@ public class Face {
     
     /** La couleur de la face */
     private final ColorRGBA color;
+    
+    /** Facteurs d'éclairage pour chaque direction */
+    private static final Map<Direction, Float> LIGHTING_FACTORS = new HashMap<>();
+    
+    // Initialisation des facteurs d'éclairage
+    static {
+        // Utilisation de différents facteurs d'éclairage pour chaque direction
+        LIGHTING_FACTORS.put(Direction.POS_Y, 1.0f);    // Haut (le plus brillant)
+        LIGHTING_FACTORS.put(Direction.POS_X, 0.8f);    // Est
+        LIGHTING_FACTORS.put(Direction.POS_Z, 0.7f);    // Sud 
+        LIGHTING_FACTORS.put(Direction.NEG_Z, 0.6f);    // Nord
+        LIGHTING_FACTORS.put(Direction.NEG_X, 0.5f);    // Ouest
+        LIGHTING_FACTORS.put(Direction.NEG_Y, 0.4f);    // Bas (le plus sombre)
+    }
 
     /**
      * Crée une face avec les 4 sommets, la normale et la couleur spécifiés.
@@ -91,7 +108,30 @@ public class Face {
                 throw new IllegalArgumentException("Direction invalide");
         }
 
-        return new Face(v0, v1, v2, v3, dir.getNormal(), color);
+        // Appliquer le facteur d'éclairage en fonction de la direction
+        ColorRGBA shadedColor = applyLighting(color, dir);
+        
+        return new Face(v0, v1, v2, v3, dir.getNormal(), shadedColor);
+    }
+    
+    /**
+     * Applique un facteur d'éclairage à la couleur en fonction de la direction de la face.
+     * 
+     * @param baseColor Couleur de base du bloc
+     * @param dir Direction de la face
+     * @return Couleur modifiée avec le facteur d'éclairage appliqué
+     */
+    private static ColorRGBA applyLighting(ColorRGBA baseColor, Direction dir) {
+        // Récupérer le facteur d'éclairage pour cette direction
+        float factor = LIGHTING_FACTORS.getOrDefault(dir, 1.0f);
+        
+        // Créer une nouvelle couleur avec le facteur d'éclairage appliqué
+        return new ColorRGBA(
+            baseColor.r * factor,
+            baseColor.g * factor,
+            baseColor.b * factor,
+            baseColor.a
+        );
     }
 
     /**
