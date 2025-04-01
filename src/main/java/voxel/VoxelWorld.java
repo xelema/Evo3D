@@ -1,6 +1,8 @@
 package voxel;
 
 import com.jme3.material.Material;
+import com.jme3.material.RenderState;
+import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
@@ -78,7 +80,12 @@ public class VoxelWorld {
                     // Configuration du matériau
                     Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
                     mat.setBoolean("VertexColor", true);
+
+                    // Gestion du rendu alpha des blocs
+                    mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+
                     geo.setMaterial(mat);
+                    geo.setQueueBucket(RenderQueue.Bucket.Transparent);
                     
                     // Stockage du matériau pour modifications ultérieures
                     materials[cx][cy][cz] = mat;
