@@ -156,7 +156,7 @@ public class Chunk {
 
                             // Si le bloc voisin est de l'air, ajouter une face
                             if (getBlockNeighbor(nx, ny, nz, world, chunkX, chunkY, chunkZ) == BlockType.AIR.getId()) {
-                                Face face = Face.createFromDirection(dir, x, y, z, blockColor);
+                                Face face = Face.createFromDirection(dir, x, y, z, blockColor, world.getLightningMode());
                                 builder.addFace(face);
                             }
                         }

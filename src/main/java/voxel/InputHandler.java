@@ -14,6 +14,7 @@ import com.jme3.renderer.Camera;
 public class InputHandler implements ActionListener {
 
     private static final String ACTION_TOGGLE_WIREFRAME = "ToggleWireframe"; // Action pour basculer le mode filaire
+    private static final String ACTION_TOGGLE_LIGHTNING = "ToggleLightning"; // Action pour basculer l'éclairage
     private static final String ACTION_MOVE_FORWARD = "MoveForward"; // Action pour déplacer la caméra vers l'avant
     private static final String ACTION_MOVE_BACKWARD = "MoveBackward"; // Action pour déplacer la caméra vers l'arrière
     private static final String ACTION_MOVE_LEFT = "MoveLeft"; // Action pour déplacer la caméra vers la gauche
@@ -52,6 +53,7 @@ public class InputHandler implements ActionListener {
     private void setupInputs() {
         // Configuration des mappings (association touche/action)
         inputManager.addMapping(ACTION_TOGGLE_WIREFRAME, new KeyTrigger(KeyInput.KEY_T));
+        inputManager.addMapping(ACTION_TOGGLE_LIGHTNING, new KeyTrigger(KeyInput.KEY_L));
         inputManager.addMapping(ACTION_MOVE_FORWARD, new KeyTrigger(KeyInput.KEY_Z));
         inputManager.addMapping(ACTION_MOVE_BACKWARD, new KeyTrigger(KeyInput.KEY_S));
         inputManager.addMapping(ACTION_MOVE_LEFT, new KeyTrigger(KeyInput.KEY_Q));
@@ -61,7 +63,8 @@ public class InputHandler implements ActionListener {
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this, 
-                ACTION_TOGGLE_WIREFRAME, 
+                ACTION_TOGGLE_WIREFRAME,
+                ACTION_TOGGLE_LIGHTNING,
                 ACTION_MOVE_FORWARD,
                 ACTION_MOVE_BACKWARD, 
                 ACTION_MOVE_LEFT, 
@@ -83,6 +86,11 @@ public class InputHandler implements ActionListener {
             case ACTION_TOGGLE_WIREFRAME:
                 if (isPressed) {
                     voxelWorld.toggleWireframe();
+                }
+                break;
+            case ACTION_TOGGLE_LIGHTNING:
+                if (isPressed) {
+                    voxelWorld.toggleLightning();
                 }
                 break;
             case ACTION_MOVE_FORWARD: 

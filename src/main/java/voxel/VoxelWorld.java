@@ -14,7 +14,7 @@ import com.jme3.asset.AssetManager;
  */
 public class VoxelWorld {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 10;
+    public static final int WORLD_SIZE = 30;
     
     /** Nœud racine contenant tous les chunks du monde */
     private Node worldNode;
@@ -36,6 +36,12 @@ public class VoxelWorld {
     
     /** Mode filaire activé ou non */
     private boolean wireframeMode = false;
+
+    /** Eclairage oui ou non */
+    private boolean lightningMode = true;
+
+    /** Indique si une mise à jour du maillage est nécessaire */
+    private boolean needsMeshUpdate = false;
     
     /** Référence à l'AssetManager pour accéder aux ressources */
     private final AssetManager assetManager;
@@ -50,6 +56,15 @@ public class VoxelWorld {
         worldNode = new Node("world");
         chunks = new Chunk[worldSizeX][worldSizeY][worldSizeZ];
         generateWorld();
+    }
+
+    /**
+     * Retourne l'état actuel du mode d'éclairage.
+     * 
+     * @return true si l'éclairage est activé, false sinon
+     */
+    boolean getLightningMode() {
+        return lightningMode;
     }
 
     /**
@@ -71,33 +86,49 @@ public class VoxelWorld {
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    // Génération du maillage du chunk
-                    Mesh mesh = chunks[cx][cy][cz].generateMesh(this, cx, cy, cz);
-                    
-                    // Création de la géométrie pour le maillage
-                    Geometry geo = new Geometry("chunk_" + cx + "_" + cy + "_" + cz, mesh);
-                    
-                    // Configuration du matériau
-                    Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-                    mat.setBoolean("VertexColor", true);
-
-                    // Gestion du rendu alpha des blocs
-                    mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-
-                    geo.setMaterial(mat);
-                    geo.setQueueBucket(RenderQueue.Bucket.Transparent);
-                    
-                    // Stockage du matériau pour modifications ultérieures
-                    materials[cx][cy][cz] = mat;
-                    
-                    // Positionnement dans le monde
-                    geo.setLocalTranslation(cx * Chunk.SIZE, cy * Chunk.SIZE, cz * Chunk.SIZE);
-                    
-                    // Ajout au nœud racine
+                    Geometry geo = createChunkGeometry(cx, cy, cz);
                     worldNode.attachChild(geo);
                 }
             }
         }
+    }
+
+    /**
+     * Crée et configure la géométrie d'un chunk.
+     * Méthode factorisée utilisée par les différentes fonctions de génération.
+     *
+     * @param chunkX Position X du chunk dans le monde
+     * @param chunkY Position Y du chunk dans le monde
+     * @param chunkZ Position Z du chunk dans le monde
+     * @return La géométrie configurée pour ce chunk
+     */
+    private Geometry createChunkGeometry(int chunkX, int chunkY, int chunkZ) {
+        // Génération du maillage du chunk
+        Mesh mesh = chunks[chunkX][chunkY][chunkZ].generateMesh(this, chunkX, chunkY, chunkZ);
+        
+        // Création de la géométrie pour le maillage
+        String chunkName = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ;
+        Geometry geo = new Geometry(chunkName, mesh);
+        
+        // Configuration du matériau
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setBoolean("VertexColor", true);
+
+        // Gestion du rendu alpha des blocs
+        mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+        geo.setQueueBucket(RenderQueue.Bucket.Transparent);
+        
+        // Application de l'état actuel du wireframe
+        mat.getAdditionalRenderState().setWireframe(wireframeMode);
+        
+        // Stockage du matériau pour modifications ultérieures
+        materials[chunkX][chunkY][chunkZ] = mat;
+        geo.setMaterial(mat);
+        
+        // Positionnement dans le monde
+        geo.setLocalTranslation(chunkX * Chunk.SIZE, chunkY * Chunk.SIZE, chunkZ * Chunk.SIZE);
+        
+        return geo;
     }
 
     /**
@@ -117,6 +148,16 @@ public class VoxelWorld {
                 }
             }
         }
+    }
+
+    /**
+     * Active ou désactive l'éclairage pour tous les chunks.
+     */
+    public void toggleLightning() {
+        lightningMode = !lightningMode;
+        System.out.println("Lightning: " + (lightningMode ? "activé" : "désactivé"));
+
+        needsMeshUpdate = true;
     }
 
     /**
@@ -169,22 +210,7 @@ public class VoxelWorld {
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    // Génération du nouveau maillage
-                    Mesh mesh = chunks[cx][cy][cz].generateMesh(this, cx, cy, cz);
-                    
-                    // Création de la géométrie et configuration
-                    Geometry geo = new Geometry("chunk_" + cx + "_" + cy + "_" + cz, mesh);
-                    Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-                    mat.setBoolean("VertexColor", true);
-                    
-                    // Application de l'état actuel du wireframe
-                    mat.getAdditionalRenderState().setWireframe(wireframeMode);
-                    
-                    geo.setMaterial(mat);
-                    materials[cx][cy][cz] = mat;
-                    
-                    // Positionnement et ajout au nœud monde
-                    geo.setLocalTranslation(cx * Chunk.SIZE, cy * Chunk.SIZE, cz * Chunk.SIZE);
+                    Geometry geo = createChunkGeometry(cx, cy, cz);
                     worldNode.attachChild(geo);
                 }
             }
@@ -192,11 +218,48 @@ public class VoxelWorld {
     }
 
     /**
+     * Régénère le maillage d'un chunk spécifique.
+     *
+     * @param chunkX Position X du chunk dans le monde
+     * @param chunkY Position Y du chunk dans le monde
+     * @param chunkZ Position Z du chunk dans le monde
+     */
+    public void regenerateChunkMesh(int chunkX, int chunkY, int chunkZ) {
+        // Vérifier que les coordonnées sont valides
+        if (chunkX < 0 || chunkX >= worldSizeX ||
+                chunkY < 0 || chunkY >= worldSizeY ||
+                chunkZ < 0 || chunkZ >= worldSizeZ) {
+            System.out.println("Chunk hors limites: " + chunkX + ", " + chunkY + ", " + chunkZ);
+            return;
+        }
+
+        // Trouver et détacher l'ancienne géométrie
+        String chunkName = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ;
+        Geometry oldGeometry = (Geometry) worldNode.getChild(chunkName);
+        if (oldGeometry != null) {
+            worldNode.detachChild(oldGeometry);
+        }
+
+        // Créer et attacher la nouvelle géométrie
+        Geometry geo = createChunkGeometry(chunkX, chunkY, chunkZ);
+        worldNode.attachChild(geo);
+    }
+
+    /**
      * Méthode appelée depuis simpleUpdate pour mettre à jour le monde si nécessaire.
      * 
      * @param tpf Temps écoulé depuis la dernière image
+     * @param posX Position X de la caméra
+     * @param posY Position Y de la caméra
+     * @param posZ Position Z de la caméra
      */
-    public void update(float tpf) {
-        // Pour l'instant, pas de mise à jour particulière
+    public void update(float tpf, float posX, float posY, float posZ) {
+        // Si une mise à jour est nécessaire, régénérer les maillages
+        if (needsMeshUpdate) {
+            System.out.println("Position du joueur: " + posX + ", " + posY + ", " + posZ);
+            System.out.println("Position du chunk: " + (int)posX/16 + ", " + (int)posY/16 + ", " + (int)posZ/16);
+            regenerateChunkMesh((int)posX/16, 0, (int)posZ/16);
+            needsMeshUpdate = false;
+        }
     }
-} 
+}

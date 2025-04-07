@@ -62,9 +62,10 @@ public class Face {
      * @param y Coordonnée Y du bloc
      * @param z Coordonnée Z du bloc
      * @param color Couleur de la face
+     * @param lightning Indique si l'éclairage doit être appliqué à la face
      * @return Une nouvelle face orientée dans la direction indiquée
      */
-    public static Face createFromDirection(Direction dir, int x, int y, int z, ColorRGBA color) {
+    public static Face createFromDirection(Direction dir, int x, int y, int z, ColorRGBA color, boolean lightning) {
         Vector3f v0, v1, v2, v3;
 
         switch (dir) {
@@ -108,10 +109,12 @@ public class Face {
                 throw new IllegalArgumentException("Direction invalide");
         }
 
-        // Appliquer le facteur d'éclairage en fonction de la direction
-        ColorRGBA shadedColor = applyLighting(color, dir);
-        
-        return new Face(v0, v1, v2, v3, dir.getNormal(), shadedColor);
+        if (lightning){
+            // Si l'éclairage est activé, appliquer le facteur d'éclairage
+            color = applyLighting(color, dir);
+        }
+
+        return new Face(v0, v1, v2, v3, dir.getNormal(), color);
     }
     
     /**

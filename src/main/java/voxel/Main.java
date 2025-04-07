@@ -49,7 +49,7 @@ public class Main extends SimpleApplication {
     /**
      * Met à jour l'application à chaque image.
      * Appelé automatiquement par jMonkeyEngine à chaque frame.
-     * 
+     *
      * @param tpf Temps écoulé depuis la dernière image (time per frame)
      */
     @Override
@@ -58,7 +58,7 @@ public class Main extends SimpleApplication {
         inputHandler.updateCameraMovement(tpf);
         
         // Mise à jour du monde voxel
-        voxelWorld.update(tpf);
+        voxelWorld.update(tpf, cam.getLocation().x, cam.getLocation().y, cam.getLocation().z);
     }
 
     /**
