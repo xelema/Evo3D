@@ -21,6 +21,7 @@ public class InputHandler implements ActionListener {
     private static final String ACTION_MOVE_RIGHT = "MoveRight"; // Action pour déplacer la caméra vers la droite
     private static final String ACTION_MOVE_UP = "MoveUp"; // Action pour déplacer la caméra vers le haut
     private static final String ACTION_MOVE_DOWN = "MoveDown"; // Action pour déplacer la caméra vers le bas
+    private static final String ACTION_SPEED_FLY = "SpeedFly"; // Action pour activer le vol rapide
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final VoxelWorld voxelWorld; // Référence au monde voxel
@@ -32,6 +33,7 @@ public class InputHandler implements ActionListener {
     private boolean movingRight = false; // État du mouvement vers la droite
     private boolean movingUp = false; // État du mouvement vers le haut
     private boolean movingDown = false; // État du mouvement vers le bas
+    private boolean speedFly = false; // État du vol rapide
 
     /**
      * Crée un nouveau gestionnaire d'entrées.
@@ -60,6 +62,7 @@ public class InputHandler implements ActionListener {
         inputManager.addMapping(ACTION_MOVE_RIGHT, new KeyTrigger(KeyInput.KEY_D));
         inputManager.addMapping(ACTION_MOVE_UP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(ACTION_MOVE_DOWN, new KeyTrigger(KeyInput.KEY_LSHIFT));
+        inputManager.addMapping(ACTION_SPEED_FLY, new KeyTrigger(KeyInput.KEY_LCONTROL));
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this, 
@@ -70,7 +73,9 @@ public class InputHandler implements ActionListener {
                 ACTION_MOVE_LEFT, 
                 ACTION_MOVE_RIGHT,
                 ACTION_MOVE_UP, 
-                ACTION_MOVE_DOWN);
+                ACTION_MOVE_DOWN,
+                ACTION_SPEED_FLY
+        );
     }
 
     /**
@@ -111,6 +116,9 @@ public class InputHandler implements ActionListener {
             case ACTION_MOVE_DOWN: 
                 movingDown = isPressed; 
                 break;
+            case ACTION_SPEED_FLY:
+                speedFly = isPressed;
+                break;
         }
     }
 
@@ -121,8 +129,17 @@ public class InputHandler implements ActionListener {
      * @param tpf Temps écoulé depuis la dernière image
      */
     public void updateCameraMovement(float tpf) {
-        float speed = 10f;
-        
+
+        float speed;
+
+        // Ajustement de la vitesse de déplacement en fonction du mode de vol
+        if(speedFly) {
+            speed = 60f;
+        }
+        else{
+            speed = 10f;
+        }
+
         // Calcul des vecteurs de direction de la caméra
         Vector3f camDir = cam.getDirection().clone().multLocal(tpf * speed);
         Vector3f camLeft = cam.getLeft().clone().multLocal(tpf * speed);

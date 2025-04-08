@@ -14,7 +14,7 @@ import com.jme3.asset.AssetManager;
  */
 public class VoxelWorld {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 30;
+    public static final int WORLD_SIZE = 16;
     
     /** Nœud racine contenant tous les chunks du monde */
     private Node worldNode;
@@ -258,7 +258,7 @@ public class VoxelWorld {
         if (needsMeshUpdate) {
             System.out.println("Position du joueur: " + posX + ", " + posY + ", " + posZ);
             System.out.println("Position du chunk: " + (int)posX/16 + ", " + (int)posY/16 + ", " + (int)posZ/16);
-            regenerateChunkMesh((int)posX/16, 0, (int)posZ/16);
+            regenerateMeshes();
             needsMeshUpdate = false;
         }
     }
