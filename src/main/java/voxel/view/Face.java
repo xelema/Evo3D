@@ -1,4 +1,4 @@
-package voxel;
+package voxel.view;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,9 +7,12 @@ import java.util.Map;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 
+import voxel.utils.Direction;
+
 /**
  * Représente une face de bloc à ajouter au maillage.
  * Une face est définie par 4 sommets, une normale et une couleur.
+ * Cette classe fait partie de la vue car elle concerne uniquement le rendu.
  */
 public class Face {
     /** Les 4 sommets de la face (dans l'ordre pour former deux triangles) */

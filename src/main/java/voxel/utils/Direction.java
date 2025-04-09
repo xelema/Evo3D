@@ -1,4 +1,4 @@
-package voxel;
+package voxel.utils;
 
 import com.jme3.math.Vector3f;
 

@@ -1,4 +1,4 @@
-package voxel;
+package voxel.model;
 
 import com.jme3.math.ColorRGBA;
 

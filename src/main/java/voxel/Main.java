@@ -5,17 +5,20 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.system.AppSettings;
 
+import voxel.controller.GameController;
+import voxel.controller.InputController;
+import voxel.controller.WorldController;
+import voxel.model.WorldModel;
+import voxel.view.WorldRenderer;
+
 /**
  * Classe principale qui est le point d'entrée du programme.
  * Hérite de SimpleApplication pour gérer le cycle de vie de l'application jMonkeyEngine.
  */
 public class Main extends SimpleApplication {
 
-    /** Référence au monde voxel */
-    private VoxelWorld voxelWorld;
-    
-    /** Référence au gestionnaire d'entrées */
-    private InputHandler inputHandler;
+    /** Référence au contrôleur principal du jeu */
+    private GameController gameController;
 
     /**
      * Point d'entrée du programme.
@@ -27,7 +30,7 @@ public class Main extends SimpleApplication {
         
         // Configuration des paramètres de l'application
         AppSettings settings = new AppSettings(true);
-        settings.setTitle("Voxel World");
+        settings.setTitle("Evo3D");
         settings.setResolution(1600, 900);
         settings.setFullscreen(false);
         
@@ -42,8 +45,7 @@ public class Main extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         setupCamera();
-        setupVoxelWorld();
-        setupInputHandler();
+        setupMVC();
     }
 
     /**
@@ -54,11 +56,8 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleUpdate(float tpf) {
-        // Mise à jour des mouvements de la caméra
-        inputHandler.updateCameraMovement(tpf);
-        
-        // Mise à jour du monde voxel
-        voxelWorld.update(tpf, cam.getLocation().x, cam.getLocation().y, cam.getLocation().z);
+        // Déléguer la mise à jour au contrôleur de jeu
+        gameController.update(tpf);
     }
 
     /**
@@ -73,23 +72,30 @@ public class Main extends SimpleApplication {
         
         // Configuration de la caméra volante
         flyCam.setEnabled(true);
-        flyCam.setMoveSpeed(0); // Désactive le mouvement par défaut (géré par InputHandler)
+        flyCam.setMoveSpeed(0); // Désactive le mouvement par défaut (géré par InputController)
         flyCam.setRotationSpeed(1f);
         flyCam.setDragToRotate(false);
     }
 
     /**
-     * Crée et initialise le monde voxel.
+     * Configure l'architecture MVC (Modèle-Vue-Contrôleur).
      */
-    private void setupVoxelWorld() {
-        voxelWorld = new VoxelWorld(this);
-        rootNode.attachChild(voxelWorld.getNode());
-    }
-
-    /**
-     * Crée et initialise le gestionnaire d'entrées.
-     */
-    private void setupInputHandler() {
-        inputHandler = new InputHandler(inputManager, voxelWorld, cam);
+    private void setupMVC() {
+        // Création des composants selon l'architecture MVC
+        
+        // Modèle - Représente les données
+        WorldModel worldModel = new WorldModel();
+        
+        // Vue - Gère l'affichage
+        WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
+        rootNode.attachChild(worldRenderer.getNode());
+        
+        // Contrôleurs - Gèrent les interactions et la logique
+        WorldController worldController = new WorldController(worldModel, worldRenderer);
+        InputController inputController = new InputController(inputManager, worldController, cam);
+        
+        // Contrôleur principal qui coordonne tout
+        gameController = new GameController(worldModel, worldRenderer, inputController, worldController, cam);
+        gameController.initialize();
     }
 } 

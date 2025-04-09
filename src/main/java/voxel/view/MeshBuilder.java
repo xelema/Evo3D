@@ -1,4 +1,4 @@
-package voxel;
+package voxel.view;
 
 import com.jme3.math.Vector3f;
 import com.jme3.math.ColorRGBA;
@@ -11,6 +11,7 @@ import java.util.List;
 /**
  * Classe utilitaire qui construit un maillage (Mesh) à partir d'un ensemble de faces.
  * Permet d'accumuler des faces, puis de générer le maillage final en une seule fois.
+ * Cette classe fait partie de la vue car elle concerne uniquement le rendu.
  */
 public class MeshBuilder {
     /** Liste des sommets (vertices) du maillage */

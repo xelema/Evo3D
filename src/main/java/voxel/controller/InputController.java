@@ -1,4 +1,4 @@
-package voxel;
+package voxel.controller;
 
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
@@ -11,7 +11,7 @@ import com.jme3.renderer.Camera;
  * Gère les entrées utilisateur pour contrôler la caméra et interagir avec le monde.
  * Implémente ActionListener pour réagir aux événements clavier.
  */
-public class InputHandler implements ActionListener {
+public class InputController implements ActionListener {
 
     private static final String ACTION_TOGGLE_WIREFRAME = "ToggleWireframe"; // Action pour basculer le mode filaire
     private static final String ACTION_TOGGLE_LIGHTNING = "ToggleLightning"; // Action pour basculer l'éclairage
@@ -24,8 +24,8 @@ public class InputHandler implements ActionListener {
     private static final String ACTION_SPEED_FLY = "SpeedFly"; // Action pour activer le vol rapide
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
-    private final VoxelWorld voxelWorld; // Référence au monde voxel
-    private final Camera cam; // Référence à la caméra de la scène
+    private final WorldController worldController; // Référence au contrôleur de monde
+    private final Camera camera; // Référence à la caméra de la scène
 
     private boolean movingForward = false; // État du mouvement vers l'avant
     private boolean movingBackward = false; // État du mouvement vers l'arrière
@@ -36,16 +36,16 @@ public class InputHandler implements ActionListener {
     private boolean speedFly = false; // État du vol rapide
 
     /**
-     * Crée un nouveau gestionnaire d'entrées.
+     * Crée un nouveau contrôleur d'entrées.
      * 
      * @param inputManager Le gestionnaire d'entrées de jMonkey
-     * @param voxelWorld Référence au monde voxel
-     * @param cam Référence à la caméra
+     * @param worldController Référence au contrôleur de monde
+     * @param camera Référence à la caméra
      */
-    public InputHandler(InputManager inputManager, VoxelWorld voxelWorld, Camera cam) {
+    public InputController(InputManager inputManager, WorldController worldController, Camera camera) {
         this.inputManager = inputManager;
-        this.voxelWorld = voxelWorld;
-        this.cam = cam;
+        this.worldController = worldController;
+        this.camera = camera;
         setupInputs();
     }
 
@@ -90,12 +90,12 @@ public class InputHandler implements ActionListener {
         switch (name) {
             case ACTION_TOGGLE_WIREFRAME:
                 if (isPressed) {
-                    voxelWorld.toggleWireframe();
+                    worldController.toggleWireframe();
                 }
                 break;
             case ACTION_TOGGLE_LIGHTNING:
                 if (isPressed) {
-                    voxelWorld.toggleLightning();
+                    worldController.toggleLightning();
                 }
                 break;
             case ACTION_MOVE_FORWARD: 
@@ -129,7 +129,6 @@ public class InputHandler implements ActionListener {
      * @param tpf Temps écoulé depuis la dernière image
      */
     public void updateCameraMovement(float tpf) {
-
         float speed;
 
         // Ajustement de la vitesse de déplacement en fonction du mode de vol
@@ -141,8 +140,8 @@ public class InputHandler implements ActionListener {
         }
 
         // Calcul des vecteurs de direction de la caméra
-        Vector3f camDir = cam.getDirection().clone().multLocal(tpf * speed);
-        Vector3f camLeft = cam.getLeft().clone().multLocal(tpf * speed);
+        Vector3f camDir = camera.getDirection().clone().multLocal(tpf * speed);
+        Vector3f camLeft = camera.getLeft().clone().multLocal(tpf * speed);
         Vector3f movement = new Vector3f(0, 0, 0);
 
         // Application des mouvements selon les touches enfoncées
@@ -154,6 +153,6 @@ public class InputHandler implements ActionListener {
         if (movingDown) movement.addLocal(0, -tpf * speed, 0);
 
         // Application du mouvement à la caméra
-        cam.setLocation(cam.getLocation().add(movement));
+        camera.setLocation(camera.getLocation().add(movement));
     }
 } 
