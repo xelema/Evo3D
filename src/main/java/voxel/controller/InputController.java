@@ -170,4 +170,4 @@ public class InputController implements ActionListener {
         // Application du mouvement à la caméra
         camera.setLocation(camera.getLocation().add(movement));
     }
-} 
+}

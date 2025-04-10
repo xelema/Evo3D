@@ -1,5 +1,7 @@
 package voxel.model;
 
+import voxel.model.entity.EntityManager;
+
 /**
  * Représente le monde de voxels complet, composé de plusieurs chunks.
  * Cette classe gère uniquement les données du monde sans le rendu.
@@ -25,6 +27,8 @@ public class WorldModel {
     
     /** Mode filaire activé ou non */
     private boolean wireframeMode = false;
+
+    private EntityManager entityManager;
 
     /**
      * Crée un nouveau monde de voxels.

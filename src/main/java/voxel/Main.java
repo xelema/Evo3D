@@ -5,6 +5,7 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.system.AppSettings;
 
+import voxel.controller.EntityController;
 import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
@@ -92,10 +93,12 @@ public class Main extends SimpleApplication {
         
         // Contrôleurs - Gèrent les interactions et la logique
         WorldController worldController = new WorldController(worldModel, worldRenderer);
-        InputController inputController = new InputController(inputManager, worldController, cam);
-        
+        EntityController entityController = new EntityController(worldModel, worldRenderer, cam);
+        InputController inputController = new InputController(inputManager, worldController, entityController, cam);
+
         // Contrôleur principal qui coordonne tout
-        gameController = new GameController(worldModel, worldRenderer, inputController, worldController, cam);
+        gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
+                entityController, cam);
         gameController.initialize();
     }
 } 

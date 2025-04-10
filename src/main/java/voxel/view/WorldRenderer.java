@@ -22,6 +22,10 @@ public class WorldRenderer {
     
     /** Tableau des renderers pour chaque chunk */
     private ChunkRenderer[][][] chunkRenderers;
+
+    private EntityRendererManager entityRendererManager;
+
+
     
     /** Indique si une mise à jour du maillage est nécessaire */
     private boolean needsMeshUpdate = false;
