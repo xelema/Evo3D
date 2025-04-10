@@ -32,6 +32,7 @@ public class WorldModel {
     public WorldModel() {
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
         generateWorld();
+        entityManager = new EntityManager(this);
     }
 
     /**
@@ -181,5 +182,16 @@ public class WorldModel {
      */
     public int getWorldSizeZ() {
         return worldSizeZ;
+    }
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public void update(float tpf) {
+        // Mettre à jour toutes les entités
+        if (entityManager != null) {
+            entityManager.updateAll(tpf);
+        }
     }
 } 

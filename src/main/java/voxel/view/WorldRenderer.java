@@ -38,6 +38,9 @@ public class WorldRenderer {
         this.worldNode = new Node("world");
         
         initializeChunkRenderers();
+
+        this.entityRendererManager = new EntityRendererManager(this.worldModel.getEntityManager(), assetManager);
+        worldNode.attachChild(entityRendererManager.getNode());
     }
 
     /**
@@ -231,5 +234,10 @@ public class WorldRenderer {
         if (needsMeshUpdate) {
             updateAllMeshes();
         }
+        entityRendererManager.update();
     }
-} 
+
+    public EntityRendererManager getEntityRendererManager() {
+        return entityRendererManager;
+    }
+}

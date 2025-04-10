@@ -6,6 +6,7 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
+import voxel.model.entity.Player;
 
 /**
  * Gère les entrées utilisateur pour contrôler la caméra et interagir avec le monde.
@@ -22,9 +23,11 @@ public class InputController implements ActionListener {
     private static final String ACTION_MOVE_UP = "MoveUp"; // Action pour déplacer la caméra vers le haut
     private static final String ACTION_MOVE_DOWN = "MoveDown"; // Action pour déplacer la caméra vers le bas
     private static final String ACTION_SPEED_FLY = "SpeedFly"; // Action pour activer le vol rapide
+    private static final String ACTION_SPAWN_PLAYER = "SpawnPlayer"; // Action pour faire apparaître le joueur
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
+    private final EntityController entityController;
     private final Camera camera; // Référence à la caméra de la scène
 
     private boolean movingForward = false; // État du mouvement vers l'avant
@@ -37,15 +40,17 @@ public class InputController implements ActionListener {
 
     /**
      * Crée un nouveau contrôleur d'entrées.
-     * 
+     *
      * @param inputManager Le gestionnaire d'entrées de jMonkey
      * @param worldController Référence au contrôleur de monde
      * @param camera Référence à la caméra
      */
-    public InputController(InputManager inputManager, WorldController worldController, Camera camera) {
+    public InputController(InputManager inputManager, WorldController worldController,
+                           EntityController entityController, Camera camera) {
         this.inputManager = inputManager;
         this.worldController = worldController;
         this.camera = camera;
+        this.entityController = entityController;
         setupInputs();
     }
 
@@ -63,24 +68,26 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_MOVE_UP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(ACTION_MOVE_DOWN, new KeyTrigger(KeyInput.KEY_LSHIFT));
         inputManager.addMapping(ACTION_SPEED_FLY, new KeyTrigger(KeyInput.KEY_LCONTROL));
+        inputManager.addMapping(ACTION_SPAWN_PLAYER, new KeyTrigger(KeyInput.KEY_P));
 
         // Enregistrement du listener pour toutes les actions
-        inputManager.addListener(this, 
+        inputManager.addListener(this,
                 ACTION_TOGGLE_WIREFRAME,
                 ACTION_TOGGLE_LIGHTNING,
                 ACTION_MOVE_FORWARD,
-                ACTION_MOVE_BACKWARD, 
-                ACTION_MOVE_LEFT, 
+                ACTION_MOVE_BACKWARD,
+                ACTION_MOVE_LEFT,
                 ACTION_MOVE_RIGHT,
-                ACTION_MOVE_UP, 
+                ACTION_MOVE_UP,
                 ACTION_MOVE_DOWN,
-                ACTION_SPEED_FLY
+                ACTION_SPEED_FLY,
+                ACTION_SPAWN_PLAYER
         );
     }
 
     /**
      * Appelé quand une action est déclenchée (touche appuyée ou relâchée).
-     * 
+     *
      * @param name Nom de l'action
      * @param isPressed true si la touche est appuyée, false si relâchée
      * @param tpf Temps écoulé depuis la dernière image
@@ -98,34 +105,42 @@ public class InputController implements ActionListener {
                     worldController.toggleLightning();
                 }
                 break;
-            case ACTION_MOVE_FORWARD: 
-                movingForward = isPressed; 
+            case ACTION_MOVE_FORWARD:
+                movingForward = isPressed;
                 break;
-            case ACTION_MOVE_BACKWARD: 
-                movingBackward = isPressed; 
+            case ACTION_MOVE_BACKWARD:
+                movingBackward = isPressed;
                 break;
-            case ACTION_MOVE_LEFT: 
-                movingLeft = isPressed; 
+            case ACTION_MOVE_LEFT:
+                movingLeft = isPressed;
                 break;
-            case ACTION_MOVE_RIGHT: 
-                movingRight = isPressed; 
+            case ACTION_MOVE_RIGHT:
+                movingRight = isPressed;
                 break;
-            case ACTION_MOVE_UP: 
-                movingUp = isPressed; 
+            case ACTION_MOVE_UP:
+                movingUp = isPressed;
                 break;
-            case ACTION_MOVE_DOWN: 
-                movingDown = isPressed; 
+            case ACTION_MOVE_DOWN:
+                movingDown = isPressed;
                 break;
             case ACTION_SPEED_FLY:
                 speedFly = isPressed;
                 break;
+            case ACTION_SPAWN_PLAYER:
+                if (isPressed) {
+                    // Crée une entité joueur à la position actuelle de la caméra
+                    System.out.println("Spawn player");
+                    entityController.createEntityAtCamera(Player.class);
+                }
+                break;
         }
     }
+
 
     /**
      * Met à jour la position de la caméra en fonction des touches enfoncées.
      * Doit être appelé depuis la méthode simpleUpdate.
-     * 
+     *
      * @param tpf Temps écoulé depuis la dernière image
      */
     public void updateCameraMovement(float tpf) {
