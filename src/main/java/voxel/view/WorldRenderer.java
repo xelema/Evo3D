@@ -2,6 +2,7 @@ package voxel.view;
 
 import com.jme3.scene.Node;
 import com.jme3.asset.AssetManager;
+import com.jme3.scene.Geometry;
 
 import voxel.model.WorldModel;
 
@@ -89,8 +90,13 @@ public class WorldRenderer {
             // Stocker le renderer
             chunkRenderers[chunkX][chunkY][chunkZ] = renderer;
             
-            // Attacher la géométrie au nœud monde
+            // Attacher la géométrie opaque au nœud monde
             worldNode.attachChild(renderer.getGeometry());
+
+            // Attacher la géométrie transparente si elle existe
+            if (renderer.getTransparentGeometry() != null) {
+                worldNode.attachChild(renderer.getTransparentGeometry());
+            }
         }
     }
 
@@ -107,7 +113,25 @@ public class WorldRenderer {
             for (int cy = 0; cy < sizeY; cy++) {
                 for (int cz = 0; cz < sizeZ; cz++) {
                     if (chunkRenderers[cx][cy][cz] != null) {
-                        chunkRenderers[cx][cy][cz].updateMesh();
+                        ChunkRenderer renderer = chunkRenderers[cx][cy][cz];
+                        
+                        // Conserver la référence à l'ancienne géométrie transparente
+                        Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
+                        
+                        // Mettre à jour le mesh
+                        renderer.updateMesh();
+                        
+                        // Gérer la nouvelle géométrie transparente
+                        Geometry newTransparentGeometry = renderer.getTransparentGeometry();
+                        
+                        // Si une nouvelle géométrie transparente a été créée
+                        if (oldTransparentGeometry == null && newTransparentGeometry != null) {
+                            worldNode.attachChild(newTransparentGeometry);
+                        }
+                        // Si la géométrie transparente a été supprimée
+                        else if (oldTransparentGeometry != null && newTransparentGeometry == null) {
+                            worldNode.detachChild(oldTransparentGeometry);
+                        }
                     }
                 }
             }
@@ -125,10 +149,21 @@ public class WorldRenderer {
         for (int cx = 0; cx < worldModel.getWorldSizeX(); cx++) {
             for (int cy = 0; cy < worldModel.getWorldSizeY(); cy++) {
                 for (int cz = 0; cz < worldModel.getWorldSizeZ(); cz++) {
-                    if (chunkRenderers[cx][cy][cz] != null && chunkRenderers[cx][cy][cz].getMaterial() != null) {
-                        chunkRenderers[cx][cy][cz].getMaterial()
-                                .getAdditionalRenderState()
-                                .setWireframe(wireframeEnabled);
+                    if (chunkRenderers[cx][cy][cz] != null) {
+                        // Appliquer le mode filaire au maillage opaque
+                        if (chunkRenderers[cx][cy][cz].getMaterial() != null) {
+                            chunkRenderers[cx][cy][cz].getMaterial()
+                                    .getAdditionalRenderState()
+                                    .setWireframe(wireframeEnabled);
+                        }
+                        
+                        // Appliquer le mode filaire au maillage transparent s'il existe
+                        Geometry transparentGeometry = chunkRenderers[cx][cy][cz].getTransparentGeometry();
+                        if (transparentGeometry != null && transparentGeometry.getMaterial() != null) {
+                            transparentGeometry.getMaterial()
+                                    .getAdditionalRenderState()
+                                    .setWireframe(wireframeEnabled);
+                        }
                     }
                 }
             }
@@ -149,7 +184,25 @@ public class WorldRenderer {
             chunkZ >= 0 && chunkZ < worldModel.getWorldSizeZ() &&
             chunkRenderers[chunkX][chunkY][chunkZ] != null) {
             
-            chunkRenderers[chunkX][chunkY][chunkZ].updateMesh();
+            ChunkRenderer renderer = chunkRenderers[chunkX][chunkY][chunkZ];
+            
+            // Conserver la référence à l'ancienne géométrie transparente
+            Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
+            
+            // Mettre à jour le mesh
+            renderer.updateMesh();
+            
+            // Gérer la nouvelle géométrie transparente
+            Geometry newTransparentGeometry = renderer.getTransparentGeometry();
+            
+            // Si une nouvelle géométrie transparente a été créée
+            if (oldTransparentGeometry == null && newTransparentGeometry != null) {
+                worldNode.attachChild(newTransparentGeometry);
+            }
+            // Si la géométrie transparente a été supprimée
+            else if (oldTransparentGeometry != null && newTransparentGeometry == null) {
+                worldNode.detachChild(oldTransparentGeometry);
+            }
         }
     }
 

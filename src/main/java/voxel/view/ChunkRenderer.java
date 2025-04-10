@@ -36,11 +36,17 @@ public class ChunkRenderer {
     /** Position Z du chunk dans le monde */
     private final int chunkZ;
     
-    /** La géométrie de ce chunk */
-    private Geometry geometry;
+    /** La géométrie opaque de ce chunk */
+    private Geometry opaqueGeometry;
     
-    /** Le matériau appliqué à ce chunk */
-    private Material material;
+    /** La géométrie transparente de ce chunk */
+    private Geometry transparentGeometry;
+    
+    /** Le matériau appliqué à la géométrie opaque */
+    private Material opaqueMaterial;
+    
+    /** Le matériau appliqué à la géométrie transparente */
+    private Material transparentMaterial;
 
     /**
      * Crée un nouveau renderer pour un chunk.
@@ -61,43 +67,58 @@ public class ChunkRenderer {
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
         
-        createGeometry();
+        createGeometries();
     }
 
     /**
-     * Crée la géométrie pour ce chunk.
+     * Crée les géométries pour ce chunk.
      */
-    private void createGeometry() {
-        // Génération du maillage du chunk
-        Mesh mesh = generateMesh();
+    private void createGeometries() {
+        // Génération des maillages séparés
+        Mesh opaqueMesh = generateOpaqueMesh();
+        Mesh transparentMesh = generateTransparentMesh();
         
-        // Création de la géométrie pour le maillage
-        String chunkName = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ;
-        geometry = new Geometry(chunkName, mesh);
+        // Création de la géométrie opaque
+        String chunkNameOpaque = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_opaque";
+        opaqueGeometry = new Geometry(chunkNameOpaque, opaqueMesh);
         
-        // Configuration du matériau
-        material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        material.setBoolean("VertexColor", true);
-
-        // Gestion du rendu alpha des blocs
-        material.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-        geometry.setQueueBucket(RenderQueue.Bucket.Transparent);
-        
-        // Application de l'état actuel du wireframe
-        material.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
-        
-        geometry.setMaterial(material);
+        // Configuration du matériau pour les blocs opaques
+        opaqueMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        opaqueMaterial.setBoolean("VertexColor", true);
+        opaqueMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
+        opaqueGeometry.setMaterial(opaqueMaterial);
         
         // Positionnement dans le monde
-        geometry.setLocalTranslation(chunkX * ChunkModel.SIZE, chunkY * ChunkModel.SIZE, chunkZ * ChunkModel.SIZE);
+        opaqueGeometry.setLocalTranslation(chunkX * ChunkModel.SIZE, chunkY * ChunkModel.SIZE, chunkZ * ChunkModel.SIZE);
+        
+        // Si nous avons des blocs transparents, créer une géométrie séparée
+        if (transparentMesh != null) {
+            String chunkNameTransparent = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_transparent";
+            transparentGeometry = new Geometry(chunkNameTransparent, transparentMesh);
+            
+            // Configuration du matériau pour les blocs transparents
+            transparentMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            transparentMaterial.setBoolean("VertexColor", true);
+            
+            // Gestion du rendu alpha des blocs
+            transparentMaterial.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+            transparentMaterial.getAdditionalRenderState().setDepthWrite(false);
+            transparentGeometry.setQueueBucket(RenderQueue.Bucket.Transparent);
+            
+            transparentMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
+            transparentGeometry.setMaterial(transparentMaterial);
+            
+            // Même position que la géométrie opaque
+            transparentGeometry.setLocalTranslation(chunkX * ChunkModel.SIZE, chunkY * ChunkModel.SIZE, chunkZ * ChunkModel.SIZE);
+        }
     }
 
     /**
-     * Génère un maillage pour ce chunk.
+     * Génère un maillage pour les parties opaques du chunk.
      * 
-     * @return Le maillage généré
+     * @return Le maillage opaque généré
      */
-    public Mesh generateMesh() {
+    private Mesh generateOpaqueMesh() {
         MeshBuilder builder = new MeshBuilder();
 
         // Parcours de tous les blocs du chunk
@@ -110,21 +131,24 @@ public class ChunkRenderer {
                     if (blockId != BlockType.AIR.getId()) {
                         BlockType blockType = BlockType.fromId(blockId);
                         ColorRGBA blockColor = blockType.getColor();
+                        
+                        // Ne traiter que les blocs opaques
+                        if (blockColor.a >= 1.0f) {
+                            // Vérifier et ajouter les faces visibles pour chaque direction
+                            for (Direction dir : Direction.values()) {
+                                // Calculer la position du bloc voisin
+                                int nx = x + dir.getOffsetX();
+                                int ny = y + dir.getOffsetY();
+                                int nz = z + dir.getOffsetZ();
 
-                        // Vérifier et ajouter les faces visibles pour chaque direction
-                        for (Direction dir : Direction.values()) {
-                            // Calculer la position du bloc voisin
-                            int nx = x + dir.getOffsetX();
-                            int ny = y + dir.getOffsetY();
-                            int nz = z + dir.getOffsetZ();
+                                // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
+                                if (getBlockNeighbor(nx, ny, nz) == BlockType.AIR.getId()
+                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId()
+                                        && chunkModel.getBlock(x, y, z) != BlockType.WATER.getId())) {
 
-                            // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
-                            if (getBlockNeighbor(nx, ny, nz) == BlockType.AIR.getId()
-                                    || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId()
-                                    && chunkModel.getBlock(x, y, z) != BlockType.WATER.getId())) {
-
-                                Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
-                                builder.addFace(face);
+                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
+                                    builder.addFace(face);
+                                }
                             }
                         }
                     }
@@ -133,6 +157,55 @@ public class ChunkRenderer {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Génère un maillage pour les parties transparentes du chunk.
+     * 
+     * @return Le maillage transparent généré, ou null s'il n'y a pas de blocs transparents
+     */
+    private Mesh generateTransparentMesh() {
+        MeshBuilder builder = new MeshBuilder();
+        boolean hasTransparentFaces = false;
+
+        // Parcours de tous les blocs du chunk
+        for (int x = 0; x < ChunkModel.SIZE; x++) {
+            for (int y = 0; y < ChunkModel.SIZE; y++) {
+                for (int z = 0; z < ChunkModel.SIZE; z++) {
+                    int blockId = chunkModel.getBlock(x, y, z);
+                    
+                    // On n'ajoute pas de faces pour les blocs d'air
+                    if (blockId != BlockType.AIR.getId()) {
+                        BlockType blockType = BlockType.fromId(blockId);
+                        ColorRGBA blockColor = blockType.getColor();
+                        
+                        // Ne traiter que les blocs transparents
+                        if (blockColor.a < 1.0f) {
+                            // Vérifier et ajouter les faces visibles pour chaque direction
+                            for (Direction dir : Direction.values()) {
+                                // Calculer la position du bloc voisin
+                                int nx = x + dir.getOffsetX();
+                                int ny = y + dir.getOffsetY();
+                                int nz = z + dir.getOffsetZ();
+
+                                // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
+                                if (getBlockNeighbor(nx, ny, nz) == BlockType.AIR.getId()
+                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId()
+                                        && chunkModel.getBlock(x, y, z) != BlockType.WATER.getId())) {
+
+                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
+                                    builder.addFace(face);
+                                    hasTransparentFaces = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Ne retourner le maillage que s'il y a des faces transparentes
+        return hasTransparentFaces ? builder.build() : null;
     }
     
     /**
@@ -160,26 +233,68 @@ public class ChunkRenderer {
      * Met à jour le maillage du chunk.
      */
     public void updateMesh() {
-        Mesh newMesh = generateMesh();
-        geometry.setMesh(newMesh);
-        material.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
+        // Mise à jour du mesh opaque
+        Mesh newOpaqueMesh = generateOpaqueMesh();
+        opaqueGeometry.setMesh(newOpaqueMesh);
+        opaqueMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
+        
+        // Mise à jour du mesh transparent
+        Mesh newTransparentMesh = generateTransparentMesh();
+        
+        if (newTransparentMesh != null) {
+            if (transparentGeometry == null) {
+                // Créer une nouvelle géométrie transparente si nécessaire
+                String chunkNameTransparent = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_transparent";
+                transparentGeometry = new Geometry(chunkNameTransparent, newTransparentMesh);
+                
+                transparentMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+                transparentMaterial.setBoolean("VertexColor", true);
+                
+                transparentMaterial.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+                transparentMaterial.getAdditionalRenderState().setDepthWrite(false);
+                transparentGeometry.setQueueBucket(RenderQueue.Bucket.Transparent);
+                
+                transparentMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
+                transparentGeometry.setMaterial(transparentMaterial);
+                
+                transparentGeometry.setLocalTranslation(chunkX * ChunkModel.SIZE, chunkY * ChunkModel.SIZE, chunkZ * ChunkModel.SIZE);
+            } else {
+                // Mettre à jour le mesh transparent existant
+                transparentGeometry.setMesh(newTransparentMesh);
+                transparentMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
+            }
+        } else if (transparentGeometry != null) {
+            // Si nous n'avons plus de faces transparentes mais que la géométrie existe toujours,
+            // nous devons informer le parent pour qu'il la supprime
+            // Cela sera géré dans le WorldRenderer
+            transparentGeometry = null;
+        }
     }
 
     /**
-     * Récupère la géométrie de ce chunk.
+     * Récupère la géométrie opaque de ce chunk.
      * 
-     * @return La géométrie du chunk
+     * @return La géométrie opaque du chunk
      */
     public Geometry getGeometry() {
-        return geometry;
+        return opaqueGeometry;
     }
 
     /**
-     * Récupère le matériau appliqué à ce chunk.
+     * Récupère la géométrie transparente de ce chunk.
      * 
-     * @return Le matériau du chunk
+     * @return La géométrie transparente du chunk, peut être null
      */
-    public Material getMaterial(){
-        return material;
+    public Geometry getTransparentGeometry() {
+        return transparentGeometry;
+    }
+
+    /**
+     * Récupère le matériau appliqué à la géométrie opaque.
+     * 
+     * @return Le matériau de la géométrie opaque
+     */
+    public Material getMaterial() {
+        return opaqueMaterial;
     }
 } 
