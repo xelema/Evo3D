@@ -92,28 +92,15 @@ public class EntityController {
 
     /**
      * Met à jour toutes les entités.
-     * Gère la physique, les collisions et les interactions.
+     * Pour gérer la physique, les collisions et les interactions.
      *
      * @param tpf Temps écoulé depuis la dernière frame
      */
     public void update(float tpf) {
-        // La mise à jour des entités est déjà gérée par EntityManager
-        // La mise à jour des renderers est déjà gérée par EntityRendererManager
-        // Ce contrôleur peut ajouter des comportements supplémentaires ici
-
-        // Par exemple, on pourrait ajouter des vérifications pour supprimer
-        // les entités qui sont tombées hors du monde
-
-        // Vérifier si des entités sont tombées en dessous du niveau minimum
-        for (Entity entity : entityManager.getEntities()) {
-            entity.update(tpf);
-            if (entity.getY() < 2) {
-                // Supprimer le renderer associé
-                entityRendererManager.removeEntity(entity);
-                // Marquer l'entité pour suppression
-                //entityManager.removeEntity(entity);
-            }
-        }
-
+        // Déléguer la mise à jour des entités à l'EntityManager
+        entityManager.updateAll(tpf);
+        
+        // Nettoyer les renderers des entités supprimées
+        // Cette opération est désormais gérée par EntityRendererManager.update()
     }
 }

@@ -96,21 +96,25 @@ public class EntityRendererManager {
      * Synchronise également avec le gestionnaire d'entités pour ajouter/supprimer des renderers.
      */
     public void update() {
-        // Synchroniser les entités existantes
+        // Ajouter des renderers pour les nouvelles entités
         for (Entity entity : entityManager.getEntities()) {
             if (!entityRenderers.containsKey(entity)) {
                 addEntity(entity);
             }
         }
 
-        // Mettre à jour tous les renderers
-        for (EntityRenderer renderer : entityRenderers.values()) {
-            renderer.update();
+        // Mettre à jour tous les renderers existants
+        for (Map.Entry<Entity, EntityRenderer> entry : new HashMap<>(entityRenderers).entrySet()) {
+            Entity entity = entry.getKey();
+            EntityRenderer renderer = entry.getValue();
+            
+            if (entityManager.getEntities().contains(entity)) {
+                renderer.update();
+            } else {
+                // L'entité n'existe plus dans le modèle, supprimer son renderer
+                removeEntity(entity);
+            }
         }
-
-        // Nettoyer les renderers pour les entités qui n'existent plus
-        entityRenderers.keySet().retainAll(entityManager.getEntities());
-
     }
 
     /**

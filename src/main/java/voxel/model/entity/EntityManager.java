@@ -1,7 +1,11 @@
 package voxel.model.entity;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 import voxel.model.WorldModel;
-import java.util.*;
 
 public class EntityManager {
     private List<Entity> entities = new ArrayList<>();
@@ -20,8 +24,15 @@ public class EntityManager {
     }
 
     public void updateAll(float tpf) {
-        for (Entity entity : new ArrayList<>(entities)) {
+        Iterator<Entity> iterator = entities.iterator();
+        while (iterator.hasNext()) {
+            Entity entity = iterator.next();
             entity.update(tpf);
+            
+            // Vérifier si l'entité est tombée en dessous du niveau minimum
+            if (entity.getY() < 2) {
+                iterator.remove(); // Suppression sécurisée avec l'itérateur
+            }
         }
     }
 
