@@ -40,5 +40,10 @@
             <artifactId>jme3-effects</artifactId>
             <version>3.7.0-stable</version>
         </dependency>
+        <dependency>
+            <groupId>org.jmonkeyengine</groupId>
+            <artifactId>jme3-niftygui</artifactId>
+            <version>3.7.0-stable</version>
+        </dependency>
     </dependencies>
 </project>
