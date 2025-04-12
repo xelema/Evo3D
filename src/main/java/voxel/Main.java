@@ -1,6 +1,7 @@
 package voxel;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.ScreenshotAppState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.system.AppSettings;
@@ -52,6 +53,10 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleInitApp() {
+        // Permet de faire des screenshots
+        ScreenshotAppState screenShotState = new ScreenshotAppState(".");
+        this.stateManager.attach(screenShotState);
+
         setupCamera();
         setupMVC();
     }
