@@ -30,6 +30,7 @@ public class InputController implements ActionListener {
     private static final String ACTION_SPEED_FLY = "SpeedFly"; // Action pour activer le vol rapide
     private static final String ACTION_SPAWN_PLAYER = "SpawnPlayer"; // Action pour faire apparaître le joueur
     private static final String ACTION_TOGGLE_FULLSCREEN = "ToggleFullscreen"; // Action pour basculer en plein écran
+    private static final String ACTION_TOGGLE_COORDINATES = "ToggleCoordinates"; // Action pour afficher/masquer les coordonnées
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
@@ -52,6 +53,7 @@ public class InputController implements ActionListener {
     private boolean movingUp = false; // État du mouvement vers le haut
     private boolean movingDown = false; // État du mouvement vers le bas
     private boolean speedFly = false; // État du vol rapide
+    private boolean displayCoordinates = false; // État d'affichage des coordonnées
 
     /**
      * Crée un nouveau contrôleur d'entrées.
@@ -103,6 +105,7 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_SPEED_FLY, new KeyTrigger(KeyInput.KEY_LCONTROL));
         inputManager.addMapping(ACTION_SPAWN_PLAYER, new KeyTrigger(KeyInput.KEY_P));
         inputManager.addMapping(ACTION_TOGGLE_FULLSCREEN, new KeyTrigger(KeyInput.KEY_F11));
+        inputManager.addMapping(ACTION_TOGGLE_COORDINATES, new KeyTrigger(KeyInput.KEY_F3));
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this,
@@ -116,7 +119,8 @@ public class InputController implements ActionListener {
                 ACTION_MOVE_DOWN,
                 ACTION_SPEED_FLY,
                 ACTION_SPAWN_PLAYER,
-                ACTION_TOGGLE_FULLSCREEN
+                ACTION_TOGGLE_FULLSCREEN,
+                ACTION_TOGGLE_COORDINATES
         );
     }
 
@@ -171,6 +175,12 @@ public class InputController implements ActionListener {
             case ACTION_TOGGLE_FULLSCREEN:
                 if (isPressed && app != null) {
                     toggleToFullscreen(app);
+                }
+                break;
+            case ACTION_TOGGLE_COORDINATES:
+                if (isPressed) {
+                    displayCoordinates = !displayCoordinates;
+                    worldController.toggleCoordinatesDisplay(displayCoordinates);
                 }
                 break;
         }

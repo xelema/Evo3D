@@ -163,9 +163,7 @@ public class ChunkRenderer {
                                 int nz = z + dir.getOffsetZ();
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
-                                if (getBlockNeighbor(nx, ny, nz) == BlockType.AIR.getId()
-                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId())) {
-
+                                if (shouldGenerateFace(nx, ny, nz)) {
                                     Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
                                     builder.addFace(face);
                                 }
@@ -209,9 +207,7 @@ public class ChunkRenderer {
                                 int nz = z + dir.getOffsetZ();
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
-                                if (getBlockNeighbor(nx, ny, nz) == BlockType.AIR.getId()
-                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId())) {
-
+                                if (shouldGenerateFace(nx, ny, nz)) {
                                     Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
                                     builder.addFace(face);
                                     hasTransparentFaces = true;
@@ -241,11 +237,25 @@ public class ChunkRenderer {
             return chunkModel.getBlock(x, y, z);
         } else {
             // Le bloc voisin est dans un autre chunk
-            int globalX = chunkX * ChunkModel.SIZE + x;
-            int globalY = chunkY * ChunkModel.SIZE + y;
-            int globalZ = chunkZ * ChunkModel.SIZE + z;
+            int globalX = x + (chunkX - worldModel.getWorldSizeX()/2) * ChunkModel.SIZE;
+            int globalY = y + chunkY * ChunkModel.SIZE;
+            int globalZ = z + (chunkZ - worldModel.getWorldSizeZ()/2) * ChunkModel.SIZE;
             return worldModel.getBlockAt(globalX, globalY, globalZ);
         }
+    }
+
+    /**
+     * Vérifie si le bloc voisin justifie la génération d'une face
+     * (uniquement pour l'air et l'eau).
+     * 
+     * @param x Coordonnée X du bloc voisin
+     * @param y Coordonnée Y du bloc voisin
+     * @param z Coordonnée Z du bloc voisin
+     * @return True si une face doit être générée, false sinon
+     */
+    private boolean shouldGenerateFace(int x, int y, int z) {
+        int blockId = getBlockNeighbor(x, y, z);
+        return blockId == BlockType.AIR.getId() || blockId == BlockType.WATER.getId();
     }
 
     /**

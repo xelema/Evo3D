@@ -17,8 +17,8 @@ public class WorldModel {
     /** Taille du monde en nombre de chunks sur l'axe X */
     private final int worldSizeX = WORLD_SIZE;
     
-    /** Taille du monde en nombre de chunks sur l'axe Y (un seul niveau vertical pour simplifier) */
-    private final int worldSizeY = 32;
+    /** Taille du monde en nombre de chunks sur l'axe Y */
+    private final int worldSizeY = 8;
     
     /** Taille du monde en nombre de chunks sur l'axe Z */
     private final int worldSizeZ = WORLD_SIZE;
@@ -58,6 +58,7 @@ public class WorldModel {
         
         // Générer l'île flottante de départ au centre du monde (0,0,0)
         createFloatingIsland();
+
     }
     
     /**
@@ -66,7 +67,7 @@ public class WorldModel {
     private void createFloatingIsland() {
 
         int centerX = 0;
-        int centerY = 10; 
+        int centerY = 16;
         int centerZ = 0;
         
         // Rayon de l'île
@@ -92,6 +93,7 @@ public class WorldModel {
                     }
                     
                     for (int y = centerY - height; y <= centerY; y++) {
+
                         if (y == centerY) {
                             setBlockAt(x, y, z, BlockType.GRASS.getId());
                         } else if (y > centerY - 3) {
@@ -151,11 +153,7 @@ public class WorldModel {
      * Crée un nuage à la position et aux dimensions spécifiées.
      */
     private void createCloud(int x, int y, int z, int sizeX, int sizeY, int sizeZ) {
-        // Déterminer le centre du nuage
-        double centerX = x + sizeX/2.0;
-        double centerY = y + sizeY/2.0;
-        double centerZ = z + sizeZ/2.0;
-        
+
         // Créer le nuage avec une forme arrondie
         for (int dx = 0; dx < sizeX; dx++) {
             for (int dy = 0; dy < sizeY; dy++) {
@@ -174,8 +172,13 @@ public class WorldModel {
                             continue;
                         }
                         
+                        // Convertir les coordonnées centrées en coordonnées de grille
+                        int gridX = x + dx;
+                        int gridY = y + dy;
+                        int gridZ = z + dz;
+                        
                         // Placer le bloc de nuage
-                        setBlockAt(x + dx, y + dy, z + dz, BlockType.CLOUD.getId());
+                        setBlockAt(gridX, gridY, gridZ, BlockType.CLOUD.getId());
                     }
                 }
             }
@@ -186,6 +189,7 @@ public class WorldModel {
      * Ajoute quelques arbres sur l'île.
      */
     private void addTrees(int centerX, int centerY, int centerZ, int radiusXZ) {
+
         // Positions fixes des arbres (angles en degrés, distance en pourcentage du radius)
         int[][] treePositions = {
             {45, 40},
@@ -208,8 +212,8 @@ public class WorldModel {
             
             int treeX = centerX + (int)(Math.cos(angleRadians) * distance);
             int treeZ = centerZ + (int)(Math.sin(angleRadians) * distance);
-            
-            // Vérifier que l'emplacement est de l'herbe
+
+            // Vérifier que l'emplacement est de l'herbe (utilise maintenant les coordonnées de grille)
             if (getBlockAt(treeX, centerY, treeZ) == BlockType.GRASS.getId()) {
                 createTree(treeX, centerY + 1, treeZ);
             }
@@ -220,10 +224,12 @@ public class WorldModel {
      * Crée un arbre à la position spécifiée.
      */
     private void createTree(int x, int y, int z) {
+
         int height = 4 + random.nextInt(6); // Hauteur du tronc entre 4 et 10
         
         // Créer le tronc
         for (int i = 0; i < height; i++) {
+            // Convertir en coordonnées de grille
             setBlockAt(x, y + i, z, BlockType.LOG.getId());
         }
         
@@ -240,7 +246,7 @@ public class WorldModel {
                         int blockX = x + dx;
                         int blockY = y + height + dy;
                         int blockZ = z + dz;
-                        
+
                         // Ne pas remplacer le tronc
                         if (!(dx == 0 && dz == 0 && dy < 0)) {
                             if (distance < leavesRadius || random.nextDouble() < 0.6) {
@@ -264,31 +270,26 @@ public class WorldModel {
      * @return L'identifiant du type de bloc, ou 0 (AIR) si en dehors du monde
      */
     public int getBlockAt(int globalX, int globalY, int globalZ) {
-        // Décalage pour centrer le monde à (0,0,0)
-        int offsetX = worldSizeX * ChunkModel.SIZE / 2;
-        int offsetY = 0; // Pas de décalage en Y
-        int offsetZ = worldSizeZ * ChunkModel.SIZE / 2;
+        // Calcul des coordonnées du chunk
+        int chunkX = Math.floorDiv(globalX, ChunkModel.SIZE);
+        int chunkY = Math.floorDiv(globalY, ChunkModel.SIZE);
+        int chunkZ = Math.floorDiv(globalZ, ChunkModel.SIZE);
         
-        // Convertir les coordonnées globales (centrées en 0,0,0) en coordonnées de grille
-        int gridX = globalX + offsetX;
-        int gridY = globalY + offsetY;
-        int gridZ = globalZ + offsetZ;
+        // Calcul des coordonnées locales à l'intérieur du chunk
+        int localX = globalX - chunkX * ChunkModel.SIZE;
+        int localY = globalY - chunkY * ChunkModel.SIZE;
+        int localZ = globalZ - chunkZ * ChunkModel.SIZE;
         
-        // Calcul des coordonnées du chunk qui contient cette position
-        int cx = Math.floorDiv(gridX, ChunkModel.SIZE);
-        int cy = Math.floorDiv(gridY, ChunkModel.SIZE);
-        int cz = Math.floorDiv(gridZ, ChunkModel.SIZE);
+        // Appliquer le décalage pour le stockage dans le tableau de chunks
+        int cx = chunkX + worldSizeX / 2;
+        int cy = chunkY;
+        int cz = chunkZ + worldSizeZ / 2;
 
         // Vérification que les coordonnées sont dans les limites du monde
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
             return BlockType.AIR.getId(); // AIR pour tout ce qui est en dehors du monde
         }
         
-        // Calcul des coordonnées locales à l'intérieur du chunk
-        int localX = gridX - cx * ChunkModel.SIZE;
-        int localY = gridY - cy * ChunkModel.SIZE;
-        int localZ = gridZ - cz * ChunkModel.SIZE;
-
         // Récupération du type de bloc dans le chunk
         return chunks[cx][cy][cz].getBlock(localX, localY, localZ);
     }
@@ -303,30 +304,26 @@ public class WorldModel {
      * @return true si le bloc a été modifié, false si hors des limites
      */
     public boolean setBlockAt(int globalX, int globalY, int globalZ, int blockType) {
-        // Décalage pour centrer le monde à (0,0,0)
-        int offsetX = worldSizeX * ChunkModel.SIZE / 2;
-        int offsetY = 0; // Pas de décalage en Y
-        int offsetZ = worldSizeZ * ChunkModel.SIZE / 2;
+        // Calcul des coordonnées du chunk sans décalage
+        int chunkX = Math.floorDiv(globalX, ChunkModel.SIZE);
+        int chunkY = Math.floorDiv(globalY, ChunkModel.SIZE);
+        int chunkZ = Math.floorDiv(globalZ, ChunkModel.SIZE);
         
-        // Convertir les coordonnées globales (centrées en 0,0,0) en coordonnées de grille
-        int gridX = globalX + offsetX;
-        int gridY = globalY + offsetY;
-        int gridZ = globalZ + offsetZ;
+        // Calcul des coordonnées locales à l'intérieur du chunk
+        int localX = globalX - chunkX * ChunkModel.SIZE;
+        int localY = globalY - chunkY * ChunkModel.SIZE;
+        int localZ = globalZ - chunkZ * ChunkModel.SIZE;
         
-        // Calcul des coordonnées du chunk qui contient cette position
-        int cx = Math.floorDiv(gridX, ChunkModel.SIZE);
-        int cy = Math.floorDiv(gridY, ChunkModel.SIZE);
-        int cz = Math.floorDiv(gridZ, ChunkModel.SIZE);
+        // Appliquer le décalage pour le stockage dans le tableau de chunks
+        int cx = chunkX + worldSizeX / 2;
+        int cy = chunkY;
+        int cz = chunkZ + worldSizeZ / 2;
 
         // Vérification que les coordonnées sont dans les limites du monde
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
+            System.out.println("Hors des limites du monde, globalX: " + globalX + ", globalY: " + globalY + ", globalZ: " + globalZ);
             return false;
         }
-        
-        // Calcul des coordonnées locales à l'intérieur du chunk
-        int localX = gridX - cx * ChunkModel.SIZE;
-        int localY = gridY - cy * ChunkModel.SIZE;
-        int localZ = gridZ - cz * ChunkModel.SIZE;
 
         // Modification du bloc dans le chunk
         chunks[cx][cy][cz].setBlock(localX, localY, localZ, blockType);
@@ -419,4 +416,4 @@ public class WorldModel {
             entityManager.updateAll(tpf);
         }
     }
-} 
+}

@@ -3,8 +3,15 @@ package voxel.view;
 import com.jme3.scene.Node;
 import com.jme3.asset.AssetManager;
 import com.jme3.scene.Geometry;
+import com.jme3.ui.Picture;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
 
 import voxel.model.WorldModel;
+import voxel.model.ChunkModel;
 
 /**
  * Classe responsable du rendu du monde entier.
@@ -25,7 +32,14 @@ public class WorldRenderer {
 
     private EntityRendererManager entityRendererManager;
 
-
+    /** Caméra pour obtenir la position du joueur */
+    private Camera camera;
+    
+    /** Text pour afficher les coordonnées */
+    private BitmapText coordinatesText;
+    
+    /** Flag pour indiquer si les coordonnées doivent être affichées */
+    private boolean displayCoordinates = false;
     
     /** Indique si une mise à jour du maillage est nécessaire */
     private boolean needsMeshUpdate = false;
@@ -45,6 +59,27 @@ public class WorldRenderer {
 
         this.entityRendererManager = new EntityRendererManager(this.worldModel.getEntityManager(), assetManager);
         worldNode.attachChild(entityRendererManager.getNode());
+    }
+    
+    /**
+     * Initialise les éléments d'interface utilisateur.
+     * 
+     * @param guiNode Nœud GUI auquel attacher les éléments
+     * @param camera Caméra du joueur
+     */
+    public void initializeUI(Node guiNode, Camera camera) {
+        this.camera = camera;
+        
+        // Crée le texte pour afficher les coordonnées
+        BitmapFont font = assetManager.loadFont("Interface/Fonts/Console.fnt");
+        coordinatesText = new BitmapText(font);
+        coordinatesText.setSize(font.getCharSet().getRenderedSize());
+        coordinatesText.setColor(ColorRGBA.White);
+        coordinatesText.setText("");
+        coordinatesText.setLocalTranslation(10, camera.getHeight() - 10, 0);
+        
+        // Ajoute le texte au nœud GUI
+        guiNode.attachChild(coordinatesText);
     }
 
     /**
@@ -230,6 +265,53 @@ public class WorldRenderer {
     }
     
     /**
+     * Active ou désactive l'affichage des coordonnées.
+     * 
+     * @param display true pour afficher, false pour masquer
+     */
+    public void setDisplayCoordinates(boolean display) {
+        this.displayCoordinates = display;
+        
+        // Efface le texte si on désactive l'affichage
+        if (!display && coordinatesText != null) {
+            coordinatesText.setText("");
+        }
+    }
+    
+    /**
+     * Met à jour le texte des coordonnées.
+     */
+    private void updateCoordinatesText() {
+        if (displayCoordinates && coordinatesText != null && camera != null) {
+            Vector3f location = camera.getLocation();
+            
+            // Calcul des coordonnées du chunk comme dans WorldModel
+            // On ajoute le décalage pour convertir les coordonnées centrées en coordonnées d'index
+            int offsetX = worldModel.getWorldSizeX() * ChunkModel.SIZE / 2;
+            int offsetZ = worldModel.getWorldSizeZ() * ChunkModel.SIZE / 2;
+            
+            // Conversion des coordonnées de la caméra en coordonnées globales des index
+            int globalX = (int)location.x + offsetX;
+            int globalY = (int)location.y;
+            int globalZ = (int)location.z + offsetZ;
+
+            // Calcul des indices de chunk utilisés dans les tableaux
+            int cx = Math.floorDiv(globalX, ChunkModel.SIZE);
+            int cy = Math.floorDiv(globalY, ChunkModel.SIZE);
+            int cz = Math.floorDiv(globalZ, ChunkModel.SIZE);
+
+            // Formater le texte avec les coordonnées du joueur et du chunk
+            String text = String.format(
+                "Position: %.2f, %.2f, %.2f\nChunk: %d, %d, %d",
+                location.x, location.y, location.z,
+                cx, cy, cz
+            );
+
+            coordinatesText.setText(text);
+        }
+    }
+
+    /**
      * Méthode appelée à chaque frame pour mettre à jour le rendu.
      * 
      * @param tpf Temps écoulé depuis la dernière frame
@@ -238,6 +320,12 @@ public class WorldRenderer {
         if (needsMeshUpdate) {
             updateAllMeshes();
         }
+        
+        // Met à jour le texte des coordonnées si nécessaire
+        if (displayCoordinates) {
+            updateCoordinatesText();
+        }
+        
         entityRendererManager.update();
     }
 

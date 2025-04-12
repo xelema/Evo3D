@@ -97,6 +97,9 @@ public class Main extends SimpleApplication {
         WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
         rootNode.attachChild(worldRenderer.getNode());
         
+        // Initialisation de l'interface utilisateur
+        worldRenderer.initializeUI(guiNode, cam);
+        
         // Contrôleurs - Gèrent les interactions et la logique
         WorldController worldController = new WorldController(worldModel, worldRenderer);
         EntityController entityController = new EntityController(worldModel, worldRenderer, cam);
