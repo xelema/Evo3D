@@ -38,7 +38,10 @@ public class Main extends SimpleApplication {
         settings.setTitle("Evo3D");
         settings.setResolution(1600, 900);
         settings.setFullscreen(false);
-        
+        settings.setVSync(true);
+        settings.setGammaCorrection(true);
+        settings.setSamples(4); // Anti-aliasing
+
         app.setSettings(settings);
         app.start();
     }

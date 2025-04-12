@@ -102,24 +102,36 @@ public class ChunkRenderer {
         
         // Si nous avons des blocs transparents, créer une géométrie séparée
         if (transparentMesh != null) {
-            String chunkNameTransparent = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_transparent";
-            transparentGeometry = new Geometry(chunkNameTransparent, transparentMesh);
-            
-            // Configuration du matériau pour les blocs transparents
-            transparentMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-            transparentMaterial.setBoolean("VertexColor", true);
-            
-            // Gestion du rendu alpha des blocs
-            transparentMaterial.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-            transparentMaterial.getAdditionalRenderState().setDepthWrite(false);
-            transparentGeometry.setQueueBucket(RenderQueue.Bucket.Transparent);
-            
-            transparentMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
-            transparentGeometry.setMaterial(transparentMaterial);
-            
-            // Même position que la géométrie opaque
-            transparentGeometry.setLocalTranslation(posX, posY, posZ);
+            createTransparentGeometry(transparentMesh, posX, posY, posZ);
         }
+    }
+
+    /**
+     * Crée ou met à jour la géométrie transparente avec le mesh fourni
+     * 
+     * @param transparentMesh Le maillage transparent à utiliser
+     * @param posX Position X dans le monde
+     * @param posY Position Y dans le monde
+     * @param posZ Position Z dans le monde
+     */
+    private void createTransparentGeometry(Mesh transparentMesh, float posX, float posY, float posZ) {
+        String chunkNameTransparent = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_transparent";
+        transparentGeometry = new Geometry(chunkNameTransparent, transparentMesh);
+        
+        // Configuration du matériau pour les blocs transparents
+        transparentMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        transparentMaterial.setBoolean("VertexColor", true);
+        
+        // Gestion du rendu alpha des blocs
+        transparentMaterial.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+        transparentMaterial.getAdditionalRenderState().setDepthWrite(false);
+        transparentGeometry.setQueueBucket(RenderQueue.Bucket.Transparent);
+        
+        transparentMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
+        transparentGeometry.setMaterial(transparentMaterial);
+        
+        // Positionnement dans le monde
+        transparentGeometry.setLocalTranslation(posX, posY, posZ);
     }
 
     /**
@@ -152,8 +164,7 @@ public class ChunkRenderer {
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
                                 if (getBlockNeighbor(nx, ny, nz) == BlockType.AIR.getId()
-                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId()
-                                        && chunkModel.getBlock(x, y, z) != BlockType.WATER.getId())) {
+                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId())) {
 
                                     Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
                                     builder.addFace(face);
@@ -199,8 +210,7 @@ public class ChunkRenderer {
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
                                 if (getBlockNeighbor(nx, ny, nz) == BlockType.AIR.getId()
-                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId()
-                                        && chunkModel.getBlock(x, y, z) != BlockType.WATER.getId())) {
+                                        || (getBlockNeighbor(nx, ny, nz) == BlockType.WATER.getId())) {
 
                                     Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
                                     builder.addFace(face);
@@ -253,20 +263,15 @@ public class ChunkRenderer {
         if (newTransparentMesh != null) {
             if (transparentGeometry == null) {
                 // Créer une nouvelle géométrie transparente si nécessaire
-                String chunkNameTransparent = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_transparent";
-                transparentGeometry = new Geometry(chunkNameTransparent, newTransparentMesh);
+                int offsetX = worldModel.getWorldSizeX() * ChunkModel.SIZE / 2;
+                int offsetY = 0;
+                int offsetZ = worldModel.getWorldSizeZ() * ChunkModel.SIZE / 2;
                 
-                transparentMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-                transparentMaterial.setBoolean("VertexColor", true);
+                float posX = (chunkX * ChunkModel.SIZE) - offsetX;
+                float posY = chunkY * ChunkModel.SIZE;
+                float posZ = (chunkZ * ChunkModel.SIZE) - offsetZ;
                 
-                transparentMaterial.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-                transparentMaterial.getAdditionalRenderState().setDepthWrite(false);
-                transparentGeometry.setQueueBucket(RenderQueue.Bucket.Transparent);
-                
-                transparentMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
-                transparentGeometry.setMaterial(transparentMaterial);
-                
-                transparentGeometry.setLocalTranslation(chunkX * ChunkModel.SIZE, chunkY * ChunkModel.SIZE, chunkZ * ChunkModel.SIZE);
+                createTransparentGeometry(newTransparentMesh, posX, posY, posZ);
             } else {
                 // Mettre à jour le mesh transparent existant
                 transparentGeometry.setMesh(newTransparentMesh);
