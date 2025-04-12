@@ -20,4 +20,9 @@ public class Player extends Entity {
         if (y < 0) y = 0;
         if (z < 0) z = 0;
     }
+
+    @Override
+    public boolean isMarkedForRemoval() {
+        return this.y < 2;
+    }
 }

@@ -66,6 +66,12 @@ public abstract class Entity {
     }
 
     /**
+     * Détermine si l'entité doit être supprimée du monde.
+     * @return true si l'entité doit être supprimée, false sinon.
+     */
+    public abstract boolean isMarkedForRemoval();
+
+    /**
      * Obtient la taille de l'entité.
      * @return La taille de l'entité en unités de monde
      */

@@ -29,8 +29,8 @@ public class EntityManager {
             Entity entity = iterator.next();
             entity.update(tpf);
             
-            // Vérifier si l'entité est tombée en dessous du niveau minimum
-            if (entity.getY() < 2) {
+            // Vérifier si l'entité doit être supprimée
+            if (entity.isMarkedForRemoval()) {
                 iterator.remove(); // Suppression sécurisée avec l'itérateur
             }
         }
