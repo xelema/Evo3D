@@ -88,8 +88,17 @@ public class ChunkRenderer {
         opaqueMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
         opaqueGeometry.setMaterial(opaqueMaterial);
         
-        // Positionnement dans le monde
-        opaqueGeometry.setLocalTranslation(chunkX * ChunkModel.SIZE, chunkY * ChunkModel.SIZE, chunkZ * ChunkModel.SIZE);
+        // Calcul du décalage pour centrer le monde à (0,0,0)
+        int offsetX = worldModel.getWorldSizeX() * ChunkModel.SIZE / 2;
+        int offsetY = 0; // Pas de décalage en Y
+        int offsetZ = worldModel.getWorldSizeZ() * ChunkModel.SIZE / 2;
+        
+        // Positionnement dans le monde centré sur (0,0,0)
+        float posX = (chunkX * ChunkModel.SIZE) - offsetX;
+        float posY = chunkY * ChunkModel.SIZE;
+        float posZ = (chunkZ * ChunkModel.SIZE) - offsetZ;
+        
+        opaqueGeometry.setLocalTranslation(posX, posY, posZ);
         
         // Si nous avons des blocs transparents, créer une géométrie séparée
         if (transparentMesh != null) {
@@ -109,7 +118,7 @@ public class ChunkRenderer {
             transparentGeometry.setMaterial(transparentMaterial);
             
             // Même position que la géométrie opaque
-            transparentGeometry.setLocalTranslation(chunkX * ChunkModel.SIZE, chunkY * ChunkModel.SIZE, chunkZ * ChunkModel.SIZE);
+            transparentGeometry.setLocalTranslation(posX, posY, posZ);
         }
     }
 

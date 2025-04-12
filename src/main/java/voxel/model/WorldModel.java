@@ -1,6 +1,7 @@
 package voxel.model;
 
 import voxel.model.entity.EntityManager;
+import java.util.Random;
 
 /**
  * Représente le monde de voxels complet, composé de plusieurs chunks.
@@ -8,7 +9,7 @@ import voxel.model.entity.EntityManager;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 16;
+    public static final int WORLD_SIZE = 32;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -17,7 +18,7 @@ public class WorldModel {
     private final int worldSizeX = WORLD_SIZE;
     
     /** Taille du monde en nombre de chunks sur l'axe Y (un seul niveau vertical pour simplifier) */
-    private final int worldSizeY = 1;
+    private final int worldSizeY = 32;
     
     /** Taille du monde en nombre de chunks sur l'axe Z */
     private final int worldSizeZ = WORLD_SIZE;
@@ -29,6 +30,9 @@ public class WorldModel {
     private boolean wireframeMode = false;
 
     private EntityManager entityManager;
+    
+    /** Générateur de nombres aléatoires */
+    private final Random random = new Random();
 
     /**
      * Crée un nouveau monde de voxels.
@@ -43,15 +47,212 @@ public class WorldModel {
      * Génère le monde complet avec tous ses chunks.
      */
     private void generateWorld() {
-        // Créer tous les chunks
+        // Créer tous les chunks vides
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    chunks[cx][cy][cz] = new ChunkModel();
+                    chunks[cx][cy][cz] = new ChunkModel(true); // Créer des chunks vides
+                }
+            }
+        }
+        
+        // Générer l'île flottante de départ au centre du monde (0,0,0)
+        createFloatingIsland();
+    }
+    
+    /**
+     * Crée une île flottante au centre du monde (0,0,0).
+     */
+    private void createFloatingIsland() {
+
+        int centerX = 0;
+        int centerY = 10; 
+        int centerZ = 0;
+        
+        // Rayon de l'île
+        int radiusXZ = 30; // Rayon horizontal
+        int radiusY = 16;   // Hauteur/épaisseur
+        
+        // Générer la base de l'île
+        for (int x = centerX - radiusXZ; x <= centerX + radiusXZ; x++) {
+            for (int z = centerZ - radiusXZ; z <= centerZ + radiusXZ; z++) {
+
+                double distanceSquared = Math.pow((x - centerX) / (radiusXZ * 0.8), 2) 
+                                      + Math.pow((z - centerZ) / (radiusXZ * 0.8), 2);
+                
+                // Si dans le rayon de l'île
+                if (distanceSquared <= 1.0) {
+                    // Déterminer la hauteur à cette position
+                    double heightFactor = 1 - Math.sqrt(distanceSquared);
+                    int height = (int) (radiusY * heightFactor);
+                    
+                    // Ajouter une variation aléatoire aux bords
+                    if (distanceSquared > 0.6) {
+                        height += random.nextInt(3) - 1;
+                    }
+                    
+                    for (int y = centerY - height; y <= centerY; y++) {
+                        if (y == centerY) {
+                            setBlockAt(x, y, z, BlockType.GRASS.getId());
+                        } else if (y > centerY - 3) {
+                            setBlockAt(x, y, z, BlockType.DIRT.getId());
+                        } else {
+                            setBlockAt(x, y, z, BlockType.STONE.getId());
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Ajouter quelques arbres
+        addTrees(centerX, centerY, centerZ, radiusXZ);
+        
+        // Ajouter des nuages dans le ciel
+        addClouds(centerX, centerY + 30, centerZ);
+    }
+    
+    /**
+     * Ajoute des nuages dans le ciel du monde.
+     * 
+     * @param centerX Le centre du monde en X
+     * @param cloudY L'altitude des nuages
+     * @param centerZ Le centre du monde en Z
+     */
+    private void addClouds(int centerX, int cloudY, int centerZ) {
+        // Positions fixes des nuages (X, Z, altitude relative, taille)
+        int[][] cloudPositions = {
+            {0, 0, 0, 12}, 
+            {30, 30, -5, 10},     
+            {-40, 25, 8, 8},      
+            {40, -35, -3, 9},     
+            {-30, -40, 5, 7},      
+            {50, 0, 10, 11},       
+            {-60, 0, -6, 10},      
+            {0, 50, 4, 9}          
+        };
+        
+        // Créer des nuages aux positions fixes
+        for (int[] position : cloudPositions) {
+            int cloudX = centerX + position[0];
+            int cloudZ = centerZ + position[1];
+            int thisCloudY = cloudY + position[2];  // Ajout de la variation d'altitude
+            int cloudSize = position[3];            // Taille du nuage
+            
+            // Dimensions du nuage basées sur sa taille
+            int cloudSizeX = cloudSize;
+            int cloudSizeY = 2 + (cloudSize / 5);
+            int cloudSizeZ = cloudSize + random.nextInt(3) - 1; // Légère variation
+            
+            createCloud(cloudX, thisCloudY, cloudZ, cloudSizeX, cloudSizeY, cloudSizeZ);
+        }
+    }
+    
+    /**
+     * Crée un nuage à la position et aux dimensions spécifiées.
+     */
+    private void createCloud(int x, int y, int z, int sizeX, int sizeY, int sizeZ) {
+        // Déterminer le centre du nuage
+        double centerX = x + sizeX/2.0;
+        double centerY = y + sizeY/2.0;
+        double centerZ = z + sizeZ/2.0;
+        
+        // Créer le nuage avec une forme arrondie
+        for (int dx = 0; dx < sizeX; dx++) {
+            for (int dy = 0; dy < sizeY; dy++) {
+                for (int dz = 0; dz < sizeZ; dz++) {
+                    // Calculer la distance normalisée au centre (forme ellipsoïdale) 
+                    double distanceSquared = 
+                        Math.pow((dx - sizeX/2.0) / (sizeX * 0.5), 2) +
+                        Math.pow((dy - sizeY/2.0) / (sizeY * 0.7), 2) +
+                        Math.pow((dz - sizeZ/2.0) / (sizeZ * 0.5), 2);
+                    
+                    double noise = random.nextDouble() * 0.3;
+                    
+                    // Si le point est dans l'ellipsoïde du nuage
+                    if (distanceSquared + noise <= 1.0) {
+                        if (distanceSquared > 0.7 && random.nextDouble() > 0.7) {
+                            continue;
+                        }
+                        
+                        // Placer le bloc de nuage
+                        setBlockAt(x + dx, y + dy, z + dz, BlockType.CLOUD.getId());
+                    }
                 }
             }
         }
     }
+    
+    /**
+     * Ajoute quelques arbres sur l'île.
+     */
+    private void addTrees(int centerX, int centerY, int centerZ, int radiusXZ) {
+        // Positions fixes des arbres (angles en degrés, distance en pourcentage du radius)
+        int[][] treePositions = {
+            {45, 40},
+            {225, 45},
+            {315, 55}, 
+            {0, 0},     
+            {90, 35}, 
+            {180, 55},  
+            {270, 45}    
+        };
+        
+        // Créer les arbres aux positions fixes
+        for (int[] position : treePositions) {
+            int angleDegrees = position[0];
+            int distancePercent = position[1];
+            
+            // Convertir l'angle en radians
+            double angleRadians = Math.toRadians(angleDegrees);
+            double distance = (distancePercent / 100.0) * radiusXZ;
+            
+            int treeX = centerX + (int)(Math.cos(angleRadians) * distance);
+            int treeZ = centerZ + (int)(Math.sin(angleRadians) * distance);
+            
+            // Vérifier que l'emplacement est de l'herbe
+            if (getBlockAt(treeX, centerY, treeZ) == BlockType.GRASS.getId()) {
+                createTree(treeX, centerY + 1, treeZ);
+            }
+        }
+    }
+    
+    /**
+     * Crée un arbre à la position spécifiée.
+     */
+    private void createTree(int x, int y, int z) {
+        int height = 4 + random.nextInt(6); // Hauteur du tronc entre 4 et 10
+        
+        // Créer le tronc
+        for (int i = 0; i < height; i++) {
+            setBlockAt(x, y + i, z, BlockType.LOG.getId());
+        }
+        
+        // Créer le feuillage
+        int leavesRadius = 3;
+        for (int dx = -leavesRadius; dx <= leavesRadius; dx++) {
+            for (int dy = -leavesRadius; dy <= leavesRadius + 1; dy++) {
+                for (int dz = -leavesRadius; dz <= leavesRadius; dz++) {
+                    // Distance au centre du feuillage
+                    double distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    
+                    // Si dans le rayon des feuilles et pas trop près du sol
+                    if (distance <= leavesRadius + 0.5 && y + height + dy > y) {
+                        int blockX = x + dx;
+                        int blockY = y + height + dy;
+                        int blockZ = z + dz;
+                        
+                        // Ne pas remplacer le tronc
+                        if (!(dx == 0 && dz == 0 && dy < 0)) {
+                            if (distance < leavesRadius || random.nextDouble() < 0.6) {
+                                setBlockAt(blockX, blockY, blockZ, BlockType.LEAVES.getId());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
 
     /**
      * Récupère le type de bloc à partir de coordonnées globales.
@@ -63,10 +264,20 @@ public class WorldModel {
      * @return L'identifiant du type de bloc, ou 0 (AIR) si en dehors du monde
      */
     public int getBlockAt(int globalX, int globalY, int globalZ) {
+        // Décalage pour centrer le monde à (0,0,0)
+        int offsetX = worldSizeX * ChunkModel.SIZE / 2;
+        int offsetY = 0; // Pas de décalage en Y
+        int offsetZ = worldSizeZ * ChunkModel.SIZE / 2;
+        
+        // Convertir les coordonnées globales (centrées en 0,0,0) en coordonnées de grille
+        int gridX = globalX + offsetX;
+        int gridY = globalY + offsetY;
+        int gridZ = globalZ + offsetZ;
+        
         // Calcul des coordonnées du chunk qui contient cette position
-        int cx = Math.floorDiv(globalX, ChunkModel.SIZE);
-        int cy = Math.floorDiv(globalY, ChunkModel.SIZE);
-        int cz = Math.floorDiv(globalZ, ChunkModel.SIZE);
+        int cx = Math.floorDiv(gridX, ChunkModel.SIZE);
+        int cy = Math.floorDiv(gridY, ChunkModel.SIZE);
+        int cz = Math.floorDiv(gridZ, ChunkModel.SIZE);
 
         // Vérification que les coordonnées sont dans les limites du monde
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
@@ -74,9 +285,9 @@ public class WorldModel {
         }
         
         // Calcul des coordonnées locales à l'intérieur du chunk
-        int localX = globalX - cx * ChunkModel.SIZE;
-        int localY = globalY - cy * ChunkModel.SIZE;
-        int localZ = globalZ - cz * ChunkModel.SIZE;
+        int localX = gridX - cx * ChunkModel.SIZE;
+        int localY = gridY - cy * ChunkModel.SIZE;
+        int localZ = gridZ - cz * ChunkModel.SIZE;
 
         // Récupération du type de bloc dans le chunk
         return chunks[cx][cy][cz].getBlock(localX, localY, localZ);
@@ -92,10 +303,20 @@ public class WorldModel {
      * @return true si le bloc a été modifié, false si hors des limites
      */
     public boolean setBlockAt(int globalX, int globalY, int globalZ, int blockType) {
+        // Décalage pour centrer le monde à (0,0,0)
+        int offsetX = worldSizeX * ChunkModel.SIZE / 2;
+        int offsetY = 0; // Pas de décalage en Y
+        int offsetZ = worldSizeZ * ChunkModel.SIZE / 2;
+        
+        // Convertir les coordonnées globales (centrées en 0,0,0) en coordonnées de grille
+        int gridX = globalX + offsetX;
+        int gridY = globalY + offsetY;
+        int gridZ = globalZ + offsetZ;
+        
         // Calcul des coordonnées du chunk qui contient cette position
-        int cx = Math.floorDiv(globalX, ChunkModel.SIZE);
-        int cy = Math.floorDiv(globalY, ChunkModel.SIZE);
-        int cz = Math.floorDiv(globalZ, ChunkModel.SIZE);
+        int cx = Math.floorDiv(gridX, ChunkModel.SIZE);
+        int cy = Math.floorDiv(gridY, ChunkModel.SIZE);
+        int cz = Math.floorDiv(gridZ, ChunkModel.SIZE);
 
         // Vérification que les coordonnées sont dans les limites du monde
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
@@ -103,9 +324,9 @@ public class WorldModel {
         }
         
         // Calcul des coordonnées locales à l'intérieur du chunk
-        int localX = globalX - cx * ChunkModel.SIZE;
-        int localY = globalY - cy * ChunkModel.SIZE;
-        int localZ = globalZ - cz * ChunkModel.SIZE;
+        int localX = gridX - cx * ChunkModel.SIZE;
+        int localY = gridY - cy * ChunkModel.SIZE;
+        int localZ = gridZ - cz * ChunkModel.SIZE;
 
         // Modification du bloc dans le chunk
         chunks[cx][cy][cz].setBlock(localX, localY, localZ, blockType);

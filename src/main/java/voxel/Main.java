@@ -65,15 +65,14 @@ public class Main extends SimpleApplication {
      * Configure la caméra et les paramètres d'affichage.
      */
     private void setupCamera() {
-        // Positionnement initial de la caméra
-        cam.setLocation(new Vector3f(10f, 10f, 30f));
-        
+        // Positionnement initial de la caméra au-dessus de l'île
+        cam.setLocation(new Vector3f(0f, 20f, 0f));        
         // Fond bleu ciel
         viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
         
         // Configuration de la caméra volante
         flyCam.setEnabled(true);
-        flyCam.setMoveSpeed(0); // Désactive le mouvement par défaut (géré par InputController)
+        flyCam.setMoveSpeed(0);
         flyCam.setRotationSpeed(1f);
         flyCam.setDragToRotate(false);
     }
