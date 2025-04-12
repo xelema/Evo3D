@@ -7,6 +7,11 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import voxel.model.entity.Player;
+import voxel.Main;
+import com.jme3.system.AppSettings;
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 
 /**
  * Gère les entrées utilisateur pour contrôler la caméra et interagir avec le monde.
@@ -24,11 +29,21 @@ public class InputController implements ActionListener {
     private static final String ACTION_MOVE_DOWN = "MoveDown"; // Action pour déplacer la caméra vers le bas
     private static final String ACTION_SPEED_FLY = "SpeedFly"; // Action pour activer le vol rapide
     private static final String ACTION_SPAWN_PLAYER = "SpawnPlayer"; // Action pour faire apparaître le joueur
+    private static final String ACTION_TOGGLE_FULLSCREEN = "ToggleFullscreen"; // Action pour basculer en plein écran
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
     private final EntityController entityController;
     private final Camera camera; // Référence à la caméra de la scène
+    private Main app; // Référence à l'application principale
+    private AppSettings settings; // Paramètres de l'application
+    
+    // Paramètres originaux pour restaurer la fenêtre
+    private int originalWidth;
+    private int originalHeight;
+    private int originalBitsPerPixel;
+    private int originalFrequency;
+    private boolean originalFullscreen;
 
     private boolean movingForward = false; // État du mouvement vers l'avant
     private boolean movingBackward = false; // État du mouvement vers l'arrière
@@ -55,6 +70,24 @@ public class InputController implements ActionListener {
     }
 
     /**
+     * Configure l'application et les paramètres pour le mode plein écran.
+     * 
+     * @param app L'application principale
+     * @param settings Les paramètres de l'application
+     */
+    public void setAppAndSettings(Main app, AppSettings settings) {
+        this.app = app;
+        this.settings = settings;
+        
+        // Mémoriser les paramètres originaux
+        this.originalWidth = settings.getWidth();
+        this.originalHeight = settings.getHeight();
+        this.originalBitsPerPixel = settings.getBitsPerPixel();
+        this.originalFrequency = settings.getFrequency();
+        this.originalFullscreen = settings.isFullscreen();
+    }
+
+    /**
      * Configure les mappings d'entrées et enregistre les listeners.
      */
     private void setupInputs() {
@@ -69,6 +102,7 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_MOVE_DOWN, new KeyTrigger(KeyInput.KEY_LSHIFT));
         inputManager.addMapping(ACTION_SPEED_FLY, new KeyTrigger(KeyInput.KEY_LCONTROL));
         inputManager.addMapping(ACTION_SPAWN_PLAYER, new KeyTrigger(KeyInput.KEY_P));
+        inputManager.addMapping(ACTION_TOGGLE_FULLSCREEN, new KeyTrigger(KeyInput.KEY_F11));
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this,
@@ -81,7 +115,8 @@ public class InputController implements ActionListener {
                 ACTION_MOVE_UP,
                 ACTION_MOVE_DOWN,
                 ACTION_SPEED_FLY,
-                ACTION_SPAWN_PLAYER
+                ACTION_SPAWN_PLAYER,
+                ACTION_TOGGLE_FULLSCREEN
         );
     }
 
@@ -133,9 +168,13 @@ public class InputController implements ActionListener {
                     entityController.createEntityAtCamera(Player.class);
                 }
                 break;
+            case ACTION_TOGGLE_FULLSCREEN:
+                if (isPressed && app != null) {
+                    toggleToFullscreen(app);
+                }
+                break;
         }
     }
-
 
     /**
      * Met à jour la position de la caméra en fonction des touches enfoncées.
@@ -169,5 +208,32 @@ public class InputController implements ActionListener {
 
         // Application du mouvement à la caméra
         camera.setLocation(camera.getLocation().add(movement));
+    }
+    
+    /**
+     * Bascule l'application entre le mode plein écran et le mode fenêtré.
+     * 
+     * @param app L'application principale
+     */
+    public void toggleToFullscreen(Main app) {
+        boolean isCurrentlyFullscreen = settings.isFullscreen();
+        
+        if (isCurrentlyFullscreen) {
+            settings.setResolution(originalWidth, originalHeight);
+            settings.setBitsPerPixel(originalBitsPerPixel);
+            settings.setFrequency(originalFrequency);
+            settings.setFullscreen(false);
+        } else {
+            GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            DisplayMode currentMode = device.getDisplayMode(); // Obtenir le mode d'affichage actuel de l'écran
+            
+            settings.setResolution(currentMode.getWidth(), currentMode.getHeight());
+            settings.setFrequency(currentMode.getRefreshRate());
+            settings.setBitsPerPixel(currentMode.getBitDepth());
+            settings.setFullscreen(device.isFullScreenSupported());
+        }
+        
+        app.setSettings(settings);
+        app.restart();
     }
 }

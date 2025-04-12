@@ -12,6 +12,10 @@ import voxel.controller.WorldController;
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
 
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+
 /**
  * Classe principale qui est le point d'entrée du programme.
  * Hérite de SimpleApplication pour gérer le cycle de vie de l'application jMonkeyEngine.
@@ -70,7 +74,7 @@ public class Main extends SimpleApplication {
         // Fond bleu ciel
         viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
         
-        // Configuration de la caméra volante
+        // Configuration de la caméra volante (de base avec JME3)
         flyCam.setEnabled(true);
         flyCam.setMoveSpeed(0);
         flyCam.setRotationSpeed(1f);
@@ -94,10 +98,14 @@ public class Main extends SimpleApplication {
         WorldController worldController = new WorldController(worldModel, worldRenderer);
         EntityController entityController = new EntityController(worldModel, worldRenderer, cam);
         InputController inputController = new InputController(inputManager, worldController, entityController, cam);
+        
+        // Passer l'application et les paramètres pour le mode plein écran
+        inputController.setAppAndSettings(this, settings);
 
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
                 entityController, cam);
         gameController.initialize();
     }
-} 
+
+}
