@@ -13,9 +13,69 @@ public abstract class Entity {
         this.vx = 0;
         this.vy = 0;
         this.vz = 0;
+        this.size = 1.0f; // Taille par défaut
     }
 
     public abstract void update(float tpf);
+    
+    /**
+     * Déplace l'entité en fonction de sa vitesse et du temps écoulé.
+     * @param tpf Temps écoulé depuis la dernière frame
+     */
+    public void move(float tpf) {
+        x += vx * tpf;
+        y += vy * tpf;
+        z += vz * tpf;
+    }
+
+    /**
+     * Définit la vitesse de l'entité dans les trois directions.
+     * @param vx Vitesse en X
+     * @param vy Vitesse en Y
+     * @param vz Vitesse en Z
+     */
+    public void setVelocity(double vx, double vy, double vz) {
+        this.vx = vx;
+        this.vy = vy;
+        this.vz = vz;
+    }
+    
+    /**
+     * Ajoute une valeur à la vitesse actuelle (accélération).
+     * @param dvx Changement de vitesse en X
+     * @param dvy Changement de vitesse en Y
+     * @param dvz Changement de vitesse en Z
+     */
+    public void addVelocity(double dvx, double dvy, double dvz) {
+        this.vx += dvx;
+        this.vy += dvy;
+        this.vz += dvz;
+    }
+    
+    /**
+     * Arrête tout mouvement de l'entité.
+     */
+    public void stopMovement() {
+        this.vx = 0;
+        this.vy = 0;
+        this.vz = 0;
+    }
+    
+    /**
+     * Arrête le mouvement horizontal (X et Z).
+     */
+    public void stopHorizontalMovement() {
+        this.vx = 0;
+        this.vz = 0;
+    }
+    
+    /**
+     * Modifie la vitesse verticale (Y).
+     * @param vy Nouvelle vitesse verticale
+     */
+    public void setVerticalVelocity(double vy) {
+        this.vy = vy;
+    }
 
     public double getX() {
         return x;
@@ -71,12 +131,12 @@ public abstract class Entity {
      */
     public abstract boolean isMarkedForRemoval();
 
-    /**
-     * Obtient la taille de l'entité.
-     * @return La taille de l'entité en unités de monde
-     */
     public float getSize() {
-        return 1.0f; // Taille par défaut d'un bloc
+        return size;
+    }
+
+    public void setSize(float size) {
+        this.size = size;
     }
 
 }
