@@ -6,7 +6,7 @@ package voxel.model;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 16;
+    public static final int WORLD_SIZE = 32;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -14,8 +14,8 @@ public class WorldModel {
     /** Taille du monde en nombre de chunks sur l'axe X */
     private final int worldSizeX = WORLD_SIZE;
     
-    /** Taille du monde en nombre de chunks sur l'axe Y (un seul niveau vertical pour simplifier) */
-    private final int worldSizeY = 1;
+    /** Taille du monde en nombre de chunks sur l'axe Y */
+    private final int worldSizeY = 4;
     
     /** Taille du monde en nombre de chunks sur l'axe Z */
     private final int worldSizeZ = WORLD_SIZE;
@@ -26,11 +26,39 @@ public class WorldModel {
     /** Mode filaire activé ou non */
     private boolean wireframeMode = false;
 
+    /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
+    private final float min_mountain = 0.001f;
+    private final float max_mountain = 0.03f;  // Réduit pour des montagnes moins abruptes
+    private final float min_detail = 0.02f;
+    private final float max_detail = 0.06f;    // Réduit pour des détails moins prononcés
+    
+    /** Bruit de Perlin pour le monde entier */
+    private PerlinNoise worldPerlinNoise;
+    
+    /** Échelles pour la génération du terrain */
+    private float mountainScale;
+    private float detailScale;
+    
+    /** Hauteur maximale en pourcentage de la hauteur totale du monde */
+    private final float maxHeightPercent = 0.75f;
+    
+    /** Décalage vertical de base pour tout le terrain */
+    private final int baseOffset = 10;
+
     /**
      * Crée un nouveau monde de voxels.
      */
     public WorldModel() {
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
+        
+        // Initialisation du bruit de Perlin pour tout le monde
+        worldPerlinNoise = new PerlinNoise(42); // Seed fixe pour reproductibilité
+        
+        // Initialisation des échelles (on pourrait les randomiser aussi)
+        java.util.Random rand = new java.util.Random();
+        mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain);
+        detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail);
+        
         generateWorld();
     }
 
@@ -38,13 +66,119 @@ public class WorldModel {
      * Génère le monde complet avec tous ses chunks.
      */
     private void generateWorld() {
-        // Création de  tous les chunks
+        // Initialisation de tous les chunks avec de l'air
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    // Chaque chunk peut avoir un seed unique mais reliée
-                    PerlinNoise perlin = new PerlinNoise(cx + cy + cz);
-                    chunks[cx][cy][cz] = new ChunkModel(cx,cz,perlin);
+                    chunks[cx][cy][cz] = new ChunkModel();
+                }
+            }
+        }
+        
+        // Génération du terrain uniquement sur le plan X-Z
+        for (int cx = 0; cx < worldSizeX; cx++) {
+            for (int cz = 0; cz < worldSizeZ; cz++) {
+                generateTerrainPerlin(cx, cz);
+            }
+        }
+    }
+    
+    /**
+     * Génère un terrain avec un bruit de Perlin pour une colonne de chunks
+     * @param chunkX coordonnée X du chunk
+     * @param chunkZ coordonnée Z du chunk
+     */
+    private void generateTerrainPerlin(int chunkX, int chunkZ) {
+        // Niveau de l'eau (abaissé par rapport à la version précédente)
+        int waterLevel = 50;
+        
+        // Coordonnées globales du chunk
+        float worldXStart = chunkX * ChunkModel.SIZE;
+        float worldZStart = chunkZ * ChunkModel.SIZE;
+        
+        // Hauteur totale disponible
+        int totalHeight = worldSizeY * ChunkModel.SIZE;
+        // Hauteur maximale pour le terrain (avec marge pour éviter les coupures)
+        int maxTerrainHeight = (int)(totalHeight * maxHeightPercent);
+
+        // Générer chaque colonne de blocs
+        for (int x = 0; x < ChunkModel.SIZE; x++) {
+            for (int z = 0; z < ChunkModel.SIZE; z++) {
+                // Coordonnées globales pour ce bloc spécifique
+                float worldX = worldXStart + x;
+                float worldZ = worldZStart + z;
+
+                // Appliquer un bruit Perlin 2D pour obtenir la hauteur globale des montagnes
+                float mountainNoise = worldPerlinNoise.Noise2D(worldX * mountainScale, worldZ * mountainScale);
+                
+                // Ajouter des détails avec un autre bruit Perlin
+                float detailNoise = worldPerlinNoise.Noise2D(worldX * detailScale, worldZ * detailScale);
+                
+                // Combiner les bruits pour avoir une hauteur réaliste
+                float heightFactor = mountainNoise * 0.7f + detailNoise * 0.3f;
+                
+                // Appliquer une courbe d'élévation pour accentuer les différences de hauteur
+                heightFactor = (float)Math.pow(heightFactor, 1.2);
+                
+                // Calculer la hauteur du terrain pour cette colonne
+                // Limiter à maxTerrainHeight pour éviter que le terrain touche le haut du monde
+                int baseTerrainHeight = baseOffset + (int)(heightFactor * (maxTerrainHeight - baseOffset));
+                
+                // Assurer une hauteur minimale
+                int terrainHeight = Math.max(waterLevel - 5, baseTerrainHeight);
+                
+                // Limiter la hauteur maximale
+                terrainHeight = Math.min(maxTerrainHeight, terrainHeight);
+
+                // Générer les blocs pour chaque coordonnée Y
+                for (int y = 0; y < totalHeight; y++) {
+                    // Déterminer le type de bloc en fonction de la hauteur
+                    int blockType;
+                    
+                    if (y <= waterLevel) {
+                        if (y < terrainHeight) {
+                            // Sous le terrain et sous l'eau
+                            if (y < terrainHeight - 3) {
+                                blockType = BlockType.STONE.getId();
+                            } else {
+                                blockType = BlockType.DIRT.getId();
+                            }
+                            
+                            // Si on est près de la surface du terrain et sous l'eau, mettre du sable
+                            if (y > terrainHeight - 4 && y == terrainHeight - 1) {
+                                blockType = BlockType.SAND.getId();
+                            }
+                        } else {
+                            // Au-dessus du terrain mais sous l'eau -> eau
+                            blockType = BlockType.WATER.getId();
+                            
+                            // Le fond de l'eau est du sable
+                            if (y == terrainHeight) {
+                                blockType = BlockType.SAND.getId();
+                            }
+                        }
+                    } else if (y < terrainHeight) {
+                        // Au-dessus du niveau d'eau, sous la surface du terrain
+                        if (y < terrainHeight - 3) {
+                            blockType = BlockType.STONE.getId();
+                        } else if (y < terrainHeight - 1) {
+                            blockType = BlockType.DIRT.getId();
+                        } else {
+                            // Surface : herbe
+                            blockType = BlockType.GRASS.getId();
+                        }
+                    } else {
+                        // Au-dessus du terrain, air
+                        blockType = BlockType.AIR.getId();
+                    }
+                    
+                    // Placer le bloc au bon endroit
+                    setBlockAt(
+                        chunkX * ChunkModel.SIZE + x,
+                        y,
+                        chunkZ * ChunkModel.SIZE + z,
+                        blockType
+                    );
                 }
             }
         }
