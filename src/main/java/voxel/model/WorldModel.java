@@ -38,11 +38,13 @@ public class WorldModel {
      * Génère le monde complet avec tous ses chunks.
      */
     private void generateWorld() {
-        // Créer tous les chunks
+        // Création de  tous les chunks
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    chunks[cx][cy][cz] = new ChunkModel();
+                    // Chaque chunk peut avoir un seed unique mais reliée
+                    PerlinNoise perlin = new PerlinNoise(cx + cy + cz);
+                    chunks[cx][cy][cz] = new ChunkModel(cx,cz,perlin);
                 }
             }
         }

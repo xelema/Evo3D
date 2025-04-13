@@ -68,7 +68,7 @@ public class Main extends SimpleApplication {
         cam.setLocation(new Vector3f(10f, 10f, 30f));
         
         // Fond noir
-        viewPort.setBackgroundColor(ColorRGBA.Black);
+        viewPort.setBackgroundColor(new ColorRGBA(0.5f, 0.8f, 1.0f, 1.0f));
         
         // Configuration de la caméra volante
         flyCam.setEnabled(true);
