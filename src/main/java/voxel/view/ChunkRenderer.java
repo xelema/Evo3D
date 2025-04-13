@@ -163,7 +163,7 @@ public class ChunkRenderer {
                                 int nz = z + dir.getOffsetZ();
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
-                                if (shouldGenerateFace(nx, ny, nz)) {
+                                if (shouldGenerateFace(nx, ny, nz, blockId)) {
                                     Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
                                     builder.addFace(face);
                                 }
@@ -207,7 +207,7 @@ public class ChunkRenderer {
                                 int nz = z + dir.getOffsetZ();
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
-                                if (shouldGenerateFace(nx, ny, nz)) {
+                                if (shouldGenerateFace(nx, ny, nz, blockId)) {
                                     Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
                                     builder.addFace(face);
                                     hasTransparentFaces = true;
@@ -253,9 +253,9 @@ public class ChunkRenderer {
      * @param z Coordonnée Z du bloc voisin
      * @return True si une face doit être générée, false sinon
      */
-    private boolean shouldGenerateFace(int x, int y, int z) {
-        int blockId = getBlockNeighbor(x, y, z);
-        return blockId == BlockType.AIR.getId() || blockId == BlockType.WATER.getId();
+    private boolean shouldGenerateFace(int x, int y, int z, int blockId) {
+        int neighborId = getBlockNeighbor(x, y, z);
+        return neighborId == BlockType.AIR.getId() || (neighborId == BlockType.WATER.getId() && blockId != BlockType.WATER.getId());
     }
 
     /**

@@ -18,7 +18,7 @@ public class WorldModel {
     private final int worldSizeX = WORLD_SIZE;
     
     /** Taille du monde en nombre de chunks sur l'axe Y */
-    private final int worldSizeY = 4;
+    private final int worldSizeY = 16;
     
     /** Taille du monde en nombre de chunks sur l'axe Z */
     private final int worldSizeZ = WORLD_SIZE;
@@ -35,6 +35,7 @@ public class WorldModel {
     private final Random random = new Random();
 
     /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
+    private final int generation_height = 6; // Hauteur max de la génération avec Perlin
     private final float min_mountain = 0.001f;
     private final float max_mountain = 0.03f;  // Réduit pour des montagnes moins abruptes
     private final float min_detail = 0.02f;
@@ -90,6 +91,8 @@ public class WorldModel {
                 generateTerrainPerlin(cx, cz);
             }
         }
+
+        createFloatingIsland();
     }
 
     /**
@@ -98,15 +101,17 @@ public class WorldModel {
      * @param chunkZ coordonnée Z du chunk
      */
     private void generateTerrainPerlin(int chunkX, int chunkZ) {
-        // Niveau de l'eau (abaissé par rapport à la version précédente)
+        // Niveau de l'eau
         int waterLevel = 50;
 
         // Coordonnées globales du chunk
-        float worldXStart = chunkX * ChunkModel.SIZE;
-        float worldZStart = chunkZ * ChunkModel.SIZE;
+        float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX *
+                ChunkModel.SIZE) / 2;
+        float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ *
+                ChunkModel.SIZE) / 2;
 
         // Hauteur totale disponible
-        int totalHeight = worldSizeY * ChunkModel.SIZE;
+        int totalHeight = generation_height * ChunkModel.SIZE;
         // Hauteur maximale pour le terrain (avec marge pour éviter les coupures)
         int maxTerrainHeight = (int)(totalHeight * maxHeightPercent);
 
@@ -182,12 +187,7 @@ public class WorldModel {
                     }
 
                     // Placer le bloc au bon endroit
-                    setBlockAt(
-                        chunkX * ChunkModel.SIZE + x,
-                        y,
-                        chunkZ * ChunkModel.SIZE + z,
-                        blockType
-                    );
+                    setBlockAt((int) worldX, y, (int) worldZ, blockType);
                 }
             }
         }
@@ -199,7 +199,7 @@ public class WorldModel {
     private void createFloatingIsland() {
 
         int centerX = 0;
-        int centerY = 16;
+        int centerY = 150;
         int centerZ = 0;
 
         // Rayon de l'île
@@ -453,7 +453,7 @@ public class WorldModel {
 
         // Vérification que les coordonnées sont dans les limites du monde
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
-            System.out.println("Hors des limites du monde, globalX: " + globalX + ", globalY: " + globalY + ", globalZ: " + globalZ);
+//            System.out.println("Bloc : " + BlockType.fromId(blockType) + " hors des limites du monde, globalX: " + globalX + ", globalY: " + globalY + ", globalZ: " + globalZ);
             return false;
         }
 
