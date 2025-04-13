@@ -1,0 +1,192 @@
+package voxel.model.physics;
+
+import com.jme3.math.Vector3f;
+import voxel.model.BlockType;
+import voxel.model.WorldModel;
+import voxel.model.entity.Entity;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Gère les collisions entre les entités et avec le monde de blocs.
+ */
+public class CollisionManager {
+    private WorldModel world;
+    
+    // Liste de types de blocs non solides à travers lesquels les entités peuvent passer
+    private final List<Integer> nonSolidBlockTypes;
+    
+    public CollisionManager(WorldModel world) {
+        this.world = world;
+        this.nonSolidBlockTypes = new ArrayList<>();
+        
+        // Initialiser la liste des blocs non solides (traversables)
+        nonSolidBlockTypes.add(BlockType.AIR.getId());
+        nonSolidBlockTypes.add(BlockType.WATER.getId());
+        nonSolidBlockTypes.add(BlockType.CLOUD.getId());
+    }
+    
+    /**
+     * Vérifie et résout les collisions entre une entité et le monde.
+     * 
+     * @param entity L'entité dont on vérifie les collisions
+     * @param newX Nouvelle position X prévue
+     * @param newY Nouvelle position Y prévue
+     * @param newZ Nouvelle position Z prévue
+     * @return Un vecteur contenant la position corrigée après résolution des collisions
+     */
+    public Vector3f checkAndResolveWorldCollision(Entity entity, double newX, double newY, double newZ) {
+        // Position originale
+        double originalX = entity.getX();
+        double originalY = entity.getY();
+        double originalZ = entity.getZ();
+        
+        // Créer une boîte de collision à la nouvelle position
+        float size = entity.getSize();
+        BoundingBox entityBox = new BoundingBox(newX, newY, newZ, size, size, size);
+        
+        // Vérifier les collisions avec les blocs environnants
+        int minBlockX = (int) Math.floor(entityBox.getMinX());
+        int maxBlockX = (int) Math.ceil(entityBox.getMaxX());
+        int minBlockY = (int) Math.floor(entityBox.getMinY());
+        int maxBlockY = (int) Math.ceil(entityBox.getMaxY());
+        int minBlockZ = (int) Math.floor(entityBox.getMinZ());
+        int maxBlockZ = (int) Math.ceil(entityBox.getMaxZ());
+        
+        // Résultat final (position après résolution des collisions)
+        Vector3f result = new Vector3f((float)newX, (float)newY, (float)newZ);
+        boolean collisionDetected = false;
+        
+        // Vérifier chaque bloc potentiellement en collision
+        for (int x = minBlockX; x <= maxBlockX; x++) {
+            for (int y = minBlockY; y <= maxBlockY; y++) {
+                for (int z = minBlockZ; z <= maxBlockZ; z++) {
+                    int blockType = world.getBlockAt(x, y, z);
+                    
+                    // Si le bloc est solide et l'entité est en collision avec lui
+                    if (isSolidBlock(blockType)) {
+                        BoundingBox blockBox = new BoundingBox(x + 0.5, y + 0.5, z + 0.5, 1.0, 1.0, 1.0);
+                        
+                        if (entityBox.intersects(blockBox)) {
+                            collisionDetected = true;
+                            
+                            // Calculer le vecteur de pénétration
+                            Vector3f penetration = entityBox.getPenetrationVector(blockBox);
+                            
+                            // Appliquer le vecteur de pénétration pour résoudre la collision
+                            result.addLocal(penetration);
+                            
+                            // Mettre à jour la boîte de collision avec la nouvelle position
+                            entityBox.update(result.x, result.y, result.z);
+                            
+                            // Ajuster la vitesse de l'entité en fonction de la collision
+                            // Si collision sur l'axe Y (sol ou plafond)
+                            if (penetration.y != 0) {
+                                entity.setVy(0);
+                            }
+                            
+                            // Si collision sur l'axe X
+                            if (penetration.x != 0) {
+                                entity.setVx(0);
+                            }
+                            
+                            // Si collision sur l'axe Z
+                            if (penetration.z != 0) {
+                                entity.setVz(0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Vérifie et résout les collisions entre deux entités.
+     * 
+     * @param entity1 Première entité
+     * @param entity2 Deuxième entité
+     */
+    public void checkAndResolveEntityCollision(Entity entity1, Entity entity2) {
+        // Créer des boîtes de collision pour les deux entités
+        BoundingBox box1 = new BoundingBox(entity1.getX(), entity1.getY(), entity1.getZ(), 
+                                          entity1.getSize(), entity1.getSize(), entity1.getSize());
+        BoundingBox box2 = new BoundingBox(entity2.getX(), entity2.getY(), entity2.getZ(), 
+                                          entity2.getSize(), entity2.getSize(), entity2.getSize());
+        
+        // Vérifier s'il y a collision
+        if (box1.intersects(box2)) {
+            // Calculer le vecteur de pénétration
+            Vector3f penetration = box1.getPenetrationVector(box2);
+            
+            // Diviser le déplacement entre les deux entités (en fonction de leurs tailles)
+            double totalSize = entity1.getSize() + entity2.getSize();
+            double ratio1 = entity2.getSize() / totalSize;
+            double ratio2 = entity1.getSize() / totalSize;
+            
+            // Appliquer le vecteur de pénétration aux deux entités
+            entity1.setX(entity1.getX() + penetration.x * ratio1);
+            entity1.setY(entity1.getY() + penetration.y * ratio1);
+            entity1.setZ(entity1.getZ() + penetration.z * ratio1);
+            
+            entity2.setX(entity2.getX() - penetration.x * ratio2);
+            entity2.setY(entity2.getY() - penetration.y * ratio2);
+            entity2.setZ(entity2.getZ() - penetration.z * ratio2);
+            
+            // Ajuster les vitesses (rebond simplifié)
+            if (penetration.x != 0) {
+                double vx1 = entity1.getVx();
+                double vx2 = entity2.getVx();
+                entity1.setVx(vx2 * 0.5);
+                entity2.setVx(vx1 * 0.5);
+            }
+            
+            if (penetration.y != 0) {
+                double vy1 = entity1.getVy();
+                double vy2 = entity2.getVy();
+                entity1.setVy(vy2 * 0.5);
+                entity2.setVy(vy1 * 0.5);
+            }
+            
+            if (penetration.z != 0) {
+                double vz1 = entity1.getVz();
+                double vz2 = entity2.getVz();
+                entity1.setVz(vz2 * 0.5);
+                entity2.setVz(vz1 * 0.5);
+            }
+        }
+    }
+    
+    /**
+     * Vérifie si un type de bloc est considéré comme solide.
+     * 
+     * @param blockType L'identifiant du type de bloc
+     * @return true si le bloc est solide, false sinon
+     */
+    public boolean isSolidBlock(int blockType) {
+        return !nonSolidBlockTypes.contains(blockType);
+    }
+    
+    /**
+     * Ajoute un type de bloc à la liste des blocs non solides.
+     * 
+     * @param blockType L'identifiant du type de bloc à ajouter
+     */
+    public void addNonSolidBlockType(int blockType) {
+        if (!nonSolidBlockTypes.contains(blockType)) {
+            nonSolidBlockTypes.add(blockType);
+        }
+    }
+    
+    /**
+     * Retire un type de bloc de la liste des blocs non solides.
+     * 
+     * @param blockType L'identifiant du type de bloc à retirer
+     */
+    public void removeNonSolidBlockType(int blockType) {
+        nonSolidBlockTypes.remove(Integer.valueOf(blockType));
+    }
+} 

@@ -6,6 +6,12 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
+import voxel.model.entity.Player;
+import voxel.Main;
+import com.jme3.system.AppSettings;
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 
 /**
  * Gère les entrées utilisateur pour contrôler la caméra et interagir avec le monde.
@@ -22,10 +28,23 @@ public class InputController implements ActionListener {
     private static final String ACTION_MOVE_UP = "MoveUp"; // Action pour déplacer la caméra vers le haut
     private static final String ACTION_MOVE_DOWN = "MoveDown"; // Action pour déplacer la caméra vers le bas
     private static final String ACTION_SPEED_FLY = "SpeedFly"; // Action pour activer le vol rapide
+    private static final String ACTION_SPAWN_PLAYER = "SpawnPlayer"; // Action pour faire apparaître le joueur
+    private static final String ACTION_TOGGLE_FULLSCREEN = "ToggleFullscreen"; // Action pour basculer en plein écran
+    private static final String ACTION_TOGGLE_COORDINATES = "ToggleCoordinates"; // Action pour afficher/masquer les coordonnées
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
+    private final EntityController entityController;
     private final Camera camera; // Référence à la caméra de la scène
+    private Main app; // Référence à l'application principale
+    private AppSettings settings; // Paramètres de l'application
+    
+    // Paramètres originaux pour restaurer la fenêtre
+    private int originalWidth;
+    private int originalHeight;
+    private int originalBitsPerPixel;
+    private int originalFrequency;
+    private boolean originalFullscreen;
 
     private boolean movingForward = false; // État du mouvement vers l'avant
     private boolean movingBackward = false; // État du mouvement vers l'arrière
@@ -34,19 +53,40 @@ public class InputController implements ActionListener {
     private boolean movingUp = false; // État du mouvement vers le haut
     private boolean movingDown = false; // État du mouvement vers le bas
     private boolean speedFly = false; // État du vol rapide
+    private boolean displayCoordinates = false; // État d'affichage des coordonnées
 
     /**
      * Crée un nouveau contrôleur d'entrées.
-     * 
+     *
      * @param inputManager Le gestionnaire d'entrées de jMonkey
      * @param worldController Référence au contrôleur de monde
      * @param camera Référence à la caméra
      */
-    public InputController(InputManager inputManager, WorldController worldController, Camera camera) {
+    public InputController(InputManager inputManager, WorldController worldController,
+                           EntityController entityController, Camera camera) {
         this.inputManager = inputManager;
         this.worldController = worldController;
         this.camera = camera;
+        this.entityController = entityController;
         setupInputs();
+    }
+
+    /**
+     * Configure l'application et les paramètres pour le mode plein écran.
+     * 
+     * @param app L'application principale
+     * @param settings Les paramètres de l'application
+     */
+    public void setAppAndSettings(Main app, AppSettings settings) {
+        this.app = app;
+        this.settings = settings;
+        
+        // Mémoriser les paramètres originaux
+        this.originalWidth = settings.getWidth();
+        this.originalHeight = settings.getHeight();
+        this.originalBitsPerPixel = settings.getBitsPerPixel();
+        this.originalFrequency = settings.getFrequency();
+        this.originalFullscreen = settings.isFullscreen();
     }
 
     /**
@@ -63,24 +103,30 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_MOVE_UP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(ACTION_MOVE_DOWN, new KeyTrigger(KeyInput.KEY_LSHIFT));
         inputManager.addMapping(ACTION_SPEED_FLY, new KeyTrigger(KeyInput.KEY_LCONTROL));
+        inputManager.addMapping(ACTION_SPAWN_PLAYER, new KeyTrigger(KeyInput.KEY_P));
+        inputManager.addMapping(ACTION_TOGGLE_FULLSCREEN, new KeyTrigger(KeyInput.KEY_F11));
+        inputManager.addMapping(ACTION_TOGGLE_COORDINATES, new KeyTrigger(KeyInput.KEY_F3));
 
         // Enregistrement du listener pour toutes les actions
-        inputManager.addListener(this, 
+        inputManager.addListener(this,
                 ACTION_TOGGLE_WIREFRAME,
                 ACTION_TOGGLE_LIGHTNING,
                 ACTION_MOVE_FORWARD,
-                ACTION_MOVE_BACKWARD, 
-                ACTION_MOVE_LEFT, 
+                ACTION_MOVE_BACKWARD,
+                ACTION_MOVE_LEFT,
                 ACTION_MOVE_RIGHT,
-                ACTION_MOVE_UP, 
+                ACTION_MOVE_UP,
                 ACTION_MOVE_DOWN,
-                ACTION_SPEED_FLY
+                ACTION_SPEED_FLY,
+                ACTION_SPAWN_PLAYER,
+                ACTION_TOGGLE_FULLSCREEN,
+                ACTION_TOGGLE_COORDINATES
         );
     }
 
     /**
      * Appelé quand une action est déclenchée (touche appuyée ou relâchée).
-     * 
+     *
      * @param name Nom de l'action
      * @param isPressed true si la touche est appuyée, false si relâchée
      * @param tpf Temps écoulé depuis la dernière image
@@ -98,26 +144,44 @@ public class InputController implements ActionListener {
                     worldController.toggleLightning();
                 }
                 break;
-            case ACTION_MOVE_FORWARD: 
-                movingForward = isPressed; 
+            case ACTION_MOVE_FORWARD:
+                movingForward = isPressed;
                 break;
-            case ACTION_MOVE_BACKWARD: 
-                movingBackward = isPressed; 
+            case ACTION_MOVE_BACKWARD:
+                movingBackward = isPressed;
                 break;
-            case ACTION_MOVE_LEFT: 
-                movingLeft = isPressed; 
+            case ACTION_MOVE_LEFT:
+                movingLeft = isPressed;
                 break;
-            case ACTION_MOVE_RIGHT: 
-                movingRight = isPressed; 
+            case ACTION_MOVE_RIGHT:
+                movingRight = isPressed;
                 break;
-            case ACTION_MOVE_UP: 
-                movingUp = isPressed; 
+            case ACTION_MOVE_UP:
+                movingUp = isPressed;
                 break;
-            case ACTION_MOVE_DOWN: 
-                movingDown = isPressed; 
+            case ACTION_MOVE_DOWN:
+                movingDown = isPressed;
                 break;
             case ACTION_SPEED_FLY:
                 speedFly = isPressed;
+                break;
+            case ACTION_SPAWN_PLAYER:
+                if (isPressed) {
+                    // Crée une entité joueur à la position actuelle de la caméra
+                    System.out.println("Spawn player");
+                    entityController.createEntityAtCamera(Player.class);
+                }
+                break;
+            case ACTION_TOGGLE_FULLSCREEN:
+                if (isPressed && app != null) {
+                    toggleToFullscreen(app);
+                }
+                break;
+            case ACTION_TOGGLE_COORDINATES:
+                if (isPressed) {
+                    displayCoordinates = !displayCoordinates;
+                    worldController.toggleCoordinatesDisplay(displayCoordinates);
+                }
                 break;
         }
     }
@@ -125,7 +189,7 @@ public class InputController implements ActionListener {
     /**
      * Met à jour la position de la caméra en fonction des touches enfoncées.
      * Doit être appelé depuis la méthode simpleUpdate.
-     * 
+     *
      * @param tpf Temps écoulé depuis la dernière image
      */
     public void updateCameraMovement(float tpf) {
@@ -155,4 +219,31 @@ public class InputController implements ActionListener {
         // Application du mouvement à la caméra
         camera.setLocation(camera.getLocation().add(movement));
     }
-} 
+    
+    /**
+     * Bascule l'application entre le mode plein écran et le mode fenêtré.
+     * 
+     * @param app L'application principale
+     */
+    public void toggleToFullscreen(Main app) {
+        boolean isCurrentlyFullscreen = settings.isFullscreen();
+        
+        if (isCurrentlyFullscreen) {
+            settings.setResolution(originalWidth, originalHeight);
+            settings.setBitsPerPixel(originalBitsPerPixel);
+            settings.setFrequency(originalFrequency);
+            settings.setFullscreen(false);
+        } else {
+            GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            DisplayMode currentMode = device.getDisplayMode(); // Obtenir le mode d'affichage actuel de l'écran
+            
+            settings.setResolution(currentMode.getWidth(), currentMode.getHeight());
+            settings.setFrequency(currentMode.getRefreshRate());
+            settings.setBitsPerPixel(currentMode.getBitDepth());
+            settings.setFullscreen(device.isFullScreenSupported());
+        }
+        
+        app.setSettings(settings);
+        app.restart();
+    }
+}

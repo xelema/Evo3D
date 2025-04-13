@@ -16,12 +16,34 @@ public class ChunkModel {
      * Crée un nouveau chunk avec une génération de terrain par défaut.
      */
     public ChunkModel() {
+        this(false);
+    }
+    
+    /**
+     * Crée un nouveau chunk.
+     * 
+     * @param empty Si true, le chunk sera rempli d'air. Sinon, il sera généré avec un terrain par défaut.
+     */
+    public ChunkModel(boolean empty) {
         blocks = new int[SIZE * SIZE * SIZE];
-        generateTerrain();
+        if (empty) {
+            fillWithAir();
+        } else {
+            generateTerrain();
+        }
     }
 
     /**
-     * Génère un terrain avec des collines, de la pierre, de la terre et de l'herbe.
+     * Remplit le chunk entièrement avec des blocs d'air.
+     */
+    private void fillWithAir() {
+        for (int i = 0; i < blocks.length; i++) {
+            blocks[i] = BlockType.AIR.getId();
+        }
+    }
+
+    /**
+     * Génère un environnement de base.
      */
     private void generateTerrain() {
         // Génération de terrain avec collines et vallées
@@ -48,6 +70,8 @@ public class ChunkModel {
                         // Air au-dessus
                         setBlock(x, y, z, BlockType.AIR.getId());
                     }
+                    setBlock(x, y, z, BlockType.AIR.getId());
+
                 }
             }
         }
