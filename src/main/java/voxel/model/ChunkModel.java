@@ -7,7 +7,7 @@ package voxel.model;
  */
 public class ChunkModel {
     /** Taille du chunk en nombre de blocs dans chaque dimension */
-    public static final int SIZE = 16;
+    public static final int SIZE = 32 ;
     
     /** Tableau contenant les identifiants des blocs du chunk */
     private final int[] blocks;
@@ -18,10 +18,10 @@ public class ChunkModel {
     public ChunkModel() {
         this(false);
     }
-    
+
     /**
      * Crée un nouveau chunk.
-     * 
+     *
      * @param empty Si true, le chunk sera rempli d'air. Sinon, il sera généré avec un terrain par défaut.
      */
     public ChunkModel(boolean empty) {
@@ -70,8 +70,6 @@ public class ChunkModel {
                         // Air au-dessus
                         setBlock(x, y, z, BlockType.AIR.getId());
                     }
-                    setBlock(x, y, z, BlockType.AIR.getId());
-
                 }
             }
         }
