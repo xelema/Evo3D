@@ -13,10 +13,6 @@ import voxel.controller.WorldController;
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
 
-import java.awt.DisplayMode;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-
 /**
  * Classe principale qui est le point d'entrée du programme.
  * Hérite de SimpleApplication pour gérer le cycle de vie de l'application jMonkeyEngine.

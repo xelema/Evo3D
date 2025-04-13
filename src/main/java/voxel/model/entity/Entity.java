@@ -1,10 +1,13 @@
 package voxel.model.entity;
 
+import voxel.model.physics.BoundingBox;
+
 public abstract class Entity {
 
     protected double x, y, z;
     protected double vx, vy, vz; // vitesse x, y, z
     protected float size; // taille de l'entité
+    protected BoundingBox boundingBox; // Boîte de collision
 
     public Entity(double x, double y, double z) {
         this.x = x;
@@ -14,6 +17,7 @@ public abstract class Entity {
         this.vy = 0;
         this.vz = 0;
         this.size = 1.0f; // Taille par défaut
+        this.boundingBox = new BoundingBox(x, y, z, size, size, size);
     }
 
     public abstract void update(float tpf);
@@ -26,6 +30,27 @@ public abstract class Entity {
         x += vx * tpf;
         y += vy * tpf;
         z += vz * tpf;
+        
+        // Mise à jour de la boîte de collision
+        boundingBox.update(x, y, z);
+    }
+    
+    /**
+     * Déplace l'entité en prenant en compte les collisions.
+     * Cette méthode doit être appelée par le gestionnaire d'entités.
+     * 
+     * @param tpf Temps écoulé depuis la dernière frame
+     * @param newX Nouvelle position X après résolution de collision
+     * @param newY Nouvelle position Y après résolution de collision
+     * @param newZ Nouvelle position Z après résolution de collision
+     */
+    public void moveWithCollision(float tpf, double newX, double newY, double newZ) {
+        this.x = newX;
+        this.y = newY;
+        this.z = newZ;
+        
+        // Mise à jour de la boîte de collision
+        boundingBox.update(x, y, z);
     }
 
     /**
@@ -83,6 +108,9 @@ public abstract class Entity {
 
     public void setX(double x) {
         this.x = x;
+        if (boundingBox != null) {
+            boundingBox.update(x, y, z);
+        }
     }
 
     public double getY() {
@@ -91,6 +119,9 @@ public abstract class Entity {
 
     public void setY(double y) {
         this.y = y;
+        if (boundingBox != null) {
+            boundingBox.update(x, y, z);
+        }
     }
 
     public double getZ() {
@@ -99,6 +130,9 @@ public abstract class Entity {
 
     public void setZ(double z) {
         this.z = z;
+        if (boundingBox != null) {
+            boundingBox.update(x, y, z);
+        }
     }
 
     public double getVx() {
@@ -137,6 +171,17 @@ public abstract class Entity {
 
     public void setSize(float size) {
         this.size = size;
+        if (boundingBox != null) {
+            // Recréer la boîte de collision avec la nouvelle taille
+            boundingBox = new BoundingBox(x, y, z, size, size, size);
+        }
     }
-
+    
+    /**
+     * Récupère la boîte de collision de l'entité.
+     * @return La boîte de collision
+     */
+    public BoundingBox getBoundingBox() {
+        return boundingBox;
+    }
 }
