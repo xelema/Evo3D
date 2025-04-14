@@ -45,6 +45,15 @@ public class WorldController {
     }
 
     /**
+     * Active ou désactive l'affichage des coordonnées.
+     * 
+     * @param display true pour afficher les coordonnées, false pour les masquer
+     */
+    public void toggleCoordinatesDisplay(boolean display) {
+        worldRenderer.setDisplayCoordinates(display);
+    }
+
+    /**
      * Modifie un bloc à une position donnée.
      * 
      * @param x Coordonnée X du bloc
@@ -86,9 +95,6 @@ public class WorldController {
      * Met à jour le contrôleur et le modèle à chaque frame.
      * 
      * @param tpf Temps écoulé depuis la dernière frame
-     * @param camX Position X de la caméra
-     * @param camY Position Y de la caméra
-     * @param camZ Position Z de la caméra
      */
     public void update(float tpf) {
         worldRenderer.update(tpf);

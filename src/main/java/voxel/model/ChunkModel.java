@@ -7,7 +7,7 @@ package voxel.model;
  */
 public class ChunkModel {
     /** Taille du chunk en nombre de blocs dans chaque dimension */
-    public static final int SIZE = 16;
+    public static final int SIZE = 32 ;
     
     /** Tableau contenant les identifiants des blocs du chunk */
     private final int[] blocks;
@@ -16,12 +16,34 @@ public class ChunkModel {
      * Crée un nouveau chunk avec une génération de terrain par défaut.
      */
     public ChunkModel() {
-        blocks = new int[SIZE * SIZE * SIZE];
-        generateTerrain();
+        this(false);
     }
 
     /**
-     * Génère un terrain avec des collines, de la pierre, de la terre et de l'herbe.
+     * Crée un nouveau chunk.
+     *
+     * @param empty Si true, le chunk sera rempli d'air. Sinon, il sera généré avec un terrain par défaut.
+     */
+    public ChunkModel(boolean empty) {
+        blocks = new int[SIZE * SIZE * SIZE];
+        if (empty) {
+            fillWithAir();
+        } else {
+            generateTerrain();
+        }
+    }
+
+    /**
+     * Remplit le chunk entièrement avec des blocs d'air.
+     */
+    private void fillWithAir() {
+        for (int i = 0; i < blocks.length; i++) {
+            blocks[i] = BlockType.AIR.getId();
+        }
+    }
+
+    /**
+     * Génère un environnement de base.
      */
     private void generateTerrain() {
         // Génération de terrain avec collines et vallées

@@ -21,6 +21,8 @@ public class GameController {
     
     /** Référence au contrôleur du monde */
     private final WorldController worldController;
+
+    private EntityController entityController;
     
     /** Caméra pour la position du joueur */
     private final Camera camera;
@@ -36,12 +38,13 @@ public class GameController {
      */
     public GameController(WorldModel worldModel, WorldRenderer worldRenderer, 
                          InputController inputController, WorldController worldController,
-                         Camera camera) {
+                         EntityController entityController, Camera camera) {
         this.worldModel = worldModel;
         this.worldRenderer = worldRenderer;
         this.inputController = inputController;
         this.worldController = worldController;
         this.camera = camera;
+        this.entityController = entityController;
     }
 
     /**
@@ -63,5 +66,7 @@ public class GameController {
         
         // Mise à jour du monde voxel avec la position actuelle de la caméra
         worldController.update(tpf);
+
+        entityController.update(tpf);
     }
 } 

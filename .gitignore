@@ -53,3 +53,4 @@ local.properties
 src-gen/
 *.xml
 *.zip
+*.puml
