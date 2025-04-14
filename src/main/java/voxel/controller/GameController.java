@@ -3,6 +3,7 @@ package voxel.controller;
 import com.jme3.renderer.Camera;
 
 import voxel.model.WorldModel;
+import voxel.model.entity.Player;
 import voxel.view.WorldRenderer;
 
 /**
@@ -53,6 +54,15 @@ public class GameController {
     public void initialize() {
         // Aucune initialisation supplémentaire nécessaire pour l'instant
         // Tout est configuré dans les constructeurs des composants
+        
+        // Créer automatiquement un joueur à la position de la caméra
+        Player player = (Player) entityController.createEntityAtCamera(Player.class);
+        
+        // Définir ce joueur comme le joueur actuel et activer le mode joueur
+        inputController.setCurrentPlayer(player);
+        
+        // Activer le mode joueur (simule un appui sur la touche V)
+        inputController.onAction("ToggleCameraMode", true, 0);
     }
 
     /**

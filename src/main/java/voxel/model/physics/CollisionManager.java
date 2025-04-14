@@ -43,8 +43,7 @@ public class CollisionManager {
         double originalZ = entity.getZ();
         
         // Créer une boîte de collision à la nouvelle position
-        float size = entity.getSize();
-        BoundingBox entityBox = new BoundingBox(newX, newY, newZ, size, size, size);
+        BoundingBox entityBox = new BoundingBox(newX, newY, newZ, entity.getWidth(), entity.getHeight(), entity.getDepth());
         
         // Vérifier les collisions avec les blocs environnants
         int minBlockX = (int) Math.floor(entityBox.getMinX());
@@ -112,30 +111,34 @@ public class CollisionManager {
      */
     public void checkAndResolveEntityCollision(Entity entity1, Entity entity2) {
         // Créer des boîtes de collision pour les deux entités
-        BoundingBox box1 = new BoundingBox(entity1.getX(), entity1.getY(), entity1.getZ(), 
-                                          entity1.getSize(), entity1.getSize(), entity1.getSize());
-        BoundingBox box2 = new BoundingBox(entity2.getX(), entity2.getY(), entity2.getZ(), 
-                                          entity2.getSize(), entity2.getSize(), entity2.getSize());
-        
+        BoundingBox box1 = new BoundingBox(entity1.getX(), entity1.getY(), entity1.getZ(),
+                                          entity1.getWidth(), entity1.getHeight(), entity1.getDepth());
+        BoundingBox box2 = new BoundingBox(entity2.getX(), entity2.getY(), entity2.getZ(),
+                                          entity2.getWidth(), entity2.getHeight(), entity2.getDepth());
+
         // Vérifier s'il y a collision
         if (box1.intersects(box2)) {
             // Calculer le vecteur de pénétration
             Vector3f penetration = box1.getPenetrationVector(box2);
-            
-            // Diviser le déplacement entre les deux entités (en fonction de leurs tailles)
-            double totalSize = entity1.getSize() + entity2.getSize();
-            double ratio1 = entity2.getSize() / totalSize;
-            double ratio2 = entity1.getSize() / totalSize;
-            
+
+            // Calculer le volume de chaque entité pour déterminer leur "taille"
+            double volume1 = entity1.getWidth() * entity1.getHeight() * entity1.getDepth();
+            double volume2 = entity2.getWidth() * entity2.getHeight() * entity2.getDepth();
+            double totalVolume = volume1 + volume2;
+
+            // Calculer les ratios basés sur les volumes
+            double ratio1 = volume2 / totalVolume; // Plus l'entité 2 est volumineuse, plus l'entité 1 se déplace
+            double ratio2 = volume1 / totalVolume; // Plus l'entité 1 est volumineuse, plus l'entité 2 se déplace
+
             // Appliquer le vecteur de pénétration aux deux entités
             entity1.setX(entity1.getX() + penetration.x * ratio1);
             entity1.setY(entity1.getY() + penetration.y * ratio1);
             entity1.setZ(entity1.getZ() + penetration.z * ratio1);
-            
+
             entity2.setX(entity2.getX() - penetration.x * ratio2);
             entity2.setY(entity2.getY() - penetration.y * ratio2);
             entity2.setZ(entity2.getZ() - penetration.z * ratio2);
-            
+
             // Ajuster les vitesses (rebond simplifié)
             if (penetration.x != 0) {
                 double vx1 = entity1.getVx();
@@ -143,14 +146,14 @@ public class CollisionManager {
                 entity1.setVx(vx2 * 0.5);
                 entity2.setVx(vx1 * 0.5);
             }
-            
+
             if (penetration.y != 0) {
                 double vy1 = entity1.getVy();
                 double vy2 = entity2.getVy();
                 entity1.setVy(vy2 * 0.5);
                 entity2.setVy(vy1 * 0.5);
             }
-            
+
             if (penetration.z != 0) {
                 double vz1 = entity1.getVz();
                 double vz2 = entity2.getVz();

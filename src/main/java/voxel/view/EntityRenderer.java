@@ -29,7 +29,7 @@ public class EntityRenderer {
     protected void createEntityGeometry() {
         try {
             // Par défaut, une entité est représentée par un cube simple
-            Box box = new Box(entity.getSize()/2, entity.getSize()/2, entity.getSize()/2);
+            Box box = new Box(entity.getWidth()/2, entity.getHeight()/2, entity.getDepth()/2);
             geometry = new Geometry("entity_geom", box);
 
             // Créer un matériau rouge pour l'entité

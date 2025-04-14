@@ -5,8 +5,8 @@ public class Player extends Entity {
 
     public Player(double x, double y, double z) {
         super(x, y, z);
-        float randomSize = (float) (0.3 + Math.random() * (1.5 - 0.3));
-        setSize(randomSize);
+//        float randomSize = (float) (0.3 + Math.random() * (1.5 - 0.3));
+        setSize(1.8f, 3.8f, 1.4f);
     }
 
     @Override

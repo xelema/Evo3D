@@ -6,7 +6,9 @@ public abstract class Entity {
 
     protected double x, y, z;
     protected double vx, vy, vz; // vitesse x, y, z
-    protected float size; // taille de l'entité
+    protected float height; // hauteur de l'entité
+    protected float width; // largeur de l'entité
+    protected float depth; // profondeur de l'entité
     protected BoundingBox boundingBox; // Boîte de collision
 
     public Entity(double x, double y, double z) {
@@ -16,8 +18,10 @@ public abstract class Entity {
         this.vx = 0;
         this.vy = 0;
         this.vz = 0;
-        this.size = 1.0f; // Taille par défaut
-        this.boundingBox = new BoundingBox(x, y, z, size, size, size);
+        this.height = 1.0f; // Taille par défaut
+        this.width = 1.0f;
+        this.depth = 1.0f;
+        this.boundingBox = new BoundingBox(x, y, z, width, height, depth);
     }
 
     public abstract void update(float tpf);
@@ -165,15 +169,26 @@ public abstract class Entity {
      */
     public abstract boolean isMarkedForRemoval();
 
-    public float getSize() {
-        return size;
+    public float getWidth() {
+        return width;
     }
 
-    public void setSize(float size) {
-        this.size = size;
+    public float getHeight() {
+        return height;
+    }
+
+    public float getDepth() {
+        return depth;
+    }
+
+
+    public void setSize(float width, float height, float depth) {
+        this.width = width;
+        this.height = height;
+        this.depth = depth;
         if (boundingBox != null) {
             // Recréer la boîte de collision avec la nouvelle taille
-            boundingBox = new BoundingBox(x, y, z, size, size, size);
+            boundingBox = new BoundingBox(x, y, z, width, height, depth);
         }
     }
     
