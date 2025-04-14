@@ -36,7 +36,8 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
         nifty = niftyDisplay.getNifty();
 
-
+        nifty.loadStyleFile("nifty-default-styles.xml");
+        nifty.loadControlFile("nifty-default-controls.xml");
         // Ajouter le menu principal
 
         createMenu();
@@ -45,7 +46,8 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
         // Afficher le menu
 
         nifty.gotoScreen("start");
-
+        inputManager.setCursorVisible(true);
+        flyCam.setEnabled(false);
 
         // Attacher Nifty à la GUI de JME
 
@@ -94,7 +96,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
                     }});
 
 
-                    control(new ButtonBuilder("startButton", "Démarrer le jeu") {{
+                    control(new ButtonBuilder("demarrerLeJeu", "Demarrer le jeu") {{
 
                         alignCenter();
 
@@ -133,7 +135,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
                     }});
 
                 }});
-
+                System.out.println("Menu construit !");
             }});
 
         }}.build(nifty));
@@ -141,12 +143,184 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     }
 
 
+    public void fenetreReglage() {
+
+        nifty.addScreen("reglage", new ScreenBuilder("reglage") {{
+
+            controller(MenuPrincipalApp.this); // liaison au ScreenController
+
+
+            layer(new LayerBuilder("layerReglage") {{
+
+                childLayoutCenter();
+
+
+                panel(new PanelBuilder("panelReglage") {{
+
+                    childLayoutVertical();
+
+                    alignCenter();
+
+                    valignCenter();
+
+                    width("50%");
+
+                    height("50%");
+
+
+                    text(new TextBuilder() {{
+
+                        text("Reglage de l'environnement");
+
+                        font("Interface/Fonts/Default.fnt");
+
+                        height("20%");
+
+                        width("100%");
+
+                        alignCenter();
+
+                    }});
+
+
+                    control(new ButtonBuilder("faune", "Faune") {{
+
+                        alignCenter();
+
+                        height("20%");
+
+                        width("60%");
+
+                        interactOnClick("reglageFaune()");
+
+                    }});
+
+
+                    control(new ButtonBuilder("flore", "Flore") {{
+
+                        alignCenter();
+
+                        height("20%");
+
+                        width("60%");
+
+                        interactOnClick("reglageFlore");
+
+                    }});
+
+
+                    control(new ButtonBuilder("conditionEnvironnement", "Condition de l' environnement") {{
+
+                        alignCenter();
+
+                        height("20%");
+
+                        width("60%");
+
+                        interactOnClick("reglageEnvironnement()");
+
+                    }});
+
+                }});
+                System.out.println("Menu construit !");
+            }});
+
+        }}.build(nifty));
+
+    }
+    
+    public void modifierFaune() {
+
+        nifty.addScreen("reglage", new ScreenBuilder("reglage") {{
+
+            controller(MenuPrincipalApp.this); // liaison au ScreenController
+
+
+            layer(new LayerBuilder("Modifications") {{
+
+                childLayoutCenter();
+
+
+                panel(new PanelBuilder("panelReglage") {{
+
+                    childLayoutVertical();
+
+                    alignCenter();
+
+                    valignCenter();
+
+                    width("50%");
+
+                    height("50%");
+
+
+                    text(new TextBuilder() {{
+
+                        text("Reglage de l'environnement");
+
+                        font("Interface/Fonts/Default.fnt");
+
+                        height("20%");
+
+                        width("100%");
+
+                        alignCenter();
+
+                    }});
+
+
+                    control(new ButtonBuilder("faune", "Faune") {{
+
+                        alignCenter();
+
+                        height("20%");
+
+                        width("60%");
+
+                        interactOnClick("reglageFaune()");
+
+                    }});
+
+
+                    control(new ButtonBuilder("flore", "Flore") {{
+
+                        alignCenter();
+
+                        height("20%");
+
+                        width("60%");
+
+                        interactOnClick("reglageFlore");
+
+                    }});
+
+
+                    control(new ButtonBuilder("conditionEnvironnement", "Condition de l' environnement") {{
+
+                        alignCenter();
+
+                        height("20%");
+
+                        width("60%");
+
+                        interactOnClick("reglageEnvironnement()");
+
+                    }});
+
+                }});
+                System.out.println("Menu construit !");
+            }});
+
+        }}.build(nifty));
+
+    }
+
     // Méthodes déclenchées par les boutons
 
     public void startGame() {
 
         System.out.println("Lancement du jeu...");
-
+        System.out.println("Bouton démarrer cliqué !");
         // Tu peux ici changer d'écran ou démarrer la logique du jeu
 
     }
@@ -155,7 +329,8 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     public void openOptions() {
 
         System.out.println("Ouverture des options...");
-
+        fenetreReglage();
+        nifty.gotoScreen("reglage");
         // Ici tu peux basculer vers un écran "options"
 
     }
@@ -167,6 +342,11 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
         stop(); // Ferme l'application JME
 
+    }
+
+    public void reglageFaune() {
+        System.out.println("Modification des paramètres de la faune...");
+        modifierFaune();
     }
 
 
