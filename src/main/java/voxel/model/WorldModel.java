@@ -18,7 +18,7 @@ public class WorldModel {
     private final int worldSizeX = WORLD_SIZE;
     
     /** Taille du monde en nombre de chunks sur l'axe Y */
-    private final int worldSizeY = 16;
+    private final int worldSizeY = 8;
     
     /** Taille du monde en nombre de chunks sur l'axe Z */
     private final int worldSizeZ = WORLD_SIZE;
@@ -453,7 +453,7 @@ public class WorldModel {
 
         // Vérification que les coordonnées sont dans les limites du monde
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
-//            System.out.println("Bloc : " + BlockType.fromId(blockType) + " hors des limites du monde, globalX: " + globalX + ", globalY: " + globalY + ", globalZ: " + globalZ);
+            System.out.println("Bloc : " + BlockType.fromId(blockType) + " hors des limites du monde, globalX: " + globalX + ", globalY: " + globalY + ", globalZ: " + globalZ);
             return false;
         }
 

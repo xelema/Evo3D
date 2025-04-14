@@ -48,7 +48,6 @@ tmp/
 .settings/
 *.swp
 *.bak
-*.jar
 local.properties
 src-gen/
 *.xml
