@@ -1,14 +1,15 @@
 package voxel.view;
 import com.jme3.app.SimpleApplication;
-
 import com.jme3.niftygui.NiftyJmeDisplay;
 
 import de.lessvoid.nifty.Nifty;
-
-import de.lessvoid.nifty.builder.*;
-
-import de.lessvoid.nifty.screen.*;
-
+import de.lessvoid.nifty.builder.LayerBuilder;
+import de.lessvoid.nifty.builder.PanelBuilder;
+import de.lessvoid.nifty.builder.ScreenBuilder;
+import de.lessvoid.nifty.builder.TextBuilder;
+import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
+import de.lessvoid.nifty.screen.Screen;
+import de.lessvoid.nifty.screen.ScreenController;
 
 public class MenuPrincipalApp extends SimpleApplication implements ScreenController {
 
