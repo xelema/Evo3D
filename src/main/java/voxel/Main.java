@@ -8,6 +8,7 @@ import com.jme3.system.AppSettings;
 import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
+import voxel.model.BiomeType;
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
 
@@ -84,7 +85,8 @@ public class Main extends SimpleApplication {
         // Création des composants selon l'architecture MVC
         
         // Modèle - Représente les données
-        WorldModel worldModel = new WorldModel();
+        BiomeType selectedBiome = BiomeType.DESERT;
+        WorldModel worldModel = new WorldModel(selectedBiome);
         
         // Vue - Gère l'affichage
         WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);

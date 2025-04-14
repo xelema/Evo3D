@@ -1,5 +1,6 @@
 package voxel.model;
 
+
 /**
  * Représente le monde de voxels complet, composé de plusieurs chunks.
  * Cette classe gère uniquement les données du monde sans le rendu.
@@ -34,6 +35,9 @@ public class WorldModel {
     
     /** Bruit de Perlin pour le monde entier */
     private PerlinNoise worldPerlinNoise;
+
+    /** Bruit de Perlin pour les biomes */
+    private PerlinNoise biomeNoise;
     
     /** Échelles pour la génération du terrain */
     private float mountainScale;
@@ -45,10 +49,16 @@ public class WorldModel {
     /** Décalage vertical de base pour tout le terrain */
     private final int baseOffset = 10;
 
+    /** Biome actif */
+    private BiomeType activeBiome;
+
+
     /**
      * Crée un nouveau monde de voxels.
      */
-    public WorldModel() {
+    public WorldModel(BiomeType biome) {
+        this.activeBiome = biome;
+
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
         
         // Initialisation du bruit de Perlin pour tout le monde
@@ -56,8 +66,8 @@ public class WorldModel {
         
         // Initialisation des échelles (on pourrait les randomiser aussi)
         java.util.Random rand = new java.util.Random();
-        mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain);
-        detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail);
+        mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain) * 0.5f;
+        detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail) * 0.8f;
         
         generateWorld();
     }
@@ -90,7 +100,7 @@ public class WorldModel {
      */
     private void generateTerrainPerlin(int chunkX, int chunkZ) {
         // Niveau de l'eau (abaissé par rapport à la version précédente)
-        int waterLevel = 50;
+        int waterLevel = 40;
         
         // Coordonnées globales du chunk
         float worldXStart = chunkX * ChunkModel.SIZE;
@@ -117,9 +127,38 @@ public class WorldModel {
                 // Combiner les bruits pour avoir une hauteur réaliste
                 float heightFactor = mountainNoise * 0.7f + detailNoise * 0.3f;
                 
+                // Appliquer des règles spécifiques au biome
+                switch (this.activeBiome) {
+                    case MOUNTAINS:
+                        heightFactor *= 1.5f; // Terrain très accidenté
+                        waterLevel = 50;
+                        break;
+                    case PLAINS:
+                        heightFactor *= 0.4f; // Terrain plat
+                        waterLevel = 20; // Niveau d'eau plus bas
+                        break;
+                    case DESERT:
+                        heightFactor *= 0.4f; // Terrain plat
+                        waterLevel = 10; // Niveau d'eau très bas (presque pas d'eau)
+                        break;
+                    case JUNGLE:
+                        heightFactor *= 0.7f; // Terrain vallonné
+                        waterLevel = 20; // Niveau d'eau plus bas
+                        break;
+                    case SNOWY:
+                        heightFactor *= 1.0f; // Terrain normal
+                        waterLevel = 30; // Niveau d'eau plus bas
+                        break;
+                    case SAVANNA:
+                        heightFactor *= 0.5f; // Terrain légèrement vallonné
+                        waterLevel = 20; // Niveau d'eau plus bas
+                        break;
+                }
+
                 // Appliquer une courbe d'élévation pour accentuer les différences de hauteur
                 heightFactor = (float)Math.pow(heightFactor, 1.2);
-                
+
+
                 // Calculer la hauteur du terrain pour cette colonne
                 // Limiter à maxTerrainHeight pour éviter que le terrain touche le haut du monde
                 int baseTerrainHeight = baseOffset + (int)(heightFactor * (maxTerrainHeight - baseOffset));
@@ -138,12 +177,28 @@ public class WorldModel {
                     if (y <= waterLevel) {
                         if (y < terrainHeight) {
                             // Sous le terrain et sous l'eau
-                            if (y < terrainHeight - 3) {
-                                blockType = BlockType.STONE.getId();
-                            } else {
-                                blockType = BlockType.DIRT.getId();
+                            switch (this.activeBiome) {
+                                case DESERT:
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.SAND.getId();
+                                    break;
+                                case SAVANNA:
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1) blockType = BlockType.SAVANNA_GRASS.getId();
+                                    break;
+                                case JUNGLE:
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1) blockType = BlockType.JUNGLE_GRASS.getId();
+                                    break;
+                                case SNOWY:
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1) blockType = BlockType.SNOW.getId(); // Ajouter un type de bloc neige
+                                    break;
+                                default:
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1) blockType = BlockType.GRASS.getId();
+                                    break;
                             }
-                            
+                    
                             // Si on est près de la surface du terrain et sous l'eau, mettre du sable
                             if (y > terrainHeight - 4 && y == terrainHeight - 1) {
                                 blockType = BlockType.SAND.getId();
@@ -151,7 +206,7 @@ public class WorldModel {
                         } else {
                             // Au-dessus du terrain mais sous l'eau -> eau
                             blockType = BlockType.WATER.getId();
-                            
+                    
                             // Le fond de l'eau est du sable
                             if (y == terrainHeight) {
                                 blockType = BlockType.SAND.getId();
@@ -159,13 +214,26 @@ public class WorldModel {
                         }
                     } else if (y < terrainHeight) {
                         // Au-dessus du niveau d'eau, sous la surface du terrain
-                        if (y < terrainHeight - 3) {
-                            blockType = BlockType.STONE.getId();
-                        } else if (y < terrainHeight - 1) {
-                            blockType = BlockType.DIRT.getId();
-                        } else {
-                            // Surface : herbe
-                            blockType = BlockType.GRASS.getId();
+                        switch (this.activeBiome) {
+                            case DESERT:
+                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.SAND.getId();
+                                break;
+                            case SAVANNA:
+                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                if (y == terrainHeight - 1) blockType = BlockType.SAVANNA_GRASS.getId();
+                                break;
+                            case JUNGLE:
+                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                if (y == terrainHeight - 1) blockType = BlockType.JUNGLE_GRASS.getId();
+                                break;
+                            case SNOWY:
+                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                if (y == terrainHeight - 1) blockType = BlockType.SNOW.getId(); // Ajouter un type de bloc neige
+                                break;
+                            default:
+                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
+                                if (y == terrainHeight - 1) blockType = BlockType.GRASS.getId();
+                                break;
                         }
                     } else {
                         // Au-dessus du terrain, air

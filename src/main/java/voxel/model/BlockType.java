@@ -9,13 +9,17 @@ import com.jme3.math.ColorRGBA;
 public enum BlockType {
 
     AIR(0, new ColorRGBA(1, 1, 1, 1)), // Bloc d'air (transparent)
-    GRASS(1, new ColorRGBA(0.2f, 0.7f, 0.2f, 1)), // Bloc d'herbe
+    GRASS(1, new ColorRGBA(0.15f, 0.8f, 0.15f, 1)), // Bloc d'herbe
     STONE(2, new ColorRGBA(0.5f, 0.5f, 0.5f, 1)), // Bloc de pierre
     DIRT(3, new ColorRGBA(0.5f, 0.3f, 0.2f, 1)), // Bloc de terre
-    SAND(4, new ColorRGBA(0.8f, 0.8f, 0.6f, 1)), // Bloc de sable
+    SAND(4, new ColorRGBA(0.98f, 0.929f, 0.772f, 1)), // Bloc de sable
     WATER(5, new ColorRGBA(0.2f, 0.2f, 0.7f, 0.5f)), // Bloc d'eau (semi-transparent)
     LOG(6, new ColorRGBA(0.6f, 0.3f, 0.1f, 1)), // Bloc de bois
-    LEAVES(7, new ColorRGBA(0.2f, 0.7f, 0.2f, 1)); // Bloc de feuillage
+    LEAVES(7, new ColorRGBA(0.2f, 0.7f, 0.2f, 1)), // Bloc de feuillage
+    SAVANNA_GRASS(8, new ColorRGBA(0.741f, 0.717f, 0.333f, 1)), // Bloc d'herbe de savane
+    JUNGLE_GRASS(9, new ColorRGBA(0.349f, 0.788f, 0.235f, 1)), // Bloc d'herbe de jungle
+    SNOW(10, new ColorRGBA(1.0f, 1.0f, 1.0f, 1)); // Bloc de neige
+
 
     /** Identifiant unique du type de bloc */
     private final int id;
