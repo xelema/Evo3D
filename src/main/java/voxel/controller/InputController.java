@@ -8,6 +8,7 @@ import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.system.AppSettings;
@@ -249,6 +250,47 @@ public class InputController implements ActionListener {
 
             // Application du mouvement à la caméra
             camera.setLocation(camera.getLocation().add(movement));
+        }
+        
+        // Limiter la rotation verticale de la caméra
+        limitCameraRotation();
+    }
+    
+    /**
+     * Limite la rotation verticale de la caméra à environ 180 degrés (+-90° par rapport à l'horizontale)
+     */
+    private void limitCameraRotation() {
+        // Obtenir la rotation actuelle de la caméra sous forme de quaternion
+        Quaternion rotation = camera.getRotation();
+        
+        // Convertir le quaternion en radians
+        float[] angles = new float[3];
+        rotation.toAngles(angles);
+        
+        // angles[0] = pitch (rotation verticale)
+        // angles[1] = yaw (rotation horizontale)
+        // angles[2] = roll (inclinaison latérale)
+        
+        // Limiter le pitch à environ +-85 degrés (légèrement moins que 90° pour éviter les problèmes)
+        float maxPitch = (float) Math.toRadians(85);
+        boolean modified = false;
+        
+        if (angles[0] > maxPitch) {
+            angles[0] = maxPitch;
+            modified = true;
+        } else if (angles[0] < -maxPitch) {
+            angles[0] = -maxPitch;
+            modified = true;
+        }
+        
+        // Si l'angle a été modifié, appliquer la nouvelle rotation
+        if (modified) {
+            // Créer un nouveau quaternion à partir des angles radians modifiés
+            Quaternion newRotation = new Quaternion();
+            newRotation.fromAngles(angles);
+            
+            // Appliquer la nouvelle rotation à la caméra
+            camera.setRotation(newRotation);
         }
     }
     
