@@ -24,7 +24,11 @@ public class GameController {
     /** Référence au contrôleur du monde */
     private final WorldController worldController;
 
-    private EntityController entityController;
+    /** Référence au contrôleur d'entités */
+    private final EntityController entityController;
+    
+    /** Référence au contrôleur du joueur */
+    private final PlayerController playerController;
     
     /** Caméra pour la position du joueur */
     private final Camera camera;
@@ -45,8 +49,9 @@ public class GameController {
         this.worldRenderer = worldRenderer;
         this.inputController = inputController;
         this.worldController = worldController;
-        this.camera = camera;
         this.entityController = entityController;
+        this.playerController = inputController.getPlayerController();
+        this.camera = camera;
     }
 
     /**
@@ -61,7 +66,7 @@ public class GameController {
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
 
         // Définir ce joueur comme le joueur actuel et activer le mode joueur
-        inputController.setCurrentPlayer(player);
+        playerController.setCurrentPlayer(player);
         
         // Activer le mode joueur (simule un appui sur la touche V)
         inputController.onAction("ToggleCameraMode", true, 0);

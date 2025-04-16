@@ -50,12 +50,12 @@ public class PhysicsManager {
     
     /**
      * Applique la gravité à une entité.
-     * 
+     *
      * @param entity L'entité à laquelle appliquer la gravité
      * @param tpf Temps écoulé depuis la dernière frame
      */
     private void applyGravity(Entity entity, float tpf) {
-        entity.addVelocity(0, GRAVITY * tpf, 0);
+        entity.addVelocity(0, 1.5*GRAVITY * tpf, 0);
     }
     
     /**

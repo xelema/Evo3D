@@ -1,17 +1,19 @@
 package voxel.controller;
 
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
-import voxel.model.entity.Player;
-import voxel.Main;
 import com.jme3.system.AppSettings;
-import java.awt.DisplayMode;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
+
+import voxel.Main;
+import voxel.model.entity.Player;
 
 /**
  * Gère les entrées utilisateur pour contrôler la caméra et interagir avec le monde.
@@ -57,12 +59,7 @@ public class InputController implements ActionListener {
     private boolean speedFly = false; // État du vol rapide
     private boolean displayCoordinates = false; // État d'affichage des coordonnées
     
-    private Player currentPlayer = null; // Référence au joueur actuel
-    private boolean inPlayerMode = false; // Mode joueur (true) ou mode caméra libre (false)
-    private boolean thirdPersonView = false; // Vue à la 3ème personne (true) ou vue à la 1ère personne (false)
-
-    private double autoStepOffset = 0.0; // Hauteur à monter pour l'auto-step (fluide)
-    private final double autoStepSpeed = 0.2; // Vitesse de montée par frame (plus petit = plus lent)
+    private PlayerController playerController; // Contrôleur du joueur
 
     /**
      * Crée un nouveau contrôleur d'entrées.
@@ -77,6 +74,7 @@ public class InputController implements ActionListener {
         this.worldController = worldController;
         this.camera = camera;
         this.entityController = entityController;
+        this.playerController = new PlayerController(worldController, entityController, camera, inputManager);
         setupInputs();
     }
 
@@ -159,30 +157,34 @@ public class InputController implements ActionListener {
                 break;
             case ACTION_MOVE_FORWARD:
                 movingForward = isPressed;
+                playerController.setMovingForward(isPressed);
                 break;
             case ACTION_MOVE_BACKWARD:
                 movingBackward = isPressed;
+                playerController.setMovingBackward(isPressed);
                 break;
             case ACTION_MOVE_LEFT:
                 movingLeft = isPressed;
+                playerController.setMovingLeft(isPressed);
                 break;
             case ACTION_MOVE_RIGHT:
                 movingRight = isPressed;
+                playerController.setMovingRight(isPressed);
                 break;
             case ACTION_MOVE_UP:
                 movingUp = isPressed;
+                playerController.setMovingUp(isPressed);
                 break;
             case ACTION_MOVE_DOWN:
                 movingDown = isPressed;
                 break;
             case ACTION_SPEED_FLY:
                 speedFly = isPressed;
+                playerController.setSpeedFly(isPressed);
                 break;
             case ACTION_SPAWN_PLAYER:
                 if (isPressed) {
-                    // Crée une entité joueur à la position actuelle de la caméra
-                    System.out.println("Spawn player");
-                    currentPlayer = (Player) entityController.createEntityAtCamera(Player.class);
+                    playerController.spawnPlayerAtCamera();
                 }
                 break;
             case ACTION_TOGGLE_FULLSCREEN:
@@ -198,12 +200,12 @@ public class InputController implements ActionListener {
                 break;
             case ACTION_TOGGLE_CAMERA_MODE:
                 if (isPressed) {
-                    toggleCameraMode();
+                    playerController.toggleCameraMode();
                 }
                 break;
             case ACTION_TOGGLE_THIRD_PERSON:
-                if (isPressed && inPlayerMode) {
-                    toggleThirdPersonView();
+                if (isPressed && playerController.isInPlayerMode()) {
+                    playerController.toggleThirdPersonView();
                 }
                 break;
         }
@@ -216,39 +218,10 @@ public class InputController implements ActionListener {
      * @param tpf Temps écoulé depuis la dernière image
      */
     public void updateCameraMovement(float tpf) {
-        if (inPlayerMode && currentPlayer != null) {
+        if (playerController.isInPlayerMode() && playerController.getCurrentPlayer() != null) {
             // En mode joueur, la caméra suit le joueur
-            updatePlayerMovement(tpf);
-            
-            double playerX = currentPlayer.getX();
-            double playerY = currentPlayer.getY();
-            double playerZ = currentPlayer.getZ();
-            
-            if (thirdPersonView) {
-                // Vue à la 3ème personne
-                Vector3f cameraDirection = camera.getDirection().normalize();
-                Vector3f cameraPosition = new Vector3f(
-                    (float)playerX - cameraDirection.x * 3,
-                    (float)playerY + 2, // Un peu au-dessus du joueur
-                    (float)playerZ - cameraDirection.z * 5
-                );
-                
-                camera.setLocation(cameraPosition);
-            } else {
-                // Vue à la 1ère personne
-                // Calculer la position des yeux (90% de la hauteur du joueur depuis le bas)
-                // Sachant que le joueur a une hauteur de 1.9, et le point de référence est au centre du joueur
-                // La caméra doit être à playerY + (hauteur/2 - 0.1) pour être à 10% du haut
-                float eyeHeight = (float)(playerY + currentPlayer.getHeight() * 0.4);
-                
-                Vector3f cameraPosition = new Vector3f(
-                    (float)playerX,
-                    eyeHeight, // À la hauteur des yeux
-                    (float)playerZ
-                );
-                
-                camera.setLocation(cameraPosition);
-            }
+            playerController.updatePlayerMovement(tpf);
+            playerController.updateCameraPosition();
         } else {
             // En mode caméra libre, comportement original
             float speed;
@@ -307,152 +280,23 @@ public class InputController implements ActionListener {
     }
 
     /**
-     * Bascule entre le mode caméra libre et le mode joueur.
-     */
-    private void toggleCameraMode() {
-        if (currentPlayer == null) {
-            // Si pas de joueur actuel, en créer un à la position de la caméra
-            currentPlayer = (Player) entityController.createEntityAtCamera(Player.class);
-        }
-        
-        inPlayerMode = !inPlayerMode;
-        System.out.println("Mode " + (inPlayerMode ? "joueur" : "caméra libre") + " activé");
-        
-        // Ajuster le frustum de la caméra en fonction du mode
-        updateCameraFrustum();
-    }
-
-    /**
-     * Met à jour la position du joueur en fonction des touches enfoncées.
-     * 
-     * @param tpf Temps écoulé depuis la dernière image
-     */
-    private void updatePlayerMovement(float tpf) {
-        if (currentPlayer == null) return;
-        
-        // Vitesse de déplacement du joueur
-        float speed = speedFly ? 12f : 5f;
-        
-        // Vecteurs de direction basés sur l'orientation de la caméra
-        Vector3f camDir = camera.getDirection().clone();
-        camDir.y = 0; // Maintenir le déplacement sur le plan horizontal
-        camDir.normalizeLocal();
-        
-        Vector3f camLeft = camera.getLeft().clone();
-        camLeft.y = 0; // Maintenir le déplacement sur le plan horizontal
-        camLeft.normalizeLocal();
-        
-        // Calcul du vecteur de mouvement
-        Vector3f moveDir = new Vector3f(0, 0, 0);
-        
-        if (movingForward) moveDir.addLocal(camDir);
-        if (movingBackward) moveDir.addLocal(camDir.negate());
-        if (movingLeft) moveDir.addLocal(camLeft);
-        if (movingRight) moveDir.addLocal(camLeft.negate());
-        
-        // Normaliser le vecteur de mouvement s'il n'est pas nul
-        if (moveDir.length() > 0) {
-            moveDir.normalizeLocal();
-            moveDir.multLocal(speed);
-        }
-        
-        // Saut
-        if (movingUp && currentPlayer.isOnGround()) {
-            currentPlayer.jump();
-        }
-
-        // Auto-step
-        // Si une montée fluide est en cours, on l'applique
-        if (autoStepOffset > 0) {
-            double step = Math.min(autoStepSpeed, autoStepOffset);
-            currentPlayer.setY(currentPlayer.getY() + step);
-            autoStepOffset -= step;
-        } else {
-            // Détection d'auto-step uniquement si pas déjà en montée
-            if (moveDir.length() > 0 && currentPlayer.isOnGround()) {
-                double px = currentPlayer.getX();
-                double py = currentPlayer.getY();
-                double pz = currentPlayer.getZ();
-                float playerWidth = currentPlayer.getWidth();
-                float playerHeight = currentPlayer.getHeight();
-
-                // Direction de déplacement (normalisée)
-                Vector3f dir = moveDir.clone().normalizeLocal();
-                // Position devant le joueur (légèrement avancée)
-                double frontX = px + dir.x * (playerWidth/2 + 0.3);
-                double frontZ = pz + dir.z * (playerWidth/2 + 0.3);
-                int baseY = (int)Math.floor(py - playerHeight/2 + 0.01); // Pieds du joueur
-
-                // Vérifier le bloc juste devant les pieds
-                int blockFront = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY, (int)Math.floor(frontZ));
-                int blockFrontAbove = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+1, (int)Math.floor(frontZ));
-                int blockFrontAbove2 = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+2, (int)Math.floor(frontZ));
-                boolean isSolidFront = blockFront != 0; // 0 = AIR
-                boolean isSolidFrontAbove = blockFrontAbove != 0;
-                boolean isSolidFrontAbove2 = blockFrontAbove2 != 0;
-
-                // Si bloc devant les pieds mais espace libre juste au-dessus (step de 1 bloc)
-                if (isSolidFront && !isSolidFrontAbove && !isSolidFrontAbove2) {
-                    // Initialiser la montée fluide
-                    autoStepOffset = 1.0;
-                }
-            }
-        }
-        
-        // Appliquer la vitesse horizontale
-        currentPlayer.setVelocity(moveDir.x, currentPlayer.getVy(), moveDir.z);
-    }
-
-    /**
      * @return le joueur actuel, ou null s'il n'existe pas
      */
     public Player getCurrentPlayer() {
-        return currentPlayer;
+        return playerController.getCurrentPlayer();
     }
     
     /**
      * @return true si en mode joueur, false si en mode caméra libre
      */
     public boolean isInPlayerMode() {
-        return inPlayerMode;
+        return playerController.isInPlayerMode();
     }
     
     /**
-     * Définit l'entité joueur actuelle.
-     * 
-     * @param player l'entité joueur
+     * @return le contrôleur du joueur
      */
-    public void setCurrentPlayer(Player player) {
-        this.currentPlayer = player;
-    }
-
-    /**
-     * Bascule entre la vue à la première personne et la vue à la troisième personne.
-     */
-    private void toggleThirdPersonView() {
-        thirdPersonView = !thirdPersonView;
-        System.out.println("Vue " + (thirdPersonView ? "à la 3ème personne" : "à la 1ère personne") + " activée");
-        
-        // Ajuster le frustum de la caméra en fonction du mode de vue
-        updateCameraFrustum();
-    }
-    
-    /**
-     * Met à jour le frustum de la caméra en fonction du mode actuel.
-     * En mode première personne, le plan near est plus proche pour éviter le clipping.
-     */
-    private void updateCameraFrustum() {
-        float aspectRatio = (float) camera.getWidth() / camera.getHeight();
-        
-        if (inPlayerMode && !thirdPersonView) {
-            // En mode première personne, utiliser un plan near plus proche
-            camera.setFrustumPerspective(70f, aspectRatio, 0.1f, 1000f);
-        } else {
-            // En mode libre ou troisième personne, utiliser le plan near par défaut
-            camera.setFrustumPerspective(80f, aspectRatio, 1f, 1000f);
-        }
-        
-        // Appliquer les changements à la caméra
-        camera.update();
+    public PlayerController getPlayerController() {
+        return playerController;
     }
 }
