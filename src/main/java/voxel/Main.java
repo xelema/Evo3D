@@ -74,7 +74,7 @@ public class Main extends SimpleApplication {
      */
     private void setupCamera() {
         // Positionnement initial de la caméra au-dessus de l'île
-        cam.setLocation(new Vector3f(-4f, 153f, 7f));
+        cam.setLocation(new Vector3f(0f, 160f, 0f));
         // Fond bleu ciel
         viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
         

@@ -99,4 +99,11 @@ public class WorldController {
     public void update(float tpf) {
         worldRenderer.update(tpf);
     }
+
+    /**
+     * Retourne le modèle du monde (WorldModel).
+     */
+    public WorldModel getWorldModel() {
+        return worldModel;
+    }
 } 

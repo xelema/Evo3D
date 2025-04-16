@@ -1,5 +1,6 @@
 package voxel.controller;
 
+import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 
 import voxel.model.WorldModel;
@@ -55,9 +56,10 @@ public class GameController {
         // Aucune initialisation supplémentaire nécessaire pour l'instant
         // Tout est configuré dans les constructeurs des composants
         
-        // Créer automatiquement un joueur à la position de la caméra
-        Player player = (Player) entityController.createEntityAtCamera(Player.class);
-        
+        // Créer automatiquement un joueur à une position de spawn
+        Vector3f spawnPosition = new Vector3f(0f, 160f, 0f);
+        Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
+
         // Définir ce joueur comme le joueur actuel et activer le mode joueur
         inputController.setCurrentPlayer(player);
         

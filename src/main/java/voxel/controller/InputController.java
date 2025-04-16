@@ -61,6 +61,9 @@ public class InputController implements ActionListener {
     private boolean inPlayerMode = false; // Mode joueur (true) ou mode caméra libre (false)
     private boolean thirdPersonView = false; // Vue à la 3ème personne (true) ou vue à la 1ère personne (false)
 
+    private double autoStepOffset = 0.0; // Hauteur à monter pour l'auto-step (fluide)
+    private final double autoStepSpeed = 0.2; // Vitesse de montée par frame (plus petit = plus lent)
+
     /**
      * Crée un nouveau contrôleur d'entrées.
      *
@@ -357,6 +360,44 @@ public class InputController implements ActionListener {
         if (movingUp && currentPlayer.isOnGround()) {
             currentPlayer.jump();
         }
+
+        // Auto-step
+        // Si une montée fluide est en cours, on l'applique
+        if (autoStepOffset > 0) {
+            double step = Math.min(autoStepSpeed, autoStepOffset);
+            currentPlayer.setY(currentPlayer.getY() + step);
+            autoStepOffset -= step;
+        } else {
+            // Détection d'auto-step uniquement si pas déjà en montée
+            if (moveDir.length() > 0 && currentPlayer.isOnGround()) {
+                double px = currentPlayer.getX();
+                double py = currentPlayer.getY();
+                double pz = currentPlayer.getZ();
+                float playerWidth = currentPlayer.getWidth();
+                float playerHeight = currentPlayer.getHeight();
+
+                // Direction de déplacement (normalisée)
+                Vector3f dir = moveDir.clone().normalizeLocal();
+                // Position devant le joueur (légèrement avancée)
+                double frontX = px + dir.x * (playerWidth/2 + 0.3);
+                double frontZ = pz + dir.z * (playerWidth/2 + 0.3);
+                int baseY = (int)Math.floor(py - playerHeight/2 + 0.01); // Pieds du joueur
+
+                // Vérifier le bloc juste devant les pieds
+                int blockFront = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY, (int)Math.floor(frontZ));
+                int blockFrontAbove = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+1, (int)Math.floor(frontZ));
+                int blockFrontAbove2 = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+2, (int)Math.floor(frontZ));
+                boolean isSolidFront = blockFront != 0; // 0 = AIR
+                boolean isSolidFrontAbove = blockFrontAbove != 0;
+                boolean isSolidFrontAbove2 = blockFrontAbove2 != 0;
+
+                // Si bloc devant les pieds mais espace libre juste au-dessus (step de 1 bloc)
+                if (isSolidFront && !isSolidFrontAbove && !isSolidFrontAbove2) {
+                    // Initialiser la montée fluide
+                    autoStepOffset = 1.0;
+                }
+            }
+        }
         
         // Appliquer la vitesse horizontale
         currentPlayer.setVelocity(moveDir.x, currentPlayer.getVy(), moveDir.z);
@@ -405,7 +446,7 @@ public class InputController implements ActionListener {
         
         if (inPlayerMode && !thirdPersonView) {
             // En mode première personne, utiliser un plan near plus proche
-            camera.setFrustumPerspective(90f, aspectRatio, 0.1f, 1000f);
+            camera.setFrustumPerspective(70f, aspectRatio, 0.1f, 1000f);
         } else {
             // En mode libre ou troisième personne, utiliser le plan near par défaut
             camera.setFrustumPerspective(80f, aspectRatio, 1f, 1000f);
