@@ -3,17 +3,21 @@ package voxel.view;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Quaternion;
+import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Box;
+
 import voxel.model.entity.Entity;
+import voxel.model.entity.Player;
 
 public class EntityRenderer {
 
-    private AssetManager assetManager;
+    protected AssetManager assetManager;
     private Node entityNode;
-    private Entity entity;
-    private Geometry geometry;
+    protected Entity entity;
+    protected Geometry geometry;
 
     public EntityRenderer(AssetManager assetManager, Entity entity) {
         this.assetManager = assetManager;
@@ -32,9 +36,15 @@ public class EntityRenderer {
             Box box = new Box(entity.getWidth()/2, entity.getHeight()/2, entity.getDepth()/2);
             geometry = new Geometry("entity_geom", box);
 
-            // Créer un matériau rouge pour l'entité
+            // Créer un matériau selon le type d'entité
             Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-            material.setColor("Color", ColorRGBA.Red);
+            if (entity instanceof Player) {
+                // Matériau bleu pour les joueurs
+                material.setColor("Color", ColorRGBA.Blue);
+            } else {
+                // Matériau rouge pour les autres entités
+                material.setColor("Color", ColorRGBA.Red);
+            }
 
             geometry.setMaterial(material);
             entityNode.attachChild(geometry);
@@ -45,10 +55,16 @@ public class EntityRenderer {
         }
     }
     /**
-     * Met à jour la position de l'entité dans le monde.
+     * Met à jour la position et la rotation de l'entité dans le monde.
      */
     public void update(){
+        // Mettre à jour la position
         entityNode.setLocalTranslation((float) entity.getX(), (float) entity.getY(), (float) entity.getZ());
+        
+        // Appliquer la rotation horizontale (autour de l'axe Y) pour toutes les entités
+        Quaternion rotation = new Quaternion();
+        rotation.fromAngleAxis(entity.getRotation(), new Vector3f(0, 1, 0));
+        entityNode.setLocalRotation(rotation);
     }
 
     public Node getNode() {

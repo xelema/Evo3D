@@ -9,6 +9,7 @@ public abstract class Entity {
     protected float height; // hauteur de l'entité
     protected float width; // largeur de l'entité
     protected float depth; // profondeur de l'entité
+    protected float rotation = 0.0f; // rotation horizontale de l'entité (en radians)
     protected BoundingBox boundingBox; // Boîte de collision
 
     public Entity(double x, double y, double z) {
@@ -161,6 +162,22 @@ public abstract class Entity {
 
     public void setVz(double vz) {
         this.vz = vz;
+    }
+    
+    /**
+     * Définit la rotation horizontale de l'entité.
+     * @param rotation Rotation en radians
+     */
+    public void setRotation(float rotation) {
+        this.rotation = rotation;
+    }
+    
+    /**
+     * Récupère la rotation horizontale de l'entité.
+     * @return Rotation en radians
+     */
+    public float getRotation() {
+        return rotation;
     }
 
     /**

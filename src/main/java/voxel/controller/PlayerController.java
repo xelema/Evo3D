@@ -66,6 +66,14 @@ public class PlayerController {
         camLeft.y = 0; // Maintenir le déplacement sur le plan horizontal
         camLeft.normalizeLocal();
         
+        // Synchroniser la rotation du joueur avec celle de la caméra
+        // Obtenir les angles d'Euler de la caméra
+        float[] angles = new float[3];
+        camera.getRotation().toAngles(angles);
+        
+        // Mettre à jour la rotation du joueur (rotation horizontale uniquement)
+        currentPlayer.setRotation(angles[1]); // angles[1] est le yaw (rotation horizontale)
+        
         // Calcul du vecteur de mouvement
         Vector3f moveDir = new Vector3f(0, 0, 0);
         
@@ -139,14 +147,35 @@ public class PlayerController {
         
         if (thirdPersonView) {
             // Vue à la 3ème personne
-            Vector3f cameraDirection = camera.getDirection().normalize();
+            // Récupère la direction horizontale vers laquelle le joueur fait face (lacet/yaw)
+            float yaw = currentPlayer.getRotation();
+            
+            // Calcule la position fixe directement derrière le joueur
+            float distanceBehind = 6.0f; // Distance derrière le joueur (augmentée de 4.0f à 6.0f)
+            float heightAbove = 2.5f;    // Hauteur au-dessus du joueur (augmentée de 1.5f à 2.5f)
+            
+            // Calcule la position derrière le joueur en fonction de sa rotation
+            float dx = (float) Math.sin(yaw);
+            float dz = (float) Math.cos(yaw);
+            
             Vector3f cameraPosition = new Vector3f(
-                (float)playerX - cameraDirection.x * 3,
-                (float)playerY + 2, // Un peu au-dessus du joueur
-                (float)playerZ - cameraDirection.z * 5
+                (float)playerX - dx * distanceBehind,
+                (float)playerY + heightAbove,
+                (float)playerZ - dz * distanceBehind
             );
             
+            // Positionne la caméra
             camera.setLocation(cameraPosition);
+            
+            // Calcule la direction pour regarder la tête du joueur
+            Vector3f lookAtPoint = new Vector3f(
+                (float)playerX,
+                (float)playerY + 1.0f, // Vise au niveau de la tête
+                (float)playerZ
+            );
+            
+            // Définit la caméra pour regarder le joueur
+            camera.lookAt(lookAtPoint, Vector3f.UNIT_Y);
         } else {
             // Vue à la 1ère personne
             // Calculer la position des yeux (90% de la hauteur du joueur depuis le bas)
@@ -182,11 +211,16 @@ public class PlayerController {
     public void updateCameraFrustum() {
         float aspectRatio = (float) camera.getWidth() / camera.getHeight();
         
-        if (inPlayerMode && !thirdPersonView) {
-            // En mode première personne, utiliser un plan near plus proche
-            camera.setFrustumPerspective(70f, aspectRatio, 0.1f, 1000f);
+        if (inPlayerMode) {
+            if (!thirdPersonView) {
+                // En mode première personne, utiliser un plan near plus proche
+                camera.setFrustumPerspective(70f, aspectRatio, 0.1f, 1000f);
+            } else {
+                // En mode troisième personne, ajuster le FOV pour une meilleure vue
+                camera.setFrustumPerspective(65f, aspectRatio, 0.5f, 1000f);
+            }
         } else {
-            // En mode libre ou troisième personne, utiliser le plan near par défaut
+            // En mode libre, utiliser le plan near par défaut
             camera.setFrustumPerspective(80f, aspectRatio, 1f, 1000f);
         }
         
