@@ -35,9 +35,6 @@ public class WorldModel {
     
     /** Bruit de Perlin pour le monde entier */
     private PerlinNoise worldPerlinNoise;
-
-    /** Bruit de Perlin pour les biomes */
-    private PerlinNoise biomeNoise;
     
     /** Échelles pour la génération du terrain */
     private float mountainScale;
@@ -91,6 +88,9 @@ public class WorldModel {
                 generateTerrainPerlin(cx, cz);
             }
         }
+
+        // Ajout des nuages aléatoires dans le ciel
+        //addClouds();
     }
     
     /**
@@ -135,7 +135,7 @@ public class WorldModel {
                         break;
                     case PLAINS:
                         heightFactor *= 0.4f; // Terrain plat
-                        waterLevel = 20; // Niveau d'eau plus bas
+                        waterLevel = 17; // Niveau d'eau plus bas
                         break;
                     case DESERT:
                         heightFactor *= 0.4f; // Terrain plat
@@ -251,6 +251,68 @@ public class WorldModel {
             }
         }
     }
+
+
+    /**
+     * Ajoute des nuages aléatoires dans le ciel du monde.
+     */
+    private void addClouds() {
+        int cloudY = 150; // Altitude moyenne des nuages
+        int numClouds = 50; // Nombre total de nuages à générer
+        java.util.Random random = new java.util.Random();
+
+        for (int i = 0; i < numClouds; i++) {
+            // Générer des positions aléatoires pour les nuages
+            int cloudX = random.nextInt(worldSizeX * ChunkModel.SIZE) - (worldSizeX * ChunkModel.SIZE) / 2;
+            int cloudZ = random.nextInt(worldSizeZ * ChunkModel.SIZE) - (worldSizeZ * ChunkModel.SIZE) / 2;
+
+            // Générer une taille aléatoire pour le nuage
+            int cloudSizeX = 10 + random.nextInt(10); // Taille entre 10 et 20 blocs
+            int cloudSizeY = 2 + random.nextInt(3);   // Hauteur entre 2 et 4 blocs
+            int cloudSizeZ = 10 + random.nextInt(10); // Taille entre 10 et 20 blocs
+
+            // Créer le nuage
+            createCloud(cloudX, cloudY, cloudZ, cloudSizeX, cloudSizeY, cloudSizeZ);
+        }
+    }
+
+    /**
+     * Crée un nuage à la position et aux dimensions spécifiées.
+     */
+    private void createCloud(int x, int y, int z, int sizeX, int sizeY, int sizeZ) {
+        java.util.Random random = new java.util.Random();
+        
+        // Créer le nuage avec une forme arrondie
+        for (int dx = 0; dx < sizeX; dx++) {
+            for (int dy = 0; dy < sizeY; dy++) {
+                for (int dz = 0; dz < sizeZ; dz++) {
+                    // Calculer la distance normalisée au centre (forme ellipsoïdale)
+                    double distanceSquared =
+                        Math.pow((dx - sizeX / 2.0) / (sizeX * 0.5), 2) +
+                        Math.pow((dy - sizeY / 2.0) / (sizeY * 0.7), 2) +
+                        Math.pow((dz - sizeZ / 2.0) / (sizeZ * 0.5), 2);
+
+                    double noise = random.nextDouble() * 0.3;
+
+                    // Si le point est dans l'ellipsoïde du nuage
+                    if (distanceSquared + noise <= 1.0) {
+                        if (distanceSquared > 0.7 && random.nextDouble() > 0.7) {
+                            continue;
+                        }
+
+                        // Convertir les coordonnées centrées en coordonnées de grille
+                        int gridX = x + dx;
+                        int gridY = y + dy;
+                        int gridZ = z + dz;
+
+                        // Placer le bloc de nuage
+                        setBlockAt(gridX, gridY, gridZ, BlockType.CLOUD.getId());
+                    }
+                }
+            }
+        }
+    }
+
 
     /**
      * Récupère le type de bloc à partir de coordonnées globales.
