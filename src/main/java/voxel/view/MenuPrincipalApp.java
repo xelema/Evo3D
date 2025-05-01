@@ -53,9 +53,8 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
         nifty.loadStyleFile("nifty-default-styles.xml");
         nifty.loadControlFile("nifty-default-controls.xml");
-        // Ajouter le menu principal
-
-        createMenu();
+        int tailleEcran = settings.getHeight();
+        createMenu(tailleEcran);
 
 
         // Afficher le menu
@@ -74,8 +73,17 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     }
 
 
-    public void createMenu() {
+    public void createMenu(int tailleEcran) {
 
+        String police;
+
+        if (tailleEcran < 800) {
+            police = "Interface/Fonts/Arial16.fnt";
+        } else if (tailleEcran < 1080) {
+            police = "Interface/Fonts/Arial32.fnt";
+        } else {
+            police = "Interface/Fonts/Arial48.fnt";
+        }
         nifty.addScreen("start", new ScreenBuilder("start") {{
 
             controller(MenuPrincipalApp.this); // liaison au ScreenController
@@ -317,7 +325,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
             @Override 
             public void onAction(String Name, boolean clique, float tpf) {
                 if (!clique) return;
-                Vector2f souris = inputManager.getCursorPosition();
+                Vector2f souris = inputManager.getCursorPosition(); 
                 for (int i = 0; i < 6; i++) {
                     if (carres[parametre][i] == null) continue;
                     Geometry carre = carres[parametre][i];
