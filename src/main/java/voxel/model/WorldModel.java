@@ -9,7 +9,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 32;
+    public static final int WORLD_SIZE = 8;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;

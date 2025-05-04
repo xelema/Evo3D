@@ -112,7 +112,5 @@ public class Main extends SimpleApplication {
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
                 entityController, cam);
-        gameController.initialize();
     }
-
 }

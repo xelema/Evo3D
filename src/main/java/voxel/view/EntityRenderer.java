@@ -11,6 +11,7 @@ import com.jme3.scene.shape.Box;
 
 import voxel.model.entity.Entity;
 import voxel.model.entity.Player;
+import voxel.model.entity.animals.Cow;
 
 public class EntityRenderer {
 
@@ -41,6 +42,9 @@ public class EntityRenderer {
             if (entity instanceof Player) {
                 // Matériau bleu pour les joueurs
                 material.setColor("Color", ColorRGBA.Blue);
+            } else if (entity instanceof Cow) {
+                // Matériau rouge pour les vaches
+                material.setColor("Color", ColorRGBA.Brown);
             } else {
                 // Matériau rouge pour les autres entités
                 material.setColor("Color", ColorRGBA.Red);

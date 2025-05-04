@@ -103,4 +103,12 @@ public class EntityController {
         // Nettoyer les renderers des entités supprimées
         // Cette opération est désormais gérée par EntityRendererManager.update()
     }
+
+    public void printEntitiesList() {
+        System.out.println("Liste des entités:");
+        for (Entity entity : entityManager.getEntities()) {
+            System.out.print(entity);
+            System.out.println(" : position: " + entity.getX() + ", " + entity.getY() + ", " + entity.getZ());
+        }
+    }
 }

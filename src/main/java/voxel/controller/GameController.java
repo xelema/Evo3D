@@ -5,7 +5,12 @@ import com.jme3.renderer.Camera;
 
 import voxel.model.WorldModel;
 import voxel.model.entity.Player;
+import voxel.model.entity.animals.Cow;
 import voxel.view.WorldRenderer;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Contrôleur principal du jeu qui coordonne tous les autres contrôleurs.
@@ -33,6 +38,15 @@ public class GameController {
     /** Caméra pour la position du joueur */
     private final Camera camera;
 
+    /** Permet d'initialiser le monde après un certain temps */
+    boolean readyToInit = true;
+
+    /** Compteur de temps */
+    float timeElapsed = 0;
+    
+    /** Indique si les entités ont été initialisées */
+    private boolean entitiesInitialized = false;
+
     /**
      * Crée un nouveau contrôleur de jeu.
      * 
@@ -58,18 +72,30 @@ public class GameController {
      * Initialise le jeu. Appelé une seule fois au démarrage.
      */
     public void initialize() {
-        // Aucune initialisation supplémentaire nécessaire pour l'instant
-        // Tout est configuré dans les constructeurs des composants
-        
+
         // Créer automatiquement un joueur à une position de spawn
-        Vector3f spawnPosition = new Vector3f(0f, 160f, 0f);
+        Vector3f spawnPosition = new Vector3f(-8f, 155f, 20f);
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
+
+        // Créer des vaches à des positions prédéfinies
+        for (int i = 0; i < 10; i++) {
+            entityController.createEntity(Cow.class, new Vector3f(i * 5, 500f,  0f));
+        }
 
         // Définir ce joueur comme le joueur actuel et activer le mode joueur
         playerController.setCurrentPlayer(player);
-        
+
         // Activer le mode joueur (simule un appui sur la touche V)
         inputController.onAction("ToggleCameraMode", true, 0);
+    }
+    
+    /**
+     * Initialise les entités du jeu après un délai.
+     */
+    private void initializeEntities() {
+
+
+        entitiesInitialized = true;
     }
 
     /**
@@ -84,6 +110,13 @@ public class GameController {
         // Mise à jour du monde voxel avec la position actuelle de la caméra
         worldController.update(tpf);
 
+        // Permet d'initialiser proprement le monde
+        if (timeElapsed > 0.1 && readyToInit){
+            initialize();
+            readyToInit = false;
+        }
+
         entityController.update(tpf);
+        timeElapsed += tpf;
     }
 } 

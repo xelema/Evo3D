@@ -36,6 +36,7 @@ public class InputController implements ActionListener {
     private static final String ACTION_TOGGLE_COORDINATES = "ToggleCoordinates"; // Action pour afficher/masquer les coordonnées
     private static final String ACTION_TOGGLE_CAMERA_MODE = "ToggleCameraMode"; // Action pour basculer entre caméra libre et joueur
     private static final String ACTION_TOGGLE_THIRD_PERSON = "ToggleThirdPerson"; // Action pour basculer entre vue 1ère et 3ème personne
+    private static final String ACTION_DEBUG_ENTITES_LIST = "DebugEntitiesList"; // Action pour afficher la liste des entités
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
@@ -116,6 +117,7 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_TOGGLE_COORDINATES, new KeyTrigger(KeyInput.KEY_F3));
         inputManager.addMapping(ACTION_TOGGLE_CAMERA_MODE, new KeyTrigger(KeyInput.KEY_V));
         inputManager.addMapping(ACTION_TOGGLE_THIRD_PERSON, new KeyTrigger(KeyInput.KEY_F5));
+        inputManager.addMapping(ACTION_DEBUG_ENTITES_LIST, new KeyTrigger(KeyInput.KEY_F6));
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this,
@@ -132,7 +134,8 @@ public class InputController implements ActionListener {
                 ACTION_TOGGLE_FULLSCREEN,
                 ACTION_TOGGLE_COORDINATES,
                 ACTION_TOGGLE_CAMERA_MODE,
-                ACTION_TOGGLE_THIRD_PERSON
+                ACTION_TOGGLE_THIRD_PERSON,
+                ACTION_DEBUG_ENTITES_LIST
         );
     }
 
@@ -207,6 +210,11 @@ public class InputController implements ActionListener {
             case ACTION_TOGGLE_THIRD_PERSON:
                 if (isPressed && playerController.isInPlayerMode()) {
                     playerController.toggleThirdPersonView();
+                }
+                break;
+            case ACTION_DEBUG_ENTITES_LIST:
+                if (isPressed) {
+                    entityController.printEntitiesList();
                 }
                 break;
         }

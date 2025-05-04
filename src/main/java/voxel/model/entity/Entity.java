@@ -10,6 +10,7 @@ public abstract class Entity {
     protected float width; // largeur de l'entité
     protected float depth; // profondeur de l'entité
     protected float rotation = 0.0f; // rotation horizontale de l'entité (en radians)
+    protected boolean onGround = false;
     protected BoundingBox boundingBox; // Boîte de collision
 
     public Entity(double x, double y, double z) {
@@ -215,5 +216,26 @@ public abstract class Entity {
      */
     public BoundingBox getBoundingBox() {
         return boundingBox;
+    }
+
+    /**
+     * Vérifie si le joueur est au sol.
+     * @return true si le joueur est au sol, false sinon
+     */
+    public boolean isOnGround() {
+        return onGround;
+    }
+
+    /**
+     * Définit si le joueur est au sol ou non.
+     * @param onGround true si le joueur est au sol, false sinon
+     */
+    public void setOnGround(boolean onGround) {
+        this.onGround = onGround;
+
+        // Réinitialise la vitesse verticale si le joueur touche le sol
+        if (onGround && this.getVy() < 0) {
+            setVerticalVelocity(0);
+        }
     }
 }
