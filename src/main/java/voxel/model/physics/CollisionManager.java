@@ -68,6 +68,9 @@ public class CollisionManager {
                         BoundingBox blockBox = new BoundingBox(x + 0.5, y + 0.5, z + 0.5, 1.0, 1.0, 1.0);
                         
                         if (entityBox.intersects(blockBox)) {
+
+                            boolean isAirAbove1 = (world.getBlockAt(x, y+1, z) == BlockType.AIR.getId()) || (world.getBlockAt(x, y+1, z) == BlockType.WATER.getId());
+
                             collisionDetected = true;
                             
                             // Calculer le vecteur de pénétration
@@ -87,12 +90,22 @@ public class CollisionManager {
                             
                             // Si collision sur l'axe X
                             if (penetration.x != 0) {
-                                entity.setVx(0);
+                                // auto-step
+                                if (isAirAbove1) {
+                                    entity.setVerticalVelocity(8.0);
+                                } else {
+                                    entity.setVx(0);
+                                }
                             }
                             
                             // Si collision sur l'axe Z
                             if (penetration.z != 0) {
-                                entity.setVz(0);
+                                // auto-step
+                                if (isAirAbove1) {
+                                    entity.setVerticalVelocity(8.0);
+                                } else {
+                                    entity.setVz(0);
+                                }
                             }
                         }
                     }

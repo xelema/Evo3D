@@ -93,43 +93,43 @@ public class PlayerController {
             currentPlayer.jump();
         }
 
-        // Auto-step
-        // Si une montée fluide est en cours, on l'applique
-        if (autoStepOffset > 0) {
-            double step = Math.min(autoStepSpeed, autoStepOffset);
-            currentPlayer.setY(currentPlayer.getY() + step);
-            autoStepOffset -= step;
-        } else {
-            // Détection d'auto-step uniquement si pas déjà en montée
-            if (moveDir.length() > 0 && currentPlayer.isOnGround()) {
-                double px = currentPlayer.getX();
-                double py = currentPlayer.getY();
-                double pz = currentPlayer.getZ();
-                float playerWidth = currentPlayer.getWidth();
-                float playerHeight = currentPlayer.getHeight();
-
-                // Direction de déplacement (normalisée)
-                Vector3f dir = moveDir.clone().normalizeLocal();
-                // Position devant le joueur (légèrement avancée)
-                double frontX = px + dir.x * (playerWidth/2 + 0.3);
-                double frontZ = pz + dir.z * (playerWidth/2 + 0.3);
-                int baseY = (int)Math.floor(py - playerHeight/2 + 0.01); // Pieds du joueur
-
-                // Vérifier le bloc juste devant les pieds
-                int blockFront = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY, (int)Math.floor(frontZ));
-                int blockFrontAbove = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+1, (int)Math.floor(frontZ));
-                int blockFrontAbove2 = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+2, (int)Math.floor(frontZ));
-                boolean isSolidFront = blockFront != 0; // 0 = AIR
-                boolean isSolidFrontAbove = blockFrontAbove != 0;
-                boolean isSolidFrontAbove2 = blockFrontAbove2 != 0;
-
-                // Si bloc devant les pieds mais espace libre juste au-dessus (step de 1 bloc)
-                if (isSolidFront && !isSolidFrontAbove && !isSolidFrontAbove2) {
-                    // Initialiser la montée fluide
-                    autoStepOffset = 1.0;
-                }
-            }
-        }
+//        // Auto-step (finalement géré dans le collision manager)
+//        // Si une montée fluide est en cours, on l'applique
+//        if (autoStepOffset > 0) {
+//            double step = Math.min(autoStepSpeed, autoStepOffset);
+//            currentPlayer.setY(currentPlayer.getY() + step);
+//            autoStepOffset -= step;
+//        } else {
+//            // Détection d'auto-step uniquement si pas déjà en montée
+//            if (moveDir.length() > 0 && currentPlayer.isOnGround()) {
+//                double px = currentPlayer.getX();
+//                double py = currentPlayer.getY();
+//                double pz = currentPlayer.getZ();
+//                float playerWidth = currentPlayer.getWidth();
+//                float playerHeight = currentPlayer.getHeight();
+//
+//                // Direction de déplacement (normalisée)
+//                Vector3f dir = moveDir.clone().normalizeLocal();
+//                // Position devant le joueur (légèrement avancée)
+//                double frontX = px + dir.x * (playerWidth/2 + 0.3);
+//                double frontZ = pz + dir.z * (playerWidth/2 + 0.3);
+//                int baseY = (int)Math.floor(py - playerHeight/2 + 0.01); // Pieds du joueur
+//
+//                // Vérifier le bloc juste devant les pieds
+//                int blockFront = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY, (int)Math.floor(frontZ));
+//                int blockFrontAbove = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+1, (int)Math.floor(frontZ));
+//                int blockFrontAbove2 = worldController.getWorldModel().getBlockAt((int)Math.floor(frontX), baseY+2, (int)Math.floor(frontZ));
+//                boolean isSolidFront = blockFront != 0; // 0 = AIR
+//                boolean isSolidFrontAbove = blockFrontAbove != 0;
+//                boolean isSolidFrontAbove2 = blockFrontAbove2 != 0;
+//
+//                // Si bloc devant les pieds mais espace libre juste au-dessus (step de 1 bloc)
+//                if (isSolidFront && !isSolidFrontAbove && !isSolidFrontAbove2) {
+//                    // Initialiser la montée fluide
+//                    autoStepOffset = 1.0;
+//                }
+//            }
+//        }
         
         // Appliquer la vitesse horizontale
         currentPlayer.setVelocity(moveDir.x, currentPlayer.getVy(), moveDir.z);

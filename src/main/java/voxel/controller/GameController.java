@@ -78,8 +78,8 @@ public class GameController {
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
 
         // Créer des vaches à des positions prédéfinies
-        for (int i = 0; i < 10; i++) {
-            entityController.createEntity(Cow.class, new Vector3f(i * 5, 500f,  0f));
+        for (int i = 0; i < 500; i++) {
+            entityController.createEntity(Cow.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
         }
 
         // Définir ce joueur comme le joueur actuel et activer le mode joueur
@@ -88,15 +88,7 @@ public class GameController {
         // Activer le mode joueur (simule un appui sur la touche V)
         inputController.onAction("ToggleCameraMode", true, 0);
     }
-    
-    /**
-     * Initialise les entités du jeu après un délai.
-     */
-    private void initializeEntities() {
 
-
-        entitiesInitialized = true;
-    }
 
     /**
      * Met à jour l'état du jeu à chaque frame.
