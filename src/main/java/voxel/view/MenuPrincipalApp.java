@@ -260,13 +260,23 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
     }
     
-    public void formationCase( int nombreCases, int altitude, int parametre) {
-        int xinitial = 100;
-        int yinitial = altitude ;//375
-        int espace2case = 100;
+    public void formationCase( int nombreCases,int parametre) {
+        int largeurEcran = settings.getWidth();
+        int hauteurEcran = settings.getHeight();
+        float largeurCase = 20;
+        // Position de x et de y dynamique.
+        float yDebut = hauteurEcran * 0.75f ;//375
+        float yEcart = hauteurEcran * 0.35f;
+        float decalageDroite = largeurEcran * 0.1f;
+        float yinitial = yDebut - parametre* yEcart;
+        float largeurDispo = largeurEcran * 0.8f;
+        float largeurTotalCase = nombreCases * largeurCase;
+        float espace2case = (largeurEcran -largeurDispo) / 2;
+        float totalLigne = (nombreCases * largeurCase) + ((nombreCases - 1) * espace2case); 
+        float xinitial =  (largeurEcran - largeurDispo) /2 + decalageDroite;
         String[] quantifieurs = {"aucun", "peu", "moyen", "beaucoup", "max"};
         for (int i = 0; i < nombreCases; i++) {
-            Quad caseCoche = new Quad(20,20);
+            Quad caseCoche = new Quad(largeurCase,20);
             Geometry geometry = new Geometry("Case" + i, caseCoche);
             Material contour = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
             contour.setColor("Color", ColorRGBA.White);
@@ -277,8 +287,11 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
             BitmapText choix = new BitmapText(guiFont, false);
             choix.setSize(guiFont.getCharSet().getRenderedSize());
             choix.setText(quantifieurs[i]);
-            choix.setLocalTranslation(x, yinitial - 20, 0);
+            float texteX = x +(largeurCase/2f) - (choix.getLineWidth() / 2f);
+            float texteY = yinitial - 15;
+            choix.setLocalTranslation(texteX, texteY, 0);
             guiNode.attachChild(choix);
+
             textes[parametre][i] = choix;
             carres[parametre][i] = geometry;
             croix[parametre][i] = null;
@@ -441,7 +454,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
                     height("50%");
                     paddingTop("2%");
-                    formationCase(5,375,0);
+                    formationCase(5,0);
                     cliqueCase(0);
                     text(new TextBuilder() {{
 
@@ -462,7 +475,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
                         height("40%");
                     }});
 
-                    formationCase(5,250,1);
+                    formationCase(5,1);
                     cliqueCase(1);
                     text(new TextBuilder() {{
 
@@ -482,7 +495,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
                         height("40%");
                     }});
 
-                    formationCase(5,125,2);
+                    formationCase(5,2);
                     cliqueCase(2);
                     text(new TextBuilder() {{
 
