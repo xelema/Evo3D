@@ -12,6 +12,7 @@ import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
+import com.jme3.system.AppSettings;
 
 import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.builder.LayerBuilder;
@@ -33,9 +34,13 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     private Nifty nifty;
 
     public static void main(String[] args) {
-
-        new MenuPrincipalApp().start();
-
+        MenuPrincipalApp menu = new MenuPrincipalApp();
+        menu.start();
+        AppSettings reglages = new AppSettings(true);
+        reglages.setResolution(1280, 720);
+        reglages.setTitle("ProjetTOB");
+        reglages.setFullscreen(false);
+        menu.setSettings(reglages);
     }
 
 
