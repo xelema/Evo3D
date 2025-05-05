@@ -14,6 +14,7 @@ import com.jme3.texture.FrameBuffer;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
 import com.jme3.ui.Picture;
+import com.jme3.renderer.ViewPort;
 
 public class MiniMap extends SimpleApplication {
 
@@ -21,6 +22,18 @@ public class MiniMap extends SimpleApplication {
     private Camera miniMapCam;
     private Geometry playerGeom;
     private Node playerNode;
+    private boolean forward, backward, left, right;
+    private com.jme3.input.controls.ActionListener actionListener = new com.jme3.input.controls.ActionListener() {
+        @Override
+        public void onAction(String name, boolean isPressed, float tpf) {
+            switch (name) {
+                case "Forward": forward = isPressed; break;
+                case "Backward": backward = isPressed; break;
+                case "Left": left = isPressed; break;
+                case "Right": right = isPressed; break;
+            }
+        }
+    };
 
     public static void main(String[] args) {
         MiniMap app = new MiniMap();
@@ -64,25 +77,23 @@ public class MiniMap extends SimpleApplication {
 
         // -- Déplacement libre désactivé
         flyCam.setEnabled(false);
+
+        // -- Ajout des touches pour le mouvement en temps réel.
+        inputManager.addMapping("Forward", new com.jme3.input.controls.KeyTrigger(com.jme3.input.KeyInput.KEY_W));
+        inputManager.addMapping("Backward", new com.jme3.input.controls.KeyTrigger(com.jme3.input.KeyInput.KEY_S));
+        inputManager.addMapping("Left", new com.jme3.input.controls.KeyTrigger(com.jme3.input.KeyInput.KEY_A));
+        inputManager.addMapping("Right", new com.jme3.input.controls.KeyTrigger(com.jme3.input.KeyInput.KEY_D));
+        inputManager.addListener(actionListener, "Forward", "Backward", "Left", "Right");
     }
 
     @Override
     public void simpleUpdate(float tpf) {
         // -- Simulation : déplacer le joueur
-        float speed = 5f; // mètres/seconde
-        if (inputManager.isKeyPressed("W")) {
-            playerNode.move(0, 0, -speed * tpf);
-        }
-        if (inputManager.isKeyPressed("S")) {
-            playerNode.move(0, 0, speed * tpf);
-        }
-        if (inputManager.isKeyPressed("A")) {
-            playerNode.move(-speed * tpf, 0, 0);
-        }
-        if (inputManager.isKeyPressed("D")) {
-            playerNode.move(speed * tpf, 0, 0);
-        }
-
+        float speed = 5f;
+        if (forward) playerNode.move(0, 0, -speed * tpf);
+        if (backward) playerNode.move(0, 0, speed * tpf);
+        if (left) playerNode.move(-speed * tpf, 0, 0);
+        if (right) playerNode.move(speed * tpf, 0, 0);
         // -- Mettre à jour la position de la mini-cam pour suivre le joueur
         Vector3f playerPos = playerNode.getWorldTranslation();
         miniMapCam.setLocation(new Vector3f(playerPos.x, 40, playerPos.z));
