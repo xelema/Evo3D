@@ -1,5 +1,6 @@
 package voxel.model;
 
+import com.jme3.math.Vector3f;
 import voxel.model.entity.EntityManager;
 import voxel.model.structure.plant.BasicTree;
 
@@ -84,7 +85,7 @@ public class WorldModel {
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    chunks[cx][cy][cz] = new ChunkModel(true); // Créer des chunks vides
+                    chunks[cx][cy][cz] = new ChunkModel(true, cx, cy, cz); // Créer des chunks vides
                 }
             }
         }
@@ -112,20 +113,31 @@ public class WorldModel {
         createFloatingIsland();
     }
 
-    public void generateTree(int worldX, int worldY, int worldZ, int width, int height){
-        BasicTree tree = new BasicTree(width, height);
-        int[][][] treeBlocks = tree.getBlocks();
+    /**
+     * Récupère les coordonnées du chunk à partir des globales.
+     *
+     * @param worldX Coordonnée mondiale X
+     * @param worldY Coordonnée mondiale Y
+     * @param worldZ Coordonnée mondiale Z
+     * @return Les coordonnées du chunk sous forme de Vector3f
+     */
+    public Vector3f getChunkCoordAt(int worldX, int worldY, int worldZ) {
+        // Calcul des coordonnées du chunk sans décalage
+        int chunkX = Math.floorDiv(worldX, ChunkModel.SIZE);
+        int chunkY = Math.floorDiv(worldY, ChunkModel.SIZE);
+        int chunkZ = Math.floorDiv(worldZ, ChunkModel.SIZE);
 
-        for (int x = 0; x < tree.getWidth(); x++) {
-            for (int y = 0; y < tree.getHeight(); y++) {
-                for (int z = 0; z < tree.getWidth(); z++) {
-                    int blockType = treeBlocks[x][y][z];
-                    if (blockType != -1) {
-                        setBlockAt(worldX-(width/2) + x, worldY + y, worldZ-(width/2) + z, blockType);
-                    }
-                }
-            }
-        }
+        // Calcul des coordonnées locales à l'intérieur du chunk
+        int localX = worldX - chunkX * ChunkModel.SIZE;
+        int localY = worldY - chunkY * ChunkModel.SIZE;
+        int localZ = worldZ - chunkZ * ChunkModel.SIZE;
+
+        // Appliquer le décalage pour le stockage dans le tableau de chunks
+        int cx = chunkX + worldSizeX / 2;
+        int cy = chunkY;
+        int cz = chunkZ + worldSizeZ / 2;
+
+        return new Vector3f(cx, cy, cz);
     }
 
     private void generateTerrainFlat(int chunkX, int chunkZ){

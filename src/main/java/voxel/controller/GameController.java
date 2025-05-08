@@ -133,8 +133,7 @@ public class GameController {
 
         if (timeElapsed - lastTimeElapsed > 3) {
             if(state < treeSize.length) {
-                worldModel.generateTree(0, 17, 0, treeSize[state][0], treeSize[state][1]);
-                worldRenderer.setNeedsMeshUpdate();
+                worldController.generateTree(0, 17, 0, treeSize[state][0], treeSize[state][1]);
                 state++;
                 lastTimeElapsed = timeElapsed;
             }

@@ -12,20 +12,23 @@ public class ChunkModel {
     /** Tableau contenant les identifiants des blocs du chunk */
     private final int[] blocks;
 
-    /**
-     * Crée un nouveau chunk avec une génération de terrain par défaut.
-     */
-    public ChunkModel() {
-        this(false);
-    }
+    boolean needsUpdate = false;
+
+    /** Coordonnées du chunk dans le monde */
+    int cx;
+    int cy;
+    int cz;
 
     /**
      * Crée un nouveau chunk.
      *
      * @param empty Si true, le chunk sera rempli d'air. Sinon, il sera généré avec un terrain par défaut.
      */
-    public ChunkModel(boolean empty) {
+    public ChunkModel(boolean empty, int cx, int cy, int cz) {
         blocks = new int[SIZE * SIZE * SIZE];
+        this.cx = cx;
+        this.cy = cy;
+        this.cz = cz;
         if (empty) {
             fillWithAir();
         } else {
@@ -115,4 +118,20 @@ public class ChunkModel {
             blocks[getIndex(x, y, z)] = value;
         }
     }
-} 
+
+    public void setNeedsUpdate(){
+        needsUpdate = true;
+    }
+
+    public int getCx() {
+        return cx;
+    }
+
+    public int getCy() {
+        return cy;
+    }
+
+    public int getCz() {
+        return cz;
+    }
+}

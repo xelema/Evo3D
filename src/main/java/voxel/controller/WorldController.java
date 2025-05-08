@@ -1,9 +1,14 @@
 package voxel.controller;
 
+import com.jme3.math.Vector3f;
 import voxel.model.BlockType;
 import voxel.model.ChunkModel;
 import voxel.model.WorldModel;
+import voxel.model.structure.plant.BasicTree;
 import voxel.view.WorldRenderer;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Contrôleur qui gère les interactions entre le modèle de monde et sa vue.
@@ -52,6 +57,66 @@ public class WorldController {
      */
     public void toggleCoordinatesDisplay(boolean display) {
         worldRenderer.setDisplayCoordinates(display);
+    }
+
+
+    public void generateTree(int worldX, int worldY, int worldZ, int width, int height){
+        // Liste des chunks à recharger à la fin de l'appel de la fonction
+        // (Set pour é
+        Set<ChunkModel> chunksToUpdate = new HashSet<>();
+
+        BasicTree tree = new BasicTree(width, height);
+        int[][][] treeBlocks = tree.getBlocks();
+
+        for (int x = 0; x < tree.getWidth(); x++) {
+            for (int y = 0; y < tree.getHeight(); y++) {
+                for (int z = 0; z < tree.getWidth(); z++) {
+                    int blockType = treeBlocks[x][y][z];
+                    if (blockType != -1) {
+
+                        int blockX = worldX-(width/2) + x;
+                        int blockY = worldY + y;
+                        int blockZ = worldZ-(width/2) + z;
+
+                        // Pose le nouveau bloc pour construire l'arbre
+                        boolean modified = worldModel.setBlockAt(blockX, blockY, blockZ, blockType);
+
+                        if (modified){
+                            Vector3f chunkCoords = worldModel.getChunkCoordAt(blockX, blockY, blockZ);
+                            int cx = (int) chunkCoords.x;
+                            int cy = (int) chunkCoords.y;
+                            int cz = (int) chunkCoords.z;
+
+                            // Indique que le chunk doit être rechargé
+                            chunksToUpdate.add(worldModel.getChunk(cx, cy, cz));
+
+                            int localX = worldX - (cx - worldModel.getWorldSizeX() / 2) * ChunkModel.SIZE;
+                            int localY = worldY - cy * ChunkModel.SIZE;
+                            int localZ = worldZ - (cz - worldModel.getWorldSizeZ() / 2) * ChunkModel.SIZE;
+
+                            // Si on est en bordure d'un chunk, mettre à jour les chunks voisins
+                            if (localX == 0) chunksToUpdate.add(worldModel.getChunk(cx-1, cy, cz));
+                            if (localX == 15) chunksToUpdate.add(worldModel.getChunk(cx+1, cy, cz));
+                            if (localY == 0) chunksToUpdate.add(worldModel.getChunk(cx, cy-1, cz));
+                            if (localY == 15) chunksToUpdate.add(worldModel.getChunk(cx, cy+1, cz));
+                            if (localZ == 0) chunksToUpdate.add(worldModel.getChunk(cx, cy, cz-1));
+                            if (localZ == 15) chunksToUpdate.add(worldModel.getChunk(cx, cy, cz+1));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Recharge les chunks à recharger
+        chunksToUpdate.forEach(chunk -> {;
+            int cx = chunk.getCx();
+            int cy = chunk.getCy();
+            int cz = chunk.getCz();
+
+            worldRenderer.updateChunkMesh(cx, cy, cz);
+            System.out.println("Chunk modifié: " + cx + ", " + cy + ", " + cz);
+        });
+
     }
 
     /**
