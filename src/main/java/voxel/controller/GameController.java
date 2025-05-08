@@ -43,6 +43,25 @@ public class GameController {
 
     /** Compteur de temps */
     float timeElapsed = 0;
+    float lastTimeElapsed = 0;
+
+    int[][] treeSize = {
+            {3, 3},
+            {3, 4},
+            {5, 5},
+            {8, 6},
+            {11, 8},
+            {15, 9},
+            {18, 11},
+            {21, 14},
+            {26, 18},
+            {35, 21},
+            {45, 25},
+            {50, 30},
+    };
+
+    int state = 0;
+
     
     /** Indique si les entités ont été initialisées */
     private boolean entitiesInitialized = false;
@@ -74,13 +93,14 @@ public class GameController {
     public void initialize() {
 
         // Créer automatiquement un joueur à une position de spawn
-        Vector3f spawnPosition = new Vector3f(-8f, 155f, 20f);
+//        Vector3f spawnPosition = new Vector3f(-8f, 155f, 20f);
+        Vector3f spawnPosition = new Vector3f(0f, 18f, 0f);
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
 
         // Créer des vaches à des positions prédéfinies
-        for (int i = 0; i < 500; i++) {
-            entityController.createEntity(Cow.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
-        }
+//        for (int i = 0; i < 500; i++) {
+//            entityController.createEntity(Cow.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+//        }
 
         // Définir ce joueur comme le joueur actuel et activer le mode joueur
         playerController.setCurrentPlayer(player);
@@ -110,5 +130,15 @@ public class GameController {
 
         entityController.update(tpf);
         timeElapsed += tpf;
+
+        if (timeElapsed - lastTimeElapsed > 3) {
+            if(state < treeSize.length) {
+                worldModel.generateTree(0, 17, 0, treeSize[state][0], treeSize[state][1]);
+                worldRenderer.setNeedsMeshUpdate();
+                state++;
+                lastTimeElapsed = timeElapsed;
+            }
+
+        }
     }
 } 

@@ -3,7 +3,6 @@ package voxel.view;
 import com.jme3.scene.Node;
 import com.jme3.asset.AssetManager;
 import com.jme3.scene.Geometry;
-import com.jme3.ui.Picture;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.math.ColorRGBA;
@@ -12,6 +11,7 @@ import com.jme3.renderer.Camera;
 
 import voxel.model.WorldModel;
 import voxel.model.ChunkModel;
+import voxel.view.entity.EntityRendererManager;
 
 /**
  * Classe responsable du rendu du monde entier.

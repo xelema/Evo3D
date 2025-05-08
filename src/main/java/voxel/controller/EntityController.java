@@ -6,7 +6,7 @@ import com.jme3.renderer.Camera;
 import voxel.model.WorldModel;
 import voxel.model.entity.Entity;
 import voxel.model.entity.EntityManager;
-import voxel.view.EntityRendererManager;
+import voxel.view.entity.EntityRendererManager;
 import voxel.view.WorldRenderer;
 
 /**

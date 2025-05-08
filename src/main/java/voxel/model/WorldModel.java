@@ -1,6 +1,8 @@
 package voxel.model;
 
 import voxel.model.entity.EntityManager;
+import voxel.model.structure.plant.BasicTree;
+
 import java.util.Random;
 
 /**
@@ -9,7 +11,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 32;
+    public static final int WORLD_SIZE = 8;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -69,14 +71,15 @@ public class WorldModel {
         mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain);
         detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail);
 
-        generateWorld();
+        generateWorld(true);
         entityManager = new EntityManager(this);
     }
 
     /**
      * Génère le monde complet avec tous ses chunks.
      */
-    private void generateWorld() {
+    private void generateWorld(Boolean flat) {
+
         // Créer tous les chunks vides
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
@@ -89,11 +92,68 @@ public class WorldModel {
         // Génération du terrain uniquement sur le plan X-Z
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cz = 0; cz < worldSizeZ; cz++) {
-                generateTerrainPerlin(cx, cz);
+                if(flat){
+                    generateTerrainFlat(cx,cz);
+                } else {
+                    generateTerrainPerlin(cx, cz);
+                }
             }
         }
 
+//        for (int worldX = -(worldSizeX * ChunkModel.SIZE)/2; worldX < (worldSizeX * ChunkModel.SIZE)/2 ; worldX++) {
+//            for (int worldZ = -(worldSizeZ * ChunkModel.SIZE)/2; worldZ < (worldSizeZ * ChunkModel.SIZE)/2; worldZ++) {
+//                boolean isTreeSpawning = Math.random() <= 0.003;
+//                if (isTreeSpawning) {
+//                    generateTree(worldX, ChunkModel.SIZE/2, worldZ);
+//                }
+//            }
+//        }
+
         createFloatingIsland();
+    }
+
+    public void generateTree(int worldX, int worldY, int worldZ, int width, int height){
+        BasicTree tree = new BasicTree(width, height);
+        int[][][] treeBlocks = tree.getBlocks();
+
+        for (int x = 0; x < tree.getWidth(); x++) {
+            for (int y = 0; y < tree.getHeight(); y++) {
+                for (int z = 0; z < tree.getWidth(); z++) {
+                    int blockType = treeBlocks[x][y][z];
+                    if (blockType != -1) {
+                        setBlockAt(worldX-(width/2) + x, worldY + y, worldZ-(width/2) + z, blockType);
+                    }
+                }
+            }
+        }
+    }
+
+    private void generateTerrainFlat(int chunkX, int chunkZ){
+
+        // Coordonnées globales du chunk
+        float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX *
+                ChunkModel.SIZE) / 2;
+        float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ *
+                ChunkModel.SIZE) / 2;
+
+        for (int x = 0; x < ChunkModel.SIZE; x++) {
+            for (int y = 0; y < ChunkModel.SIZE; y++) {
+                for (int z = 0; z < ChunkModel.SIZE; z++) {
+
+                    float worldX = worldXStart + x;
+                    float worldZ = worldZStart + z;
+
+                    if (y <= ChunkModel.SIZE/2) {
+                        if (y == ChunkModel.SIZE/2){
+                            setBlockAt((int) worldX, y, (int) worldZ, BlockType.GRASS.getId());
+                        }
+                        else {
+                            setBlockAt((int) worldX, y, (int) worldZ, BlockType.STONE.getId());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -552,5 +612,6 @@ public class WorldModel {
         if (entityManager != null) {
             entityManager.updateAll(tpf);
         }
+
     }
 }

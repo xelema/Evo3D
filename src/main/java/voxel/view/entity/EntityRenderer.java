@@ -1,4 +1,4 @@
-package voxel.view;
+package voxel.view.entity;
 
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
