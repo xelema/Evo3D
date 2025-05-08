@@ -174,6 +174,7 @@ public class WorldController {
      */
     public void update(float tpf) {
         worldRenderer.update(tpf);
+        updateNeededChunks();
     }
 
     /**
