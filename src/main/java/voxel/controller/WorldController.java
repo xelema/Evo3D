@@ -1,6 +1,7 @@
 package voxel.controller;
 
 import voxel.model.BlockType;
+import voxel.model.ChunkModel;
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
 
@@ -64,21 +65,28 @@ public class WorldController {
      */
     public boolean modifyBlock(int x, int y, int z, BlockType blockType) {
         boolean modified = worldModel.setBlockAt(x, y, z, blockType.getId());
-        
+
         if (modified) {
-            // Calculer les coordonnées du chunk contenant ce bloc
-            int chunkX = Math.floorDiv(x, 16);
-            int chunkY = Math.floorDiv(y, 16);
-            int chunkZ = Math.floorDiv(z, 16);
-            
+            // Calcul des coordonnées du chunk sans décalage
+            int chunkX = Math.floorDiv(x, ChunkModel.SIZE);
+            int chunkY = Math.floorDiv(y, ChunkModel.SIZE);
+            int chunkZ = Math.floorDiv(z, ChunkModel.SIZE);
+
+            // Calcul des coordonnées locales à l'intérieur du chunk
+            int localX = x - chunkX * ChunkModel.SIZE;
+            int localY = y - chunkY * ChunkModel.SIZE;
+            int localZ = z - chunkZ * ChunkModel.SIZE;
+
+            // Appliquer le décalage pour le stockage dans le tableau de chunks
+            int cx = chunkX + worldModel.getWorldSizeX() / 2;
+            int cy = chunkY;
+            int cz = chunkZ + worldModel.getWorldSizeZ() / 2;
+
+            System.out.println("Chunk modifié: " + cx + ", " + cy + ", " + cz);
+
             // Mettre à jour le maillage du chunk
-            worldRenderer.updateChunkMesh(chunkX, chunkY, chunkZ);
-            
-            // Vérifier les chunks voisins qui pourraient être affectés
-            int localX = x - chunkX * 16;
-            int localY = y - chunkY * 16;
-            int localZ = z - chunkZ * 16;
-            
+            worldRenderer.updateChunkMesh(cx, cy, cz);
+
             // Si on est en bordure d'un chunk, mettre à jour les chunks voisins
             if (localX == 0) worldRenderer.updateChunkMesh(chunkX - 1, chunkY, chunkZ);
             if (localX == 15) worldRenderer.updateChunkMesh(chunkX + 1, chunkY, chunkZ);
@@ -87,7 +95,7 @@ public class WorldController {
             if (localZ == 0) worldRenderer.updateChunkMesh(chunkX, chunkY, chunkZ - 1);
             if (localZ == 15) worldRenderer.updateChunkMesh(chunkX, chunkY, chunkZ + 1);
         }
-        
+
         return modified;
     }
 
