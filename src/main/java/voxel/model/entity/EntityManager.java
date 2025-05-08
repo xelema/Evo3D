@@ -12,12 +12,10 @@ import voxel.model.physics.PhysicsManager;
 
 public class EntityManager {
     private List<Entity> entities = new ArrayList<>();
-    private WorldModel world;
     private CollisionManager collisionManager;
     private PhysicsManager physicsManager;
 
     public EntityManager(WorldModel world) {
-        this.world = world;
         this.collisionManager = new CollisionManager(world);
         this.physicsManager = new PhysicsManager(world, collisionManager);
     }

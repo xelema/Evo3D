@@ -76,9 +76,7 @@ public class GameController {
             {95, 75},
             {100, 80},
             {105, 85},
-            {110, 90},
-            {115, 95},
-            {120, 100}
+
     };
 
     int state = 0;
@@ -152,7 +150,7 @@ public class GameController {
         entityController.update(tpf);
         timeElapsed += tpf;
 
-        if (timeElapsed - lastTimeElapsed > 0.3) {
+        if (timeElapsed - lastTimeElapsed > 0.5) {
             if(state < treeSize.length) {
                 worldController.generateTree(0, 17, 50, treeSize[state][0], treeSize[state][1]);
                 worldController.generateTree(50, 17, -50, treeSize[state][0], treeSize[state][1]);
