@@ -103,7 +103,7 @@ public class BasicTree extends Structure {
      * Crée un grand arbre avec du détail
      */
     private void createLargeTree() {
-        // Calculate proportions based on height and width
+        // Calculer les proportions basées sur la hauteur et la largeur
         int trunkHeight = Math.max(2, (int)(height * 0.7));
         int trunkRadius = Math.max(1, width / 10);
         int canopyRadius = Math.max(2, width / 3);
@@ -111,15 +111,15 @@ public class BasicTree extends Structure {
         // S'assurer que le canopy n'est pas trop grand pour la structure
         canopyRadius = Math.min(canopyRadius, (width / 2) - 1);
         
-        // Create the trunk
+        // Créer le tronc
         createTrunk(trunkHeight, trunkRadius);
         
-        // Only create branches if the tree is big enough
+        // Créer des branches seulement si l'arbre est assez grand
         if (height > 7) {
             createBranches(trunkHeight, trunkRadius, canopyRadius);
         }
         
-        // Create foliage at the top
+        // Créer le feuillage au sommet
         createCanopy(trunkHeight, canopyRadius);
     }
     
@@ -127,16 +127,16 @@ public class BasicTree extends Structure {
         // Limite la taille du tronc pour éviter les out of bounds
         trunkRadius = Math.min(trunkRadius, (width / 2) - 1);
         
-        // Generate the trunk with variable thickness
+        // Générer le tronc avec une épaisseur variable
         for (int y = 0; y < trunkHeight; y++) {
-            // Thicker at the bottom, gradually thinner at the top
+            // Plus épais en bas, progressivement plus mince en haut
             int currentRadius = Math.max(1, (trunkRadius * (trunkHeight - y)) / Math.max(1, trunkHeight));
             
             for (int x = -currentRadius; x <= currentRadius; x++) {
                 for (int z = -currentRadius; z <= currentRadius; z++) {
-                    // Only place blocks in a rough circle
+                    // Placer uniquement les blocs dans un cercle approximatif
                     if (x*x + z*z <= currentRadius*currentRadius + 1) {
-                        // Make the inner part of the trunk
+                        // Faire la partie intérieure du tronc
                         if (y < trunkHeight - 1 || (x*x + z*z <= (currentRadius-1)*(currentRadius-1) + 1)) {
                             setBlockSafe(x, y, z, BlockType.LOG.getId());
                         }
@@ -147,36 +147,36 @@ public class BasicTree extends Structure {
     }
     
     private void createBranches(int trunkHeight, int trunkRadius, int canopyRadius) {
-        // Number of branches scales with tree height, minimum 1
+        // Le nombre de branches augmente avec la hauteur de l'arbre, minimum 1
         int numBranches = Math.max(1, height / 5);
         
-        // Start branches from about 40% up the trunk
+        // Commencer les branches à environ 40% de la hauteur du tronc
         int startHeight = Math.max(1, trunkHeight * 2 / 5);
         
         for (int i = 0; i < numBranches; i++) {
-            // Distribute branches along the trunk
+            // Distribuer les branches le long du tronc
             int branchY = startHeight + ((trunkHeight - startHeight) * i) / Math.max(1, numBranches);
             
-            // Random angle for the branch
+            // Angle aléatoire pour la branche
             double angle = random.nextDouble() * Math.PI * 2;
             
-            // Branch length is proportional to canopy radius, but limited to avoid out of bounds
-            int maxBranchLength = (width / 2) - 2; // leave space from the edge
+            // La longueur de la branche est proportionnelle au rayon de la canopée, mais limitée pour éviter les dépassements
+            int maxBranchLength = (width / 2) - 2; // laisser de l'espace depuis le bord
             int branchLength = Math.min(maxBranchLength, Math.max(1, canopyRadius - 1));
             
-            // Create the branch
+            // Créer la branche
             for (int j = 0; j < branchLength; j++) {
                 int x = (int)(Math.cos(angle) * j);
                 int z = (int)(Math.sin(angle) * j);
                 
-                // Branch slopes upward slightly
+                // La branche s'incline légèrement vers le haut
                 int y = branchY + j / 3;
                 
                 // Vérifier que y reste dans les limites
                 if (y < height) {
                     setBlockSafe(x, y, z, BlockType.LOG.getId());
                     
-                    // Add small leaf clusters along branches
+                    // Ajouter de petits groupes de feuilles le long des branches
                     if (j > branchLength / 2) {
                         addLeafCluster(x, y, z, 1);
                     }
@@ -189,12 +189,12 @@ public class BasicTree extends Structure {
         // Limiter le rayon du feuillage pour éviter out of bounds
         canopyRadius = Math.min(canopyRadius, (width / 2) - 1);
         
-        // Create a large foliage ball at the top of the trunk
-        int foliageStart = Math.max(1, (int)(trunkHeight * 0.6)); // Start foliage at 60% of trunk height
+        // Créer une grande boule de feuillage au sommet du tronc
+        int foliageStart = Math.max(1, (int)(trunkHeight * 0.6)); // Commencer le feuillage à 60% de la hauteur du tronc
         
         for (int y = foliageStart; y < height; y++) {
-            // Determine the radius of the foliage at this height
-            // Ellipsoid shape - wider in the middle, narrower at top and bottom
+            // Déterminer le rayon du feuillage à cette hauteur
+            // Forme d'ellipsoïde - plus large au milieu, plus étroite en haut et en bas
             double heightPercent = (double)(y - foliageStart) / Math.max(1, (height - foliageStart));
             double radiusFactor = 1.0 - Math.pow(2 * heightPercent - 1, 2);
             int currentRadius = Math.max(1, (int)(canopyRadius * radiusFactor));
@@ -206,11 +206,11 @@ public class BasicTree extends Structure {
                 for (int z = -currentRadius; z <= currentRadius; z++) {
                     double distance = Math.sqrt(x*x + z*z);
                     
-                    // Create a rough sphere of leaves
+                    // Créer une sphère approximative de feuilles
                     if (distance <= currentRadius) {
-                        // Add some randomness to the edges
+                        // Ajouter un peu d'aléatoire sur les bords
                         if (distance <= currentRadius - 1 || random.nextDouble() < 0.7) {
-                            // Don't overwrite the trunk
+                            // Ne pas écraser le tronc
                             if (!(Math.abs(x) <= 1 && Math.abs(z) <= 1 && y < trunkHeight)) {
                                 setBlockSafe(x, y, z, BlockType.LEAVES.getId());
                             }
@@ -231,14 +231,14 @@ public class BasicTree extends Structure {
                 for (int z = centerZ - radius; z <= centerZ + radius; z++) {
                     // Vérifier que y reste dans les limites
                     if (y >= 0 && y < height) {
-                        // Calculate distance from center
+                        // Calculer la distance depuis le centre
                         double distance = Math.sqrt(
                             Math.pow(x - centerX, 2) + 
                             Math.pow(y - centerY, 2) + 
                             Math.pow(z - centerZ, 2)
                         );
                         
-                        // Create a rough sphere of leaves
+                        // Créer une sphère approximative de feuilles
                         if (distance <= radius && random.nextDouble() < 0.8) {
                             setBlockSafe(x, y, z, BlockType.LEAVES.getId());
                         }

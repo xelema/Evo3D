@@ -119,8 +119,12 @@ public class ChunkModel {
         }
     }
 
-    public void setNeedsUpdate(){
-        needsUpdate = true;
+    public void setNeedsUpdate(boolean needsUpdate) {
+        this.needsUpdate = needsUpdate;
+    }
+
+    public boolean getNeedsUpdate() {
+        return needsUpdate;
     }
 
     public int getCx() {

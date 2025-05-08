@@ -61,10 +61,6 @@ public class WorldController {
 
 
     public void generateTree(int worldX, int worldY, int worldZ, int width, int height){
-        // Liste des chunks à recharger à la fin de l'appel de la fonction
-        // (Set pour é
-        Set<ChunkModel> chunksToUpdate = new HashSet<>();
-
         BasicTree tree = new BasicTree(width, height);
         int[][][] treeBlocks = tree.getBlocks();
 
@@ -88,35 +84,42 @@ public class WorldController {
                             int cz = (int) chunkCoords.z;
 
                             // Indique que le chunk doit être rechargé
-                            chunksToUpdate.add(worldModel.getChunk(cx, cy, cz));
+                            worldModel.getChunk(cx, cy, cz).setNeedsUpdate(true);
 
                             int localX = worldX - (cx - worldModel.getWorldSizeX() / 2) * ChunkModel.SIZE;
                             int localY = worldY - cy * ChunkModel.SIZE;
                             int localZ = worldZ - (cz - worldModel.getWorldSizeZ() / 2) * ChunkModel.SIZE;
 
                             // Si on est en bordure d'un chunk, mettre à jour les chunks voisins
-                            if (localX == 0) chunksToUpdate.add(worldModel.getChunk(cx-1, cy, cz));
-                            if (localX == 15) chunksToUpdate.add(worldModel.getChunk(cx+1, cy, cz));
-                            if (localY == 0) chunksToUpdate.add(worldModel.getChunk(cx, cy-1, cz));
-                            if (localY == 15) chunksToUpdate.add(worldModel.getChunk(cx, cy+1, cz));
-                            if (localZ == 0) chunksToUpdate.add(worldModel.getChunk(cx, cy, cz-1));
-                            if (localZ == 15) chunksToUpdate.add(worldModel.getChunk(cx, cy, cz+1));
+                            if (localX == 0) worldModel.getChunk(cx-1, cy, cz).setNeedsUpdate(true);
+                            if (localX == 15) worldModel.getChunk(cx+1, cy, cz).setNeedsUpdate(true);
+                            if (localY == 0) worldModel.getChunk(cx, cy-1, cz).setNeedsUpdate(true);
+                            if (localY == 15) worldModel.getChunk(cx, cy+1, cz).setNeedsUpdate(true);
+                            if (localZ == 0) worldModel.getChunk(cx, cy, cz-1).setNeedsUpdate(true);
+                            if (localZ == 15) worldModel.getChunk(cx, cy, cz+1).setNeedsUpdate(true);
                         }
                     }
                 }
             }
         }
 
-        // Recharge les chunks à recharger
-        chunksToUpdate.forEach(chunk -> {;
-            int cx = chunk.getCx();
-            int cy = chunk.getCy();
-            int cz = chunk.getCz();
+        // update les chunks qui ont besoin d'être mis à jour
+        updateNeededChunks();
 
-            worldRenderer.updateChunkMesh(cx, cy, cz);
-            System.out.println("Chunk modifié: " + cx + ", " + cy + ", " + cz);
-        });
+    }
 
+    public void updateNeededChunks() {
+        for (int cx = 0; cx < worldModel.getWorldSizeX(); cx++) {
+            for (int cy = 0; cy < worldModel.getWorldSizeY(); cy++) {
+                for (int cz = 0; cz < worldModel.getWorldSizeZ(); cz++) {
+                    ChunkModel chunk = worldModel.getChunk(cx, cy, cz);
+                    if (chunk.getNeedsUpdate()) {
+                        worldRenderer.updateChunkMesh(cx, cy, cz);
+                        chunk.setNeedsUpdate(false);
+                    }
+                }
+            }
+        }
     }
 
     /**
