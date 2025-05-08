@@ -31,16 +31,18 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     private Geometry[][] carres = new Geometry[NOMBREPARAMETRES][NOMBRECASESMAX];
     private boolean[][] coche = new boolean[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[][] textes = new BitmapText[NOMBREPARAMETRES][NOMBRECASESMAX];
+    private BitmapText[] titres = new BitmapText[NOMBREPARAMETRES];
     private Nifty nifty;
 
     public static void main(String[] args) {
         MenuPrincipalApp menu = new MenuPrincipalApp();
-        menu.start();
+        
         AppSettings reglages = new AppSettings(true);
         reglages.setResolution(1280, 720);
         reglages.setTitle("ProjetTOB");
         reglages.setFullscreen(false);
         menu.setSettings(reglages);
+        menu.start();
     }
 
 
@@ -260,20 +262,33 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
     }
     
-    public void formationCase( int nombreCases,int parametre) {
+    public void formationCase(String nomParametre ,int nombreCases,int parametre) {
         int largeurEcran = settings.getWidth();
         int hauteurEcran = settings.getHeight();
         float largeurCase = 20;
+        // Taille du texte
+        float tailleTexte = guiFont.getCharSet().getRenderedSize() * 0.8f;
+        float espaceParBloc = guiFont.getCharSet().getRenderedSize() + hauteurEcran * 0.3f + tailleTexte ;
         // Position de x et de y dynamique.
+        float ytitre = hauteurEcran - guiFont.getCharSet().getRenderedSize() - parametre* espaceParBloc;
+        BitmapText titre = new BitmapText(guiFont, false);
+        float policeTexte = Math.max(18, hauteurEcran * 0.025f);
+        titre.setSize(policeTexte);
+        titre.setText(nomParametre);
+        float ycases = ytitre - guiFont.getCharSet().getRenderedSize() - hauteurEcran* 0.15f;
+        float ytexte = ycases - hauteurEcran * 0.025f;
         float yDebut = hauteurEcran * 0.75f ;//375
         float yEcart = hauteurEcran * 0.35f;
         float decalageDroite = largeurEcran * 0.1f;
+        titres[parametre] = titre;
         float yinitial = yDebut - parametre* yEcart;
         float largeurDispo = largeurEcran * 0.8f;
         float largeurTotalCase = nombreCases * largeurCase;
         float espace2case = (largeurEcran -largeurDispo) / 2;
         float totalLigne = (nombreCases * largeurCase) + ((nombreCases - 1) * espace2case); 
         float xinitial =  (largeurEcran - largeurDispo) /2 + decalageDroite;
+        titre.setLocalTranslation(xinitial, ytitre, 0);
+        guiNode.attachChild(titre);
         String[] quantifieurs = {"aucun", "peu", "moyen", "beaucoup", "max"};
         for (int i = 0; i < nombreCases; i++) {
             Quad caseCoche = new Quad(largeurCase,20);
@@ -282,13 +297,13 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
             contour.setColor("Color", ColorRGBA.White);
             geometry.setMaterial(contour); 
             float x = xinitial + i* (20 + espace2case);
-            geometry.setLocalTranslation(x,yinitial,0);
+            geometry.setLocalTranslation(x,ycases,0);
             guiNode.attachChild(geometry);
             BitmapText choix = new BitmapText(guiFont, false);
-            choix.setSize(guiFont.getCharSet().getRenderedSize());
+            choix.setSize(policeTexte);
             choix.setText(quantifieurs[i]);
             float texteX = x +(largeurCase/2f) - (choix.getLineWidth() / 2f);
-            float texteY = yinitial - 15;
+            float texteY = ycases - 15;
             choix.setLocalTranslation(texteX, texteY, 0);
             guiNode.attachChild(choix);
 
@@ -322,6 +337,10 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
                     guiNode.detachChild(textes[j][i]);
     
                     textes[j][i] = null;
+                }
+                if (titres[j] != null) {
+                    guiNode.detachChild(titres[j]);
+                    titres[j] = null;
                 }
             }
     
@@ -454,11 +473,11 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
                     height("50%");
                     paddingTop("2%");
-                    formationCase(5,0);
+                    formationCase("Reglage de la température",5,0);
                     cliqueCase(0);
                     text(new TextBuilder() {{
 
-                        text("Reglage de la température.");
+                       // text("Reglage de la température.");
 
                         font("Interface/Fonts/Default.fnt");
 
@@ -475,11 +494,11 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
                         height("40%");
                     }});
 
-                    formationCase(5,1);
+                    formationCase("reglage de l'humidité",5,1);
                     cliqueCase(1);
                     text(new TextBuilder() {{
 
-                        text("Reglage de l'humidité.");
+                     //   text("Reglage de l'humidité.");
 
                         font("Interface/Fonts/Default.fnt");
 
@@ -495,11 +514,11 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
                         height("40%");
                     }});
 
-                    formationCase(5,2);
+                    formationCase("reglage des reliefs",5,2);
                     cliqueCase(2);
                     text(new TextBuilder() {{
 
-                        text("Reglage des reliefs");
+                       // text("Reglage des reliefs");
 
                         font("Interface/Fonts/Default.fnt");
 
