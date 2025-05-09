@@ -1,8 +1,10 @@
 package voxel.view;
 import com.jme3.app.SimpleApplication;
 import com.jme3.font.BitmapText;
+import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -33,6 +35,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     private BitmapText[][] textes = new BitmapText[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[] titres = new BitmapText[NOMBREPARAMETRES];
     private Nifty nifty;
+    
 
     public static void main(String[] args) {
         MenuPrincipalApp menu = new MenuPrincipalApp();
@@ -70,6 +73,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
         inputManager.setCursorVisible(true);
         flyCam.setEnabled(false);
 
+        inputManager.addMapping("open Menu", new KeyTrigger(KeyInput.KEY_G));
         // Attacher Nifty à la GUI de JME
 
         guiViewPort.addProcessor(niftyDisplay);

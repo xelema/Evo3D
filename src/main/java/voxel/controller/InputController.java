@@ -6,6 +6,7 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
+import com.jme3.system.AppSettings;
 
 import voxel.view.MenuPrincipalApp;
 
@@ -127,8 +128,13 @@ public class InputController implements ActionListener {
                 speedFly = isPressed;
                 break;
             case ACTION_OPEN_MENU:
-                if (isPressed) {
-                    menuPrincipal.getNifty().gotoScreen("menu") ;
+                if (isPressed) { 
+                        AppSettings reglages = new AppSettings(true);
+                        reglages.setResolution(1280, 720);
+                        reglages.setTitle("ProjetTOB");
+                        reglages.setFullscreen(false);
+                        menuPrincipal.setSettings(reglages);
+                        menuPrincipal.start();
                 }   
         }
     }
