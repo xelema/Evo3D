@@ -611,6 +611,9 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
         nifty.gotoScreen("faune");
     }
 
+    public Nifty getNifty() {
+        return this.nifty;
+    }
 
     // Méthodes du ScreenController
 

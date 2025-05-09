@@ -9,6 +9,7 @@ import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
 import voxel.model.WorldModel;
+import voxel.view.MenuPrincipalApp;
 import voxel.view.WorldRenderer;
 
 /**
@@ -86,13 +87,15 @@ public class Main extends SimpleApplication {
         // Modèle - Représente les données
         WorldModel worldModel = new WorldModel();
         
+        // Menu- Lance le jeu et gère les options
+        MenuPrincipalApp menu = new MenuPrincipalApp();
         // Vue - Gère l'affichage
         WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
         rootNode.attachChild(worldRenderer.getNode());
         
         // Contrôleurs - Gèrent les interactions et la logique
         WorldController worldController = new WorldController(worldModel, worldRenderer);
-        InputController inputController = new InputController(inputManager, worldController, cam);
+        InputController inputController = new InputController(inputManager, worldController, cam,menu);
         
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController, cam);

@@ -7,6 +7,8 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 
+import voxel.view.MenuPrincipalApp;
+
 /**
  * Gère les entrées utilisateur pour contrôler la caméra et interagir avec le monde.
  * Implémente ActionListener pour réagir aux événements clavier.
@@ -22,10 +24,12 @@ public class InputController implements ActionListener {
     private static final String ACTION_MOVE_UP = "MoveUp"; // Action pour déplacer la caméra vers le haut
     private static final String ACTION_MOVE_DOWN = "MoveDown"; // Action pour déplacer la caméra vers le bas
     private static final String ACTION_SPEED_FLY = "SpeedFly"; // Action pour activer le vol rapide
+    private static final String ACTION_OPEN_MENU = "OpenMenu";
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
     private final Camera camera; // Référence à la caméra de la scène
+    private final MenuPrincipalApp menuPrincipal;
 
     private boolean movingForward = false; // État du mouvement vers l'avant
     private boolean movingBackward = false; // État du mouvement vers l'arrière
@@ -42,10 +46,11 @@ public class InputController implements ActionListener {
      * @param worldController Référence au contrôleur de monde
      * @param camera Référence à la caméra
      */
-    public InputController(InputManager inputManager, WorldController worldController, Camera camera) {
+    public InputController(InputManager inputManager, WorldController worldController, Camera camera, MenuPrincipalApp menuPrincipal) {
         this.inputManager = inputManager;
         this.worldController = worldController;
         this.camera = camera;
+        this.menuPrincipal = menuPrincipal;
         setupInputs();
     }
 
@@ -63,6 +68,7 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_MOVE_UP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(ACTION_MOVE_DOWN, new KeyTrigger(KeyInput.KEY_LSHIFT));
         inputManager.addMapping(ACTION_SPEED_FLY, new KeyTrigger(KeyInput.KEY_LCONTROL));
+        inputManager.addMapping(ACTION_OPEN_MENU,new KeyTrigger(KeyInput.KEY_G));
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this, 
@@ -74,7 +80,8 @@ public class InputController implements ActionListener {
                 ACTION_MOVE_RIGHT,
                 ACTION_MOVE_UP, 
                 ACTION_MOVE_DOWN,
-                ACTION_SPEED_FLY
+                ACTION_SPEED_FLY,
+                ACTION_OPEN_MENU
         );
     }
 
@@ -119,6 +126,10 @@ public class InputController implements ActionListener {
             case ACTION_SPEED_FLY:
                 speedFly = isPressed;
                 break;
+            case ACTION_OPEN_MENU:
+                if (isPressed) {
+                    menuPrincipal.getNifty().gotoScreen("menu") ;
+                }   
         }
     }
 
