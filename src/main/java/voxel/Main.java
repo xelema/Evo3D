@@ -85,7 +85,7 @@ public class Main extends SimpleApplication {
         // Création des composants selon l'architecture MVC
         
         // Modèle - Représente les données
-        BiomeType selectedBiome = BiomeType.DESERT;
+        BiomeType selectedBiome = BiomeType.PLAINS;
         WorldModel worldModel = new WorldModel(selectedBiome);
         
         // Vue - Gère l'affichage

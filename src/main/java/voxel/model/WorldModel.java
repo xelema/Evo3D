@@ -90,7 +90,7 @@ public class WorldModel {
         }
 
         // Ajout des nuages aléatoires dans le ciel
-        //addClouds();
+        addClouds();
     }
     
     /**
@@ -257,19 +257,19 @@ public class WorldModel {
      * Ajoute des nuages aléatoires dans le ciel du monde.
      */
     private void addClouds() {
-        int cloudY = 150; // Altitude moyenne des nuages
-        int numClouds = 50; // Nombre total de nuages à générer
+        int cloudY = 100; // Altitude moyenne des nuages
+        int numClouds = 80; // Nombre total de nuages à générer
         java.util.Random random = new java.util.Random();
 
         for (int i = 0; i < numClouds; i++) {
             // Générer des positions aléatoires pour les nuages
-            int cloudX = random.nextInt(worldSizeX * ChunkModel.SIZE) - (worldSizeX * ChunkModel.SIZE) / 2;
-            int cloudZ = random.nextInt(worldSizeZ * ChunkModel.SIZE) - (worldSizeZ * ChunkModel.SIZE) / 2;
+            int cloudX = random.nextInt(worldSizeX * ChunkModel.SIZE);
+            int cloudZ = random.nextInt(worldSizeZ * ChunkModel.SIZE);
 
             // Générer une taille aléatoire pour le nuage
-            int cloudSizeX = 10 + random.nextInt(10); // Taille entre 10 et 20 blocs
-            int cloudSizeY = 2 + random.nextInt(3);   // Hauteur entre 2 et 4 blocs
-            int cloudSizeZ = 10 + random.nextInt(10); // Taille entre 10 et 20 blocs
+            int cloudSizeX = 50 + random.nextInt(80); // Taille entre 50 et 130 blocs
+            int cloudSizeY = 2;   // Hauteur de 2 blocs
+            int cloudSizeZ = 50 + random.nextInt(80); // Taille entre 50 et 130 blocs
 
             // Créer le nuage
             createCloud(cloudX, cloudY, cloudZ, cloudSizeX, cloudSizeY, cloudSizeZ);
@@ -279,35 +279,41 @@ public class WorldModel {
     /**
      * Crée un nuage à la position et aux dimensions spécifiées.
      */
-    private void createCloud(int x, int y, int z, int sizeX, int sizeY, int sizeZ) {
+    private void createCloud(int x, int y, int z, int size, int height, int depth) {
         java.util.Random random = new java.util.Random();
-        
-        // Créer le nuage avec une forme arrondie
-        for (int dx = 0; dx < sizeX; dx++) {
-            for (int dy = 0; dy < sizeY; dy++) {
-                for (int dz = 0; dz < sizeZ; dz++) {
-                    // Calculer la distance normalisée au centre (forme ellipsoïdale)
-                    double distanceSquared =
-                        Math.pow((dx - sizeX / 2.0) / (sizeX * 0.5), 2) +
-                        Math.pow((dy - sizeY / 2.0) / (sizeY * 0.7), 2) +
-                        Math.pow((dz - sizeZ / 2.0) / (sizeZ * 0.5), 2);
+        int numPlaques = 2 + random.nextInt(4); // Entre 2 et 5 plaques par nuage
+        java.util.List<int[]> bords = new java.util.ArrayList<>();
 
-                    double noise = random.nextDouble() * 0.3;
+        // Première plaque, placée aléatoirement
+        int plaqueSizeX = 4 + random.nextInt(size / 2);
+        int plaqueSizeZ = 4 + random.nextInt(depth / 2);
+        int plaqueY = y + random.nextInt(height);
+        int offsetX = x + random.nextInt(size - plaqueSizeX + 1);
+        int offsetZ = z + random.nextInt(depth - plaqueSizeZ + 1);
+        for (int dx = 0; dx < plaqueSizeX; dx++) {
+            for (int dz = 0; dz < plaqueSizeZ; dz++) {
+                setBlockAt(offsetX + dx, plaqueY, offsetZ + dz, BlockType.CLOUD.getId());
+                bords.add(new int[]{offsetX + dx, plaqueY, offsetZ + dz});
+            }
+        }
 
-                    // Si le point est dans l'ellipsoïde du nuage
-                    if (distanceSquared + noise <= 1.0) {
-                        if (distanceSquared > 0.7 && random.nextDouble() > 0.7) {
-                            continue;
-                        }
-
-                        // Convertir les coordonnées centrées en coordonnées de grille
-                        int gridX = x + dx;
-                        int gridY = y + dy;
-                        int gridZ = z + dz;
-
-                        // Placer le bloc de nuage
-                        setBlockAt(gridX, gridY, gridZ, BlockType.CLOUD.getId());
-                    }
+        // Plaques suivantes, toujours collées à une position déjà occupée
+        for (int i = 1; i < numPlaques; i++) {
+            // Choisir un point de départ parmi les bords existants
+            int[] base = bords.get(random.nextInt(bords.size()));
+            plaqueSizeX = 4 + random.nextInt(size / 2);
+            plaqueSizeZ = 4 + random.nextInt(depth / 2);
+            plaqueY = y + random.nextInt(height);
+            // Décalage aléatoire autour du point de base (pour coller la plaque)
+            int decalX = base[0] - random.nextInt(plaqueSizeX);
+            int decalZ = base[2] - random.nextInt(plaqueSizeZ);
+            for (int dx = 0; dx < plaqueSizeX; dx++) {
+                for (int dz = 0; dz < plaqueSizeZ; dz++) {
+                    int bx = decalX + dx;
+                    int by = plaqueY;
+                    int bz = decalZ + dz;
+                    setBlockAt(bx, by, bz, BlockType.CLOUD.getId());
+                    bords.add(new int[]{bx, by, bz});
                 }
             }
         }

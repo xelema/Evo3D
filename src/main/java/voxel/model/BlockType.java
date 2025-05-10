@@ -19,7 +19,7 @@ public enum BlockType {
     SAVANNA_GRASS(8, new ColorRGBA(0.741f, 0.717f, 0.333f, 1)), // Bloc d'herbe de savane
     JUNGLE_GRASS(9, new ColorRGBA(0.349f, 0.788f, 0.235f, 1)), // Bloc d'herbe de jungle
     SNOW(10, new ColorRGBA(1.0f, 1.0f, 1.0f, 1)), // Bloc de neige
-    CLOUD(11, new ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f)); // Bloc de nuage (semi-transparent)
+    CLOUD(11, new ColorRGBA(1.0f, 1.0f, 1.0f, 0.6f)); // Bloc de nuage (semi-transparent)
 
 
     /** Identifiant unique du type de bloc */
