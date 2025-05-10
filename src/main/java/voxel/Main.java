@@ -10,6 +10,7 @@ import voxel.controller.InputController;
 import voxel.controller.WorldController;
 import voxel.model.BiomeType;
 import voxel.model.WorldModel;
+import voxel.model.ChunkModel;
 import voxel.view.WorldRenderer;
 
 /**
@@ -58,15 +59,17 @@ public class Main extends SimpleApplication {
     @Override
     public void simpleUpdate(float tpf) {
         // Déléguer la mise à jour au contrôleur de jeu
-        gameController.update(tpf);
+        gameController.update(tpf, viewPort);
     }
 
     /**
      * Configure la caméra et les paramètres d'affichage.
      */
     private void setupCamera() {
-        // Positionnement initial de la caméra
-        cam.setLocation(new Vector3f(10f, 10f, 30f));
+        // Centre de la map
+        float centerX = (WorldModel.WORLD_SIZE * ChunkModel.SIZE) / 2f;
+        float centerZ = (WorldModel.WORLD_SIZE * ChunkModel.SIZE) / 2f;
+        cam.setLocation(new Vector3f(centerX, 40f, centerZ));
         
         // Fond noir
         viewPort.setBackgroundColor(new ColorRGBA(0.5f, 0.8f, 1.0f, 1.0f));
@@ -90,6 +93,7 @@ public class Main extends SimpleApplication {
         
         // Vue - Gère l'affichage
         WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
+        rootNode.attachChild(worldRenderer.getSkyNode());
         rootNode.attachChild(worldRenderer.getNode());
         
         // Contrôleurs - Gèrent les interactions et la logique
