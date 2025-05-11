@@ -87,15 +87,21 @@ public class Main extends SimpleApplication {
         // Modèle - Représente les données
         WorldModel worldModel = new WorldModel();
         
-        // Menu- Lance le jeu et gère les options
+        // Menu - Création sans démarrage automatique
         MenuPrincipalApp menu = new MenuPrincipalApp();
+        AppSettings menuSettings = new AppSettings(true);
+        menuSettings.setResolution(1280, 720);
+        menuSettings.setTitle("ProjetTOB");
+        menuSettings.setFullscreen(false);
+        menu.setSettings(menuSettings);
+        
         // Vue - Gère l'affichage
         WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
         rootNode.attachChild(worldRenderer.getNode());
         
         // Contrôleurs - Gèrent les interactions et la logique
         WorldController worldController = new WorldController(worldModel, worldRenderer);
-        InputController inputController = new InputController(inputManager, worldController, cam,menu);
+        InputController inputController = new InputController(inputManager, worldController, cam, menu);
         
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController, cam);

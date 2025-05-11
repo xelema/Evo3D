@@ -35,52 +35,46 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     private BitmapText[][] textes = new BitmapText[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[] titres = new BitmapText[NOMBREPARAMETRES];
     private Nifty nifty;
+    private boolean started = false;
     
 
     public static void main(String[] args) {
-        MenuPrincipalApp menu = new MenuPrincipalApp();
-        
-        AppSettings reglages = new AppSettings(true);
-        reglages.setResolution(1280, 720);
-        reglages.setTitle("ProjetTOB");
-        reglages.setFullscreen(false);
-        menu.setSettings(reglages);
-        menu.start();
+        // Ce main ne sera plus utilisé car le menu est géré par le jeu principal
+        throw new UnsupportedOperationException("Ce main n'est plus utilisé. Le menu est géré par le jeu principal.");
     }
 
 
     @Override
-
     public void simpleInitApp() {
+        try {
+            // Créer le système d'affichage Nifty lié à JME
+            NiftyJmeDisplay niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
+                    assetManager, inputManager, audioRenderer, guiViewPort);
 
-        // Créer le système d'affichage Nifty lié à JME
+            nifty = niftyDisplay.getNifty();
+            nifty.loadStyleFile("nifty-default-styles.xml");
+            nifty.loadControlFile("nifty-default-controls.xml");
+            
+            int tailleEcran = settings.getHeight();
+            createMenu(tailleEcran);
 
-        NiftyJmeDisplay niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
+            // Afficher le menu
+            nifty.gotoScreen("start");
+            inputManager.setCursorVisible(true);
+            flyCam.setEnabled(false);
 
-                assetManager, inputManager, audioRenderer, guiViewPort);
-
-        nifty = niftyDisplay.getNifty();
-
-        nifty.loadStyleFile("nifty-default-styles.xml");
-        nifty.loadControlFile("nifty-default-controls.xml");
-        int tailleEcran = settings.getHeight();
-        createMenu(tailleEcran);
-
-
-        // Afficher le menu
-
-        nifty.gotoScreen("start");
-        inputManager.setCursorVisible(true);
-        flyCam.setEnabled(false);
-
-        inputManager.addMapping("open Menu", new KeyTrigger(KeyInput.KEY_G));
-        // Attacher Nifty à la GUI de JME
-
-        guiViewPort.addProcessor(niftyDisplay);
-        inputManager.setCursorVisible(true);
-        nifty.getNiftyMouse().enableMouseCursor("curseur1");
-        setDisplayFps(false);
-        setDisplayStatView(false);
+            // Attacher Nifty à la GUI de JME
+            guiViewPort.addProcessor(niftyDisplay);
+            
+            // Configuration supplémentaire
+            setDisplayFps(false);
+            setDisplayStatView(false);
+            
+            System.out.println("Menu initialisé avec succès");
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'initialisation du menu : " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
 
@@ -628,5 +622,24 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
 
     public void onEndScreen() {}
+
+    @Override
+    public void start() {
+        super.start();
+        this.started = true;
+        System.out.println("Menu démarré");
+    }
+
+    public void start(boolean waitFor) {
+        if (!started) {
+            super.start(waitFor);
+            this.started = true;
+            System.out.println("Menu démarré (waitFor=" + waitFor + ")");
+        }
+    }
+
+    public boolean isStarted() {
+        return this.started;
+    }
 
 }
