@@ -1,6 +1,5 @@
 package voxel.model;
 
-
 /**
  * Représente le monde de voxels complet, composé de plusieurs chunks.
  * Cette classe gère uniquement les données du monde sans le rendu.
@@ -8,47 +7,49 @@ package voxel.model;
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
     public static final int WORLD_SIZE = 32;
-    
+
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
-    
+
     /** Taille du monde en nombre de chunks sur l'axe X */
     private final int worldSizeX = WORLD_SIZE;
-    
+
     /** Taille du monde en nombre de chunks sur l'axe Y */
     private final int worldSizeY = 4;
-    
+
     /** Taille du monde en nombre de chunks sur l'axe Z */
     private final int worldSizeZ = WORLD_SIZE;
-    
+
     /** Eclairage oui ou non */
     private boolean lightningMode = true;
-    
+
     /** Mode filaire activé ou non */
     private boolean wireframeMode = false;
 
-    /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
+    /**
+     * Valeurs pour definir l'echelle des montagne et des details dans le bruit de
+     * Perlin
+     */
     private final float min_mountain = 0.001f;
-    private final float max_mountain = 0.03f;  // Réduit pour des montagnes moins abruptes
+    private final float max_mountain = 0.03f; // Réduit pour des montagnes moins abruptes
     private final float min_detail = 0.02f;
-    private final float max_detail = 0.06f;    // Réduit pour des détails moins prononcés
-    
+    private final float max_detail = 0.06f; // Réduit pour des détails moins prononcés
+
     /** Bruit de Perlin pour le monde entier */
     private PerlinNoise worldPerlinNoise;
-    
+
     /** Échelles pour la génération du terrain */
     private float mountainScale;
     private float detailScale;
-    
+
     /** Hauteur maximale en pourcentage de la hauteur totale du monde */
     private final float maxHeightPercent = 0.75f;
-    
+
     /** Décalage vertical de base pour tout le terrain */
     private final int baseOffset = 10;
 
     /** Biome actif */
     private BiomeType activeBiome;
-
 
     /**
      * Crée un nouveau monde de voxels.
@@ -57,15 +58,15 @@ public class WorldModel {
         this.activeBiome = biome;
 
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
-        
+
         // Initialisation du bruit de Perlin pour tout le monde
         worldPerlinNoise = new PerlinNoise(42); // Seed fixe pour reproductibilité
-        
+
         // Initialisation des échelles (on pourrait les randomiser aussi)
         java.util.Random rand = new java.util.Random();
         mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain) * 0.5f;
         detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail) * 0.8f;
-        
+
         generateWorld();
     }
 
@@ -81,177 +82,225 @@ public class WorldModel {
                 }
             }
         }
-        
+
         // Génération du terrain uniquement sur le plan X-Z
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cz = 0; cz < worldSizeZ; cz++) {
-                generateTerrainPerlin(cx, cz);
+                generateTerrainPerlin(cx, cz, 0);
             }
         }
 
         // Ajout des nuages aléatoires dans le ciel
         addClouds();
     }
-    
+
     /**
      * Génère un terrain avec un bruit de Perlin pour une colonne de chunks
+     * 
      * @param chunkX coordonnée X du chunk
      * @param chunkZ coordonnée Z du chunk
      */
-    private void generateTerrainPerlin(int chunkX, int chunkZ) {
-        // Niveau de l'eau (abaissé par rapport à la version précédente)
+    private void generateTerrainPerlin(int chunkX, int chunkZ, int type) {
         int waterLevel = 40;
-        
-        // Coordonnées globales du chunk
+
+        // Calcul des coordonnées globales du chunk
         float worldXStart = chunkX * ChunkModel.SIZE;
         float worldZStart = chunkZ * ChunkModel.SIZE;
-        
-        // Hauteur totale disponible
-        int totalHeight = worldSizeY * ChunkModel.SIZE;
-        // Hauteur maximale pour le terrain (avec marge pour éviter les coupures)
-        int maxTerrainHeight = (int)(totalHeight * maxHeightPercent);
 
-        // Générer chaque colonne de blocs
+        // Hauteur totale et maximale du terrain
+        int totalHeight = worldSizeY * ChunkModel.SIZE;
+        int maxTerrainHeight = (int) (totalHeight * maxHeightPercent);
+
+        // Parcourir chaque colonne du chunk
         for (int x = 0; x < ChunkModel.SIZE; x++) {
             for (int z = 0; z < ChunkModel.SIZE; z++) {
-                // Coordonnées globales pour ce bloc spécifique
+                // Coordonnées globales du bloc
                 float worldX = worldXStart + x;
                 float worldZ = worldZStart + z;
 
-                // Appliquer un bruit Perlin 2D pour obtenir la hauteur globale des montagnes
-                float mountainNoise = worldPerlinNoise.Noise2D(worldX * mountainScale, worldZ * mountainScale);
-                
-                // Ajouter des détails avec un autre bruit Perlin
-                float detailNoise = worldPerlinNoise.Noise2D(worldX * detailScale, worldZ * detailScale);
-                
-                // Combiner les bruits pour avoir une hauteur réaliste
-                float heightFactor = mountainNoise * 0.7f + detailNoise * 0.3f;
-                
-                // Appliquer des règles spécifiques au biome
-                switch (this.activeBiome) {
-                    case MOUNTAINS:
-                        heightFactor *= 1.5f; // Terrain très accidenté
-                        waterLevel = 50;
-                        break;
-                    case PLAINS:
-                        heightFactor *= 0.4f; // Terrain plat
-                        waterLevel = 17; // Niveau d'eau plus bas
-                        break;
-                    case DESERT:
-                        heightFactor *= 0.4f; // Terrain plat
-                        waterLevel = 10; // Niveau d'eau très bas (presque pas d'eau)
-                        break;
-                    case JUNGLE:
-                        heightFactor *= 0.7f; // Terrain vallonné
-                        waterLevel = 20; // Niveau d'eau plus bas
-                        break;
-                    case SNOWY:
-                        heightFactor *= 1.0f; // Terrain normal
-                        waterLevel = 30; // Niveau d'eau plus bas
-                        break;
-                    case SAVANNA:
-                        heightFactor *= 0.5f; // Terrain légèrement vallonné
-                        waterLevel = 20; // Niveau d'eau plus bas
-                        break;
+                float heightFactor = 0.0f;
+
+                // Type 0 : méthode 1 (complexe à 3 niveaux de bruit)
+                if (type == 0) {
+                    float largeScale = 0.01f;
+                    float mediumScale = 0.05f;
+                    float smallScale = 0.1f;
+
+                    // Appliquer trois niveaux de bruit Perlin
+                    float largeNoise = worldPerlinNoise.Noise2D(worldX * largeScale, worldZ * largeScale);
+                    float mediumNoise = worldPerlinNoise.Noise2D(worldX * mediumScale, worldZ * mediumScale);
+                    float smallNoise = worldPerlinNoise.Noise2D(worldX * smallScale, worldZ * smallScale);
+
+                    // Combiner les différents bruits pour obtenir une hauteur réaliste
+                    heightFactor = largeNoise * 0.6f + mediumNoise * 0.3f + smallNoise * 0.1f;
+
+                    // Appliquer un facteur d'atténuation si le bruit large est faible
+                    if (largeNoise < 0.1f)
+                        heightFactor *= 0.3f;
+
+                    // Appliquer des réglages spécifiques selon le biome actif
+                    switch (this.activeBiome) {
+                        case MOUNTAINS:
+                            heightFactor = largeNoise * 3.8f + mediumNoise * 1.8f;
+                            waterLevel = 0;
+                            break;
+                        case PLAINS:
+                            heightFactor = largeNoise * 0.2f + mediumNoise * 0.4f;
+                            waterLevel = 25;
+                            break;
+                        case DESERT:
+                            heightFactor = largeNoise * 0.1f + mediumNoise * 0.3f;
+                            waterLevel = 0;
+                            break;
+                        case JUNGLE:
+                            heightFactor = largeNoise * 0.6f + mediumNoise * 0.9f;
+                            waterLevel = 14;
+                            break;
+                        case SNOWY:
+                            heightFactor = largeNoise * 1.2f + mediumNoise * 0.8f;
+                            waterLevel = 8;
+                            break;
+                        case SAVANNA:
+                            heightFactor = largeNoise * 0.5f + mediumNoise * 0.3f;
+                            waterLevel = 20;
+                            break;
+                    }
+
+                    // Type 1 : méthode 2 (plus simple à 2 niveaux de bruit)
+                } else if (type == 1) {
+                    // Appliquer deux niveaux de bruit Perlin
+                    float mountainNoise = worldPerlinNoise.Noise2D(worldX * mountainScale, worldZ * mountainScale);
+                    float detailNoise = worldPerlinNoise.Noise2D(worldX * detailScale, worldZ * detailScale);
+
+                    // Combiner les bruits pour une hauteur réaliste
+                    heightFactor = mountainNoise * 0.7f + detailNoise * 0.3f;
+
+                    // Appliquer des ajustements spécifiques pour chaque biome
+                    switch (this.activeBiome) {
+                        case MOUNTAINS:
+                            heightFactor *= 1.5f;
+                            waterLevel = 50;
+                            break;
+                        case PLAINS:
+                            heightFactor *= 0.4f;
+                            waterLevel = 17;
+                            break;
+                        case DESERT:
+                            heightFactor *= 0.4f;
+                            waterLevel = 10;
+                            break;
+                        case JUNGLE:
+                            heightFactor *= 0.7f;
+                            waterLevel = 20;
+                            break;
+                        case SNOWY:
+                            heightFactor *= 1.0f;
+                            waterLevel = 30;
+                            break;
+                        case SAVANNA:
+                            heightFactor *= 0.5f;
+                            waterLevel = 20;
+                            break;
+                    }
                 }
 
                 // Appliquer une courbe d'élévation pour accentuer les différences de hauteur
-                heightFactor = (float)Math.pow(heightFactor, 1.2);
+                heightFactor = (float) Math.pow(heightFactor, 1.2);
 
+                // Calculer la hauteur du terrain en fonction de la hauteur de base
+                int baseTerrainHeight = baseOffset + (int) (heightFactor * (maxTerrainHeight - baseOffset));
 
-                // Calculer la hauteur du terrain pour cette colonne
-                // Limiter à maxTerrainHeight pour éviter que le terrain touche le haut du monde
-                int baseTerrainHeight = baseOffset + (int)(heightFactor * (maxTerrainHeight - baseOffset));
-                
-                // Assurer une hauteur minimale
+                // Limiter la hauteur du terrain et l'aligner avec le niveau de l'eau
                 int terrainHeight = Math.max(waterLevel - 5, baseTerrainHeight);
-                
-                // Limiter la hauteur maximale
                 terrainHeight = Math.min(maxTerrainHeight, terrainHeight);
 
-                // Générer les blocs pour chaque coordonnée Y
+                // Générer les blocs pour chaque hauteur de terrain
                 for (int y = 0; y < totalHeight; y++) {
-                    // Déterminer le type de bloc en fonction de la hauteur
                     int blockType;
-                    
+
+                    // Si le bloc est sous le niveau de l'eau
                     if (y <= waterLevel) {
                         if (y < terrainHeight) {
-                            // Sous le terrain et sous l'eau
+                            // Appliquer le type de bloc en fonction du biome
                             switch (this.activeBiome) {
                                 case DESERT:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.SAND.getId();
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
+                                            : BlockType.SAND.getId();
                                     break;
                                 case SAVANNA:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1) blockType = BlockType.SAVANNA_GRASS.getId();
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
+                                            : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1)
+                                        blockType = BlockType.SAVANNA_GRASS.getId();
                                     break;
                                 case JUNGLE:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1) blockType = BlockType.JUNGLE_GRASS.getId();
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
+                                            : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1)
+                                        blockType = BlockType.JUNGLE_GRASS.getId();
                                     break;
                                 case SNOWY:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1) blockType = BlockType.SNOW.getId(); // Ajouter un type de bloc neige
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
+                                            : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1)
+                                        blockType = BlockType.SNOW.getId();
                                     break;
                                 default:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1) blockType = BlockType.GRASS.getId();
+                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
+                                            : BlockType.DIRT.getId();
+                                    if (y == terrainHeight - 1)
+                                        blockType = BlockType.GRASS.getId();
                                     break;
                             }
-                    
-                            // Si on est près de la surface du terrain et sous l'eau, mettre du sable
+
+                            // Sable près de la surface sous l'eau
                             if (y > terrainHeight - 4 && y == terrainHeight - 1) {
                                 blockType = BlockType.SAND.getId();
                             }
                         } else {
-                            // Au-dessus du terrain mais sous l'eau -> eau
+                            // Bloc d'eau
                             blockType = BlockType.WATER.getId();
-                    
-                            // Le fond de l'eau est du sable
-                            if (y == terrainHeight) {
-                                blockType = BlockType.SAND.getId();
-                            }
+                            if (y == terrainHeight)
+                                blockType = BlockType.SAND.getId(); // Sable au fond de l'eau
                         }
                     } else if (y < terrainHeight) {
-                        // Au-dessus du niveau d'eau, sous la surface du terrain
+                        // Si le bloc est au-dessus du niveau d'eau mais sous la surface
                         switch (this.activeBiome) {
                             case DESERT:
                                 blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.SAND.getId();
                                 break;
                             case SAVANNA:
                                 blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1) blockType = BlockType.SAVANNA_GRASS.getId();
+                                if (y == terrainHeight - 1)
+                                    blockType = BlockType.SAVANNA_GRASS.getId();
                                 break;
                             case JUNGLE:
                                 blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1) blockType = BlockType.JUNGLE_GRASS.getId();
+                                if (y == terrainHeight - 1)
+                                    blockType = BlockType.JUNGLE_GRASS.getId();
                                 break;
                             case SNOWY:
                                 blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1) blockType = BlockType.SNOW.getId(); // Ajouter un type de bloc neige
+                                if (y == terrainHeight - 1)
+                                    blockType = BlockType.SNOW.getId();
                                 break;
                             default:
                                 blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1) blockType = BlockType.GRASS.getId();
+                                if (y == terrainHeight - 1)
+                                    blockType = BlockType.GRASS.getId();
                                 break;
                         }
                     } else {
-                        // Au-dessus du terrain, air
+                        // Bloc d'air au-dessus du terrain
                         blockType = BlockType.AIR.getId();
                     }
-                    
-                    // Placer le bloc au bon endroit
-                    setBlockAt(
-                        chunkX * ChunkModel.SIZE + x,
-                        y,
-                        chunkZ * ChunkModel.SIZE + z,
-                        blockType
-                    );
+
+                    // Placer le bloc à la position correspondante
+                    setBlockAt(chunkX * ChunkModel.SIZE + x, y, chunkZ * ChunkModel.SIZE + z, blockType);
                 }
             }
         }
     }
-
 
     /**
      * Ajoute des nuages aléatoires dans le ciel du monde.
@@ -268,7 +317,7 @@ public class WorldModel {
 
             // Générer une taille aléatoire pour le nuage
             int cloudSizeX = 50 + random.nextInt(80); // Taille entre 50 et 130 blocs
-            int cloudSizeY = 2;   // Hauteur de 2 blocs
+            int cloudSizeY = 2; // Hauteur de 2 blocs
             int cloudSizeZ = 50 + random.nextInt(80); // Taille entre 50 et 130 blocs
 
             // Créer le nuage
@@ -293,7 +342,7 @@ public class WorldModel {
         for (int dx = 0; dx < plaqueSizeX; dx++) {
             for (int dz = 0; dz < plaqueSizeZ; dz++) {
                 setBlockAt(offsetX + dx, plaqueY, offsetZ + dz, BlockType.CLOUD.getId());
-                bords.add(new int[]{offsetX + dx, plaqueY, offsetZ + dz});
+                bords.add(new int[] { offsetX + dx, plaqueY, offsetZ + dz });
             }
         }
 
@@ -313,12 +362,11 @@ public class WorldModel {
                     int by = plaqueY;
                     int bz = decalZ + dz;
                     setBlockAt(bx, by, bz, BlockType.CLOUD.getId());
-                    bords.add(new int[]{bx, by, bz});
+                    bords.add(new int[] { bx, by, bz });
                 }
             }
         }
     }
-
 
     /**
      * Récupère le type de bloc à partir de coordonnées globales.
@@ -339,7 +387,7 @@ public class WorldModel {
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
             return BlockType.AIR.getId(); // AIR pour tout ce qui est en dehors du monde
         }
-        
+
         // Calcul des coordonnées locales à l'intérieur du chunk
         int localX = globalX - cx * ChunkModel.SIZE;
         int localY = globalY - cy * ChunkModel.SIZE;
@@ -348,13 +396,13 @@ public class WorldModel {
         // Récupération du type de bloc dans le chunk
         return chunks[cx][cy][cz].getBlock(localX, localY, localZ);
     }
-    
+
     /**
      * Modifie le type de bloc à partir de coordonnées globales.
      * 
-     * @param globalX Coordonnée globale X
-     * @param globalY Coordonnée globale Y
-     * @param globalZ Coordonnée globale Z
+     * @param globalX   Coordonnée globale X
+     * @param globalY   Coordonnée globale Y
+     * @param globalZ   Coordonnée globale Z
      * @param blockType Identifiant du type de bloc
      * @return true si le bloc a été modifié, false si hors des limites
      */
@@ -368,7 +416,7 @@ public class WorldModel {
         if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
             return false;
         }
-        
+
         // Calcul des coordonnées locales à l'intérieur du chunk
         int localX = globalX - cx * ChunkModel.SIZE;
         int localY = globalY - cy * ChunkModel.SIZE;
@@ -426,9 +474,9 @@ public class WorldModel {
      * @return Le chunk à cette position, ou null si hors limites
      */
     public ChunkModel getChunk(int chunkX, int chunkY, int chunkZ) {
-        if (chunkX >= 0 && chunkX < worldSizeX && 
-            chunkY >= 0 && chunkY < worldSizeY && 
-            chunkZ >= 0 && chunkZ < worldSizeZ) {
+        if (chunkX >= 0 && chunkX < worldSizeX &&
+                chunkY >= 0 && chunkY < worldSizeY &&
+                chunkZ >= 0 && chunkZ < worldSizeZ) {
             return chunks[chunkX][chunkY][chunkZ];
         }
         return null;
@@ -454,4 +502,4 @@ public class WorldModel {
     public int getWorldSizeZ() {
         return worldSizeZ;
     }
-} 
+}

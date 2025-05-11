@@ -12,18 +12,21 @@ public class PerlinNoise {
 
     // Tableau des gradients pour le bruit de Perlin 3D
     private double[][] grad3D = {
-        {1,1,0}, {-1,1,0}, {1,-1,0}, {-1,-1,0},
-        {1,0,1}, {-1,0,1}, {1,0,-1}, {-1,0,-1},
-        {0,1,1}, {0,-1,1}, {0,1,-1}, {0,-1,-1},
-        {1,1,1}, {-1,1,1}, {1,-1,1}, {-1,-1,-1}
+            { 1, 1, 0 }, { -1, 1, 0 }, { 1, -1, 0 }, { -1, -1, 0 },
+            { 1, 0, 1 }, { -1, 0, 1 }, { 1, 0, -1 }, { -1, 0, -1 },
+            { 0, 1, 1 }, { 0, -1, 1 }, { 0, 1, -1 }, { 0, -1, -1 },
+            { 1, 1, 1 }, { -1, 1, 1 }, { 1, -1, 1 }, { -1, -1, -1 }
     };
 
     /**
      * Constructeur pour la classe PerlinNoise.
-     * Initialise la permutation à l'aide d'une seed fournie pour obtenir des résultats reproductibles.
-     * @param seed La graine utilisée pour initialiser le générateur de nombres aléatoires pour la permutation.
+     * Initialise la permutation à l'aide d'une seed fournie pour obtenir des
+     * résultats reproductibles.
+     * 
+     * @param seed La graine utilisée pour initialiser le générateur de nombres
+     *             aléatoires pour la permutation.
      */
-    public PerlinNoise(int seed){
+    public PerlinNoise(int seed) {
         permutation = new int[512];
         Random rand = new Random(seed);
 
@@ -48,15 +51,17 @@ public class PerlinNoise {
 
     /**
      * Génère un bruit de Perlin en 2D pour des coordonnées données.
+     * 
      * @param x Coordonnée x dans l'espace 2D.
      * @param y Coordonnée y dans l'espace 2D.
-     * @return Un nombre flottant représentant le bruit de Perlin à la position (x, y).
+     * @return Un nombre flottant représentant le bruit de Perlin à la position (x,
+     *         y).
      */
-    public float Noise2D(float x, float y){
+    public float Noise2D(float x, float y) {
         // Partie entière des coordonnées
         int xi = (int) Math.floor(x) & 255;
         int yi = (int) Math.floor(y) & 255;
-        
+
         // Partie décimale des coordonnées
         float xf = x - (int) Math.floor(x);
         float yf = y - (int) Math.floor(y);
@@ -65,7 +70,7 @@ public class PerlinNoise {
         float u = fade(xf);
         float v = fade(yf);
 
-        // Indices pseudo-aléatoires pour chaque coin 
+        // Indices pseudo-aléatoires pour chaque coin
         int aa = permutation[permutation[xi] + yi];
         int ab = permutation[permutation[xi] + yi + 1];
         int ba = permutation[permutation[xi + 1] + yi];
@@ -74,7 +79,7 @@ public class PerlinNoise {
         // Interpolation linéaire des valeurs de gradient
         float x1 = lerp(grad2D(aa, xf, yf), grad2D(ba, xf - 1, yf), u);
         float x2 = lerp(grad2D(ab, xf, yf - 1), grad2D(bb, xf - 1, yf - 1), u);
-        
+
         // Interpolation finale dans la direction verticale
         float result = lerp(x1, x2, v);
 
@@ -84,6 +89,7 @@ public class PerlinNoise {
 
     /**
      * Fonction de lissage (fade) utilisée pour rendre le bruit de Perlin plus doux.
+     * 
      * @param t La valeur à lisser.
      * @return La valeur lissée.
      */
@@ -93,6 +99,7 @@ public class PerlinNoise {
 
     /**
      * Interpolation linéaire entre deux valeurs.
+     * 
      * @param a La première valeur.
      * @param b La deuxième valeur.
      * @param t Le facteur d'interpolation entre a et b.
@@ -104,14 +111,15 @@ public class PerlinNoise {
 
     /**
      * Calcule le gradient en 2D à partir de l'indice du tableau de permutation.
+     * 
      * @param hash L'indice pour obtenir le gradient.
-     * @param x La coordonnée x du point.
-     * @param y La coordonnée y du point.
+     * @param x    La coordonnée x du point.
+     * @param y    La coordonnée y du point.
      * @return La valeur du gradient calculée.
      */
     private float grad2D(int hash, float x, float y) {
         int h = hash & 15;
         double[] g = grad3D[h % grad3D.length];
-        return (float)(g[0] * x + g[1] * y);
+        return (float) (g[0] * x + g[1] * y);
     }
 }
