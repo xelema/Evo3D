@@ -38,7 +38,7 @@ public class Lizard extends Entity {
         System.out.println("Le lézard se déplace légèrement...");
     }
 
-    private void move(float tpf) {
+    public void move(float tpf) {
         float step = movementSpeed * tpf;
 
         if (targetDistance <= step) {

@@ -6,7 +6,7 @@ import com.jme3.renderer.ViewPort;
 
 import voxel.model.WorldModel;
 import voxel.model.entity.Player;
-import voxel.model.entity.animals.Cow;
+import voxel.model.entity.animals.*;
 import voxel.view.WorldRenderer;
 
 import java.util.concurrent.Executors;
@@ -118,9 +118,17 @@ public class GameController {
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
 
         // Créer des vaches à des positions prédéfinies
-//        for (int i = 0; i < 500; i++) {
-//            entityController.createEntity(Cow.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
-//        }
+        entityController.createEntity(Cow.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Dromedary.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Eagle.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Fox.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Lizard.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Owl.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Scorpion.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Sheep.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+        entityController.createEntity(Wolf.class, new Vector3f((float) (Math.random()*1000 - 500), 160f, (float) (Math.random()*1000 - 500)));
+
+
 
         // Définir ce joueur comme le joueur actuel et activer le mode joueur
         playerController.setCurrentPlayer(player);

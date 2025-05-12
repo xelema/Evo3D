@@ -38,7 +38,7 @@ public class WorldModel {
     private final Random random = new Random();
 
     /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
-    private final int worldSeed = 42;
+    private final int worldSeed = 0;
     private final int generation_height = 6; // Hauteur max de la génération avec Perlin
     private final float min_mountain = 0.001f;
     private final float max_mountain = 0.03f;
