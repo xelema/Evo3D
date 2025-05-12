@@ -9,7 +9,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 32;
+    public static final int WORLD_SIZE = 8;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -111,7 +111,7 @@ public class WorldModel {
      * @param chunkX coordonnée X du chunk
      * @param chunkZ coordonnée Z du chunk
      */
-    private void generateTerrainPerlin(int chunkX, int chunkZ) {
+    private void generateTerrainPerlin(int chunkX, int chunkZ, int type) {
         // Niveau de l'eau
         int waterLevel = 50;
 
@@ -468,14 +468,14 @@ public class WorldModel {
             int cloudSizeY = 2 + (cloudSize / 5);
             int cloudSizeZ = cloudSize + random.nextInt(3) - 1; // Légère variation
 
-            createCloud(cloudX, thisCloudY, cloudZ, cloudSizeX, cloudSizeY, cloudSizeZ);
+            createCloudIsland(cloudX, thisCloudY, cloudZ, cloudSizeX, cloudSizeY, cloudSizeZ);
         }
     }
 
     /**
      * Crée un nuage à la position et aux dimensions spécifiées.
      */
-    private void createCloud(int x, int y, int z, int sizeX, int sizeY, int sizeZ) {
+    private void createCloudIsland(int x, int y, int z, int sizeX, int sizeY, int sizeZ) {
 
         // Créer le nuage avec une forme arrondie
         for (int dx = 0; dx < sizeX; dx++) {

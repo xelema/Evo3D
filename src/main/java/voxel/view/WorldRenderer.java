@@ -335,6 +335,14 @@ public class WorldRenderer {
         if (needsMeshUpdate) {
             updateAllMeshes();
         }
+
+        // Met à jour le texte des coordonnées si nécessaire
+        if (displayCoordinates) {
+            updateCoordinatesText();
+        }
+
+        entityRendererManager.update();
+
         // Gestion du cycle jour/nuit
         long elapsed = (System.currentTimeMillis() - startTime) / 1000; // secondes écoulées
         int step = (int)((elapsed * 64 / 60) % 192); // 192 étapes sur le cycle
@@ -414,13 +422,6 @@ public class WorldRenderer {
 
     public Node getSkyNode() {
         return skyNode;
-
-        // Met à jour le texte des coordonnées si nécessaire
-        if (displayCoordinates) {
-            updateCoordinatesText();
-        }
-
-        entityRendererManager.update();
     }
 
     public EntityRendererManager getEntityRendererManager() {

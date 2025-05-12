@@ -75,10 +75,7 @@ public class Main extends SimpleApplication {
      * Configure la caméra et les paramètres d'affichage.
      */
     private void setupCamera() {
-        // Centre de la map
-        float centerX = (WorldModel.WORLD_SIZE * ChunkModel.SIZE) / 2f;
-        float centerZ = (WorldModel.WORLD_SIZE * ChunkModel.SIZE) / 2f;
-        cam.setLocation(new Vector3f(centerX, 40f, centerZ));
+        cam.setLocation(new Vector3f(0, 40f, 0));
 
         // Fond bleu ciel
         viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
