@@ -598,8 +598,8 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     public void quitGame() {
 
         System.out.println("Fermeture du jeu...");
-
-        stop(); // Ferme l'application JME
+        // Fermer proprement l'application principale
+        System.exit(0);
 
     }
 
