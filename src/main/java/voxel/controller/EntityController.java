@@ -6,7 +6,7 @@ import com.jme3.renderer.Camera;
 import voxel.model.WorldModel;
 import voxel.model.entity.Entity;
 import voxel.model.entity.EntityManager;
-import voxel.view.EntityRendererManager;
+import voxel.view.entity.EntityRendererManager;
 import voxel.view.WorldRenderer;
 
 /**
@@ -102,5 +102,13 @@ public class EntityController {
         
         // Nettoyer les renderers des entités supprimées
         // Cette opération est désormais gérée par EntityRendererManager.update()
+    }
+
+    public void printEntitiesList() {
+        System.out.println("Liste des entités:");
+        for (Entity entity : entityManager.getEntities()) {
+            System.out.print(entity);
+            System.out.println(" : position: " + entity.getX() + ", " + entity.getY() + ", " + entity.getZ());
+        }
     }
 }

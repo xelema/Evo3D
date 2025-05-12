@@ -1,6 +1,9 @@
 package voxel.model;
 
+import com.jme3.math.Vector3f;
 import voxel.model.entity.EntityManager;
+import voxel.model.structure.plant.BasicTree;
+
 import java.util.Random;
 
 /**
@@ -35,12 +38,8 @@ public class WorldModel {
     private final Random random = new Random();
 
     /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
+    private final int worldSeed = 42;
     private final int generation_height = 6; // Hauteur max de la génération avec Perlin
-
-    /**
-     * Valeurs pour definir l'echelle des montagne et des details dans le bruit de
-     * Perlin
-     */
     private final float min_mountain = 0.001f;
     private final float max_mountain = 0.03f;
     private final float min_detail = 0.02f;
@@ -48,14 +47,14 @@ public class WorldModel {
 
     /** Bruit de Perlin pour le monde entier */
     private PerlinNoise worldPerlinNoise;
-    
+
     /** Échelles pour la génération du terrain */
     private float mountainScale;
     private float detailScale;
-    
+
     /** Hauteur maximale en pourcentage de la hauteur totale du monde */
     private final float maxHeightPercent = 0.75f;
-    
+
     /** Décalage vertical de base pour tout le terrain */
     private final int baseOffset = 10;
 
@@ -71,41 +70,101 @@ public class WorldModel {
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
 
         // Initialisation du bruit de Perlin pour tout le monde
-        worldPerlinNoise = new PerlinNoise(42); // Seed fixe pour reproductibilité
+        worldPerlinNoise = new PerlinNoise(worldSeed); // Seed fixe pour reproductibilité
 
         // Initialisation des échelles (on pourrait les randomiser aussi)
-        java.util.Random rand = new java.util.Random();
+        java.util.Random rand = new java.util.Random(worldSeed);
         mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain) * 0.5f;
         detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail) * 0.8f;
 
-        generateWorld();
+        generateWorld(true);
         entityManager = new EntityManager(this);
     }
 
     /**
      * Génère le monde complet avec tous ses chunks.
      */
-    private void generateWorld() {
+    private void generateWorld(Boolean flat) {
+
         // Créer tous les chunks vides
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cy = 0; cy < worldSizeY; cy++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    chunks[cx][cy][cz] = new ChunkModel(true); // Créer des chunks vides
+                    chunks[cx][cy][cz] = new ChunkModel(true, cx, cy, cz); // Créer des chunks vides
                 }
             }
         }
-        
+
         // Génération du terrain uniquement sur le plan X-Z
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cz = 0; cz < worldSizeZ; cz++) {
-                generateTerrainPerlin(cx, cz, 0);
+                if(flat){
+                    generateTerrainFlat(cx,cz);
+                } else {
+                    generateTerrainPerlin(cx, cz, 0);
+                }
             }
         }
 
         // Ajout des nuages aléatoires dans le ciel
         addClouds();
     }
-    
+
+    /**
+     * Récupère les coordonnées du chunk à partir des globales.
+     *
+     * @param worldX Coordonnée mondiale X
+     * @param worldY Coordonnée mondiale Y
+     * @param worldZ Coordonnée mondiale Z
+     * @return Les coordonnées du chunk sous forme de Vector3f
+     */
+    public Vector3f getChunkCoordAt(int worldX, int worldY, int worldZ) {
+        // Calcul des coordonnées du chunk sans décalage
+        int chunkX = Math.floorDiv(worldX, ChunkModel.SIZE);
+        int chunkY = Math.floorDiv(worldY, ChunkModel.SIZE);
+        int chunkZ = Math.floorDiv(worldZ, ChunkModel.SIZE);
+
+        // Calcul des coordonnées locales à l'intérieur du chunk
+        int localX = worldX - chunkX * ChunkModel.SIZE;
+        int localY = worldY - chunkY * ChunkModel.SIZE;
+        int localZ = worldZ - chunkZ * ChunkModel.SIZE;
+
+        // Appliquer le décalage pour le stockage dans le tableau de chunks
+        int cx = chunkX + worldSizeX / 2;
+        int cy = chunkY;
+        int cz = chunkZ + worldSizeZ / 2;
+
+        return new Vector3f(cx, cy, cz);
+    }
+
+    private void generateTerrainFlat(int chunkX, int chunkZ){
+
+        // Coordonnées globales du chunk
+        float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX *
+                ChunkModel.SIZE) / 2;
+        float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ *
+                ChunkModel.SIZE) / 2;
+
+        for (int x = 0; x < ChunkModel.SIZE; x++) {
+            for (int y = 0; y < ChunkModel.SIZE; y++) {
+                for (int z = 0; z < ChunkModel.SIZE; z++) {
+
+                    float worldX = worldXStart + x;
+                    float worldZ = worldZStart + z;
+
+                    if (y <= ChunkModel.SIZE/2) {
+                        if (y == ChunkModel.SIZE/2){
+                            setBlockAt((int) worldX, y, (int) worldZ, BlockType.GRASS.getId());
+                        }
+                        else {
+                            setBlockAt((int) worldX, y, (int) worldZ, BlockType.STONE.getId());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Génère un terrain avec un bruit de Perlin pour une colonne de chunks
      * @param chunkX coordonnée X du chunk
@@ -727,6 +786,10 @@ public class WorldModel {
      */
     public int getWorldSizeZ() {
         return worldSizeZ;
+    }
+
+    public int getWorldSeed(){
+        return worldSeed;
     }
 
     public EntityManager getEntityManager() {

@@ -8,6 +8,7 @@ import com.jme3.math.ColorRGBA;
  */
 public enum BlockType {
 
+    VOID(-1, new ColorRGBA(0, 0, 0, 0)), // Bloc vide (invisible);
     AIR(0, new ColorRGBA(1, 1, 1, 1)), // Bloc d'air (transparent)
     GRASS(1, new ColorRGBA(0.15f, 0.8f, 0.15f, 1)), // Bloc d'herbe
     STONE(2, new ColorRGBA(0.5f, 0.5f, 0.5f, 1)), // Bloc de pierre

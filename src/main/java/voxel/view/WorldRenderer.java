@@ -3,7 +3,6 @@ package voxel.view;
 import com.jme3.scene.Node;
 import com.jme3.asset.AssetManager;
 import com.jme3.scene.Geometry;
-import com.jme3.ui.Picture;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.math.ColorRGBA;
@@ -19,6 +18,7 @@ import com.jme3.renderer.ViewPort;
 
 import voxel.model.WorldModel;
 import voxel.model.ChunkModel;
+import voxel.view.entity.EntityRendererManager;
 
 /**
  * Classe responsable du rendu du monde entier.
@@ -317,8 +317,8 @@ public class WorldRenderer {
 
             // Formater le texte avec les coordonnées du joueur et du chunk
             String text = String.format(
-                "Position: %.2f, %.2f, %.2f\nChunk: %d, %d, %d",
-                location.x, location.y, location.z,
+                "Seed : %d\nPosition: %.2f, %.2f, %.2f\nChunk: %d, %d, %d",
+                worldModel.getWorldSeed(), location.x, location.y, location.z,
                 cx, cy, cz
             );
 

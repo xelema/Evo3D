@@ -2,9 +2,15 @@ package voxel.controller;
 
 import com.jme3.renderer.ViewPort;
 
+import com.jme3.math.Vector3f;
 import voxel.model.BlockType;
+import voxel.model.ChunkModel;
 import voxel.model.WorldModel;
+import voxel.model.structure.plant.BasicTree;
 import voxel.view.WorldRenderer;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Contrôleur qui gère les interactions entre le modèle de monde et sa vue.
@@ -55,6 +61,73 @@ public class WorldController {
         worldRenderer.setDisplayCoordinates(display);
     }
 
+
+    public void generateTree(int worldX, int worldY, int worldZ, int width, int height){
+        BasicTree tree = new BasicTree(width, height);
+        int[][][] treeBlocks = tree.getBlocks();
+
+        for (int x = 0; x < tree.getWidth(); x++) {
+            for (int y = 0; y < tree.getHeight(); y++) {
+                for (int z = 0; z < tree.getWidth(); z++) {
+                    int blockType = treeBlocks[x][y][z];
+                    if (blockType != -1) {
+
+                        int blockX = worldX-(width/2) + x;
+                        int blockY = worldY + y;
+                        int blockZ = worldZ-(width/2) + z;
+
+                        // Pose le nouveau bloc pour construire l'arbre
+                        int blockBefore = worldModel.getBlockAt(blockX, blockY, blockZ);
+                        if (blockType != blockBefore) {
+                            boolean modified = worldModel.setBlockAt(blockX, blockY, blockZ, blockType);
+
+                            if (modified){
+                                Vector3f chunkCoords = worldModel.getChunkCoordAt(blockX, blockY, blockZ);
+                                int cx = (int) chunkCoords.x;
+                                int cy = (int) chunkCoords.y;
+                                int cz = (int) chunkCoords.z;
+
+                                // Indique que le chunk doit être rechargé
+                                worldModel.getChunk(cx, cy, cz).setNeedsUpdate(true);
+
+                                int localX = worldX - (cx - worldModel.getWorldSizeX() / 2) * ChunkModel.SIZE;
+                                int localY = worldY - cy * ChunkModel.SIZE;
+                                int localZ = worldZ - (cz - worldModel.getWorldSizeZ() / 2) * ChunkModel.SIZE;
+
+                                // Si on est en bordure d'un chunk, mettre à jour les chunks voisins
+                                if (localX == 0) worldModel.getChunk(cx-1, cy, cz).setNeedsUpdate(true);
+                                if (localX == 15) worldModel.getChunk(cx+1, cy, cz).setNeedsUpdate(true);
+                                if (localY == 0) worldModel.getChunk(cx, cy-1, cz).setNeedsUpdate(true);
+                                if (localY == 15) worldModel.getChunk(cx, cy+1, cz).setNeedsUpdate(true);
+                                if (localZ == 0) worldModel.getChunk(cx, cy, cz-1).setNeedsUpdate(true);
+                                if (localZ == 15) worldModel.getChunk(cx, cy, cz+1).setNeedsUpdate(true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void updateNeededChunks() {
+        int compteurChunkUpdated = 0;
+        for (int cx = 0; cx < worldModel.getWorldSizeX(); cx++) {
+            for (int cy = 0; cy < worldModel.getWorldSizeY(); cy++) {
+                for (int cz = 0; cz < worldModel.getWorldSizeZ(); cz++) {
+                    ChunkModel chunk = worldModel.getChunk(cx, cy, cz);
+                    if (chunk.getNeedsUpdate()) {
+                        worldRenderer.updateChunkMesh(cx, cy, cz);
+                        chunk.setNeedsUpdate(false);
+                        compteurChunkUpdated++;
+                    }
+                }
+            }
+        }
+        if (compteurChunkUpdated > 0) {
+            System.out.println("Nombre de chunks mis à jour: " + compteurChunkUpdated);
+        }
+    }
+
     /**
      * Modifie un bloc à une position donnée.
      * 
@@ -66,21 +139,28 @@ public class WorldController {
      */
     public boolean modifyBlock(int x, int y, int z, BlockType blockType) {
         boolean modified = worldModel.setBlockAt(x, y, z, blockType.getId());
-        
+
         if (modified) {
-            // Calculer les coordonnées du chunk contenant ce bloc
-            int chunkX = Math.floorDiv(x, 16);
-            int chunkY = Math.floorDiv(y, 16);
-            int chunkZ = Math.floorDiv(z, 16);
-            
+            // Calcul des coordonnées du chunk sans décalage
+            int chunkX = Math.floorDiv(x, ChunkModel.SIZE);
+            int chunkY = Math.floorDiv(y, ChunkModel.SIZE);
+            int chunkZ = Math.floorDiv(z, ChunkModel.SIZE);
+
+            // Calcul des coordonnées locales à l'intérieur du chunk
+            int localX = x - chunkX * ChunkModel.SIZE;
+            int localY = y - chunkY * ChunkModel.SIZE;
+            int localZ = z - chunkZ * ChunkModel.SIZE;
+
+            // Appliquer le décalage pour le stockage dans le tableau de chunks
+            int cx = chunkX + worldModel.getWorldSizeX() / 2;
+            int cy = chunkY;
+            int cz = chunkZ + worldModel.getWorldSizeZ() / 2;
+
+            System.out.println("Chunk modifié: " + cx + ", " + cy + ", " + cz);
+
             // Mettre à jour le maillage du chunk
-            worldRenderer.updateChunkMesh(chunkX, chunkY, chunkZ);
-            
-            // Vérifier les chunks voisins qui pourraient être affectés
-            int localX = x - chunkX * 16;
-            int localY = y - chunkY * 16;
-            int localZ = z - chunkZ * 16;
-            
+            worldRenderer.updateChunkMesh(cx, cy, cz);
+
             // Si on est en bordure d'un chunk, mettre à jour les chunks voisins
             if (localX == 0) worldRenderer.updateChunkMesh(chunkX - 1, chunkY, chunkZ);
             if (localX == 15) worldRenderer.updateChunkMesh(chunkX + 1, chunkY, chunkZ);
@@ -100,5 +180,13 @@ public class WorldController {
      */
     public void update(float tpf, ViewPort mainViewport) {
         worldRenderer.update(tpf, mainViewport);
+        updateNeededChunks();
+    }
+
+    /**
+     * Retourne le modèle du monde (WorldModel).
+     */
+    public WorldModel getWorldModel() {
+        return worldModel;
     }
 } 

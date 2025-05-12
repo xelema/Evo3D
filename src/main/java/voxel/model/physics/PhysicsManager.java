@@ -40,22 +40,20 @@ public class PhysicsManager {
 
             // Applique la friction
             applyFriction(entity, tpf);
-            
-            // Vérifie si l'entité est au sol (pour les joueurs)
-            if (entity instanceof Player) {
-                checkOnGround((Player) entity);
-            }
+
+            // Vérifie si les entités sont au sol
+            checkOnGround(entity);
         }
     }
     
     /**
      * Applique la gravité à une entité.
-     * 
+     *
      * @param entity L'entité à laquelle appliquer la gravité
      * @param tpf Temps écoulé depuis la dernière frame
      */
     private void applyGravity(Entity entity, float tpf) {
-        entity.addVelocity(0, GRAVITY * tpf, 0);
+        entity.addVelocity(0, 1.5*GRAVITY * tpf, 0);
     }
     
     /**
@@ -106,12 +104,12 @@ public class PhysicsManager {
     }
     
     /**
-     * Vérifie si un joueur est au sol et met à jour son état.
+     * Vérifie si une entité est au sol et met à jour son état.
      * 
-     * @param player Le joueur à vérifier
+     * @param entity L'entité à vérifier
      */
-    private void checkOnGround(Player player) {
-        boolean onGround = isEntityOnGround(player);
-        player.setOnGround(onGround);
+    private void checkOnGround(Entity entity) {
+        boolean onGround = isEntityOnGround(entity);
+        entity.setOnGround(onGround);
     }
 } 

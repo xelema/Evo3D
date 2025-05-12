@@ -1,4 +1,4 @@
-package voxel.view;
+package voxel.view.entity;
 
 import java.util.HashMap;
 import java.util.Map;

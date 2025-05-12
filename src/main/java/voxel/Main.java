@@ -79,7 +79,7 @@ public class Main extends SimpleApplication {
 
         // Fond bleu ciel
         viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
-
+        
         // Configuration de la caméra volante (de base avec JME3)
         flyCam.setEnabled(true);
         flyCam.setMoveSpeed(0);
@@ -104,7 +104,7 @@ public class Main extends SimpleApplication {
         
         // Initialisation de l'interface utilisateur
         worldRenderer.initializeUI(guiNode, cam);
-
+        
         // Contrôleurs - Gèrent les interactions et la logique
         WorldController worldController = new WorldController(worldModel, worldRenderer);
         EntityController entityController = new EntityController(worldModel, worldRenderer, cam);

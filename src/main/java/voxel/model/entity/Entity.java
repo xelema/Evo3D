@@ -6,7 +6,11 @@ public abstract class Entity {
 
     protected double x, y, z;
     protected double vx, vy, vz; // vitesse x, y, z
-    protected float size; // taille de l'entité
+    protected float height; // hauteur de l'entité
+    protected float width; // largeur de l'entité
+    protected float depth; // profondeur de l'entité
+    protected float rotation = 0.0f; // rotation horizontale de l'entité (en radians)
+    protected boolean onGround = false;
     protected BoundingBox boundingBox; // Boîte de collision
 
     public Entity(double x, double y, double z) {
@@ -16,8 +20,10 @@ public abstract class Entity {
         this.vx = 0;
         this.vy = 0;
         this.vz = 0;
-        this.size = 1.0f; // Taille par défaut
-        this.boundingBox = new BoundingBox(x, y, z, size, size, size);
+        this.height = 1.0f; // Taille par défaut
+        this.width = 1.0f;
+        this.depth = 1.0f;
+        this.boundingBox = new BoundingBox(x, y, z, width, height, depth);
     }
 
     public abstract void update(float tpf);
@@ -158,6 +164,22 @@ public abstract class Entity {
     public void setVz(double vz) {
         this.vz = vz;
     }
+    
+    /**
+     * Définit la rotation horizontale de l'entité.
+     * @param rotation Rotation en radians
+     */
+    public void setRotation(float rotation) {
+        this.rotation = rotation;
+    }
+    
+    /**
+     * Récupère la rotation horizontale de l'entité.
+     * @return Rotation en radians
+     */
+    public float getRotation() {
+        return rotation;
+    }
 
     /**
      * Détermine si l'entité doit être supprimée du monde.
@@ -165,15 +187,26 @@ public abstract class Entity {
      */
     public abstract boolean isMarkedForRemoval();
 
-    public float getSize() {
-        return size;
+    public float getWidth() {
+        return width;
     }
 
-    public void setSize(float size) {
-        this.size = size;
+    public float getHeight() {
+        return height;
+    }
+
+    public float getDepth() {
+        return depth;
+    }
+
+
+    public void setSize(float width, float height, float depth) {
+        this.width = width;
+        this.height = height;
+        this.depth = depth;
         if (boundingBox != null) {
             // Recréer la boîte de collision avec la nouvelle taille
-            boundingBox = new BoundingBox(x, y, z, size, size, size);
+            boundingBox = new BoundingBox(x, y, z, (width+depth)/2, height, (width+depth)/2);
         }
     }
     
@@ -183,5 +216,26 @@ public abstract class Entity {
      */
     public BoundingBox getBoundingBox() {
         return boundingBox;
+    }
+
+    /**
+     * Vérifie si le joueur est au sol.
+     * @return true si le joueur est au sol, false sinon
+     */
+    public boolean isOnGround() {
+        return onGround;
+    }
+
+    /**
+     * Définit si le joueur est au sol ou non.
+     * @param onGround true si le joueur est au sol, false sinon
+     */
+    public void setOnGround(boolean onGround) {
+        this.onGround = onGround;
+
+        // Réinitialise la vitesse verticale si le joueur touche le sol
+        if (onGround && this.getVy() < 0) {
+            setVerticalVelocity(0);
+        }
     }
 }
