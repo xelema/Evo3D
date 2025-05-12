@@ -10,7 +10,9 @@ import voxel.controller.EntityController;
 import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
+import voxel.model.BiomeType;
 import voxel.model.WorldModel;
+import voxel.model.ChunkModel;
 import voxel.view.WorldRenderer;
 
 /**
@@ -66,18 +68,21 @@ public class Main extends SimpleApplication {
     @Override
     public void simpleUpdate(float tpf) {
         // Déléguer la mise à jour au contrôleur de jeu
-        gameController.update(tpf);
+        gameController.update(tpf, viewPort);
     }
 
     /**
      * Configure la caméra et les paramètres d'affichage.
      */
     private void setupCamera() {
-        // Positionnement initial de la caméra au-dessus de l'île
-        cam.setLocation(new Vector3f(-4f, 153f, 7f));
+        // Centre de la map
+        float centerX = (WorldModel.WORLD_SIZE * ChunkModel.SIZE) / 2f;
+        float centerZ = (WorldModel.WORLD_SIZE * ChunkModel.SIZE) / 2f;
+        cam.setLocation(new Vector3f(centerX, 40f, centerZ));
+
         // Fond bleu ciel
         viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
-        
+
         // Configuration de la caméra volante (de base avec JME3)
         flyCam.setEnabled(true);
         flyCam.setMoveSpeed(0);
@@ -92,15 +97,17 @@ public class Main extends SimpleApplication {
         // Création des composants selon l'architecture MVC
         
         // Modèle - Représente les données
-        WorldModel worldModel = new WorldModel();
+        BiomeType selectedBiome = BiomeType.PLAINS;
+        WorldModel worldModel = new WorldModel(selectedBiome);
         
         // Vue - Gère l'affichage
         WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
+        rootNode.attachChild(worldRenderer.getSkyNode());
         rootNode.attachChild(worldRenderer.getNode());
         
         // Initialisation de l'interface utilisateur
         worldRenderer.initializeUI(guiNode, cam);
-        
+
         // Contrôleurs - Gèrent les interactions et la logique
         WorldController worldController = new WorldController(worldModel, worldRenderer);
         EntityController entityController = new EntityController(worldModel, worldRenderer, cam);

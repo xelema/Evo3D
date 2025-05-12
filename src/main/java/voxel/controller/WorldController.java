@@ -1,5 +1,7 @@
 package voxel.controller;
 
+import com.jme3.renderer.ViewPort;
+
 import voxel.model.BlockType;
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
@@ -96,7 +98,7 @@ public class WorldController {
      * 
      * @param tpf Temps écoulé depuis la dernière frame
      */
-    public void update(float tpf) {
-        worldRenderer.update(tpf);
+    public void update(float tpf, ViewPort mainViewport) {
+        worldRenderer.update(tpf, mainViewport);
     }
 } 

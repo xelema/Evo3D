@@ -1,6 +1,7 @@
 package voxel.controller;
 
 import com.jme3.renderer.Camera;
+import com.jme3.renderer.ViewPort;
 
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
@@ -23,7 +24,7 @@ public class GameController {
     private final WorldController worldController;
 
     private EntityController entityController;
-    
+
     /** Caméra pour la position du joueur */
     private final Camera camera;
 
@@ -60,12 +61,12 @@ public class GameController {
      * 
      * @param tpf Temps écoulé depuis la dernière frame
      */
-    public void update(float tpf) {
+    public void update(float tpf, ViewPort mainViewport) {
         // Mise à jour des mouvements de la caméra
         inputController.updateCameraMovement(tpf);
         
         // Mise à jour du monde voxel avec la position actuelle de la caméra
-        worldController.update(tpf);
+        worldController.update(tpf, mainViewport);
 
         entityController.update(tpf);
     }

@@ -9,6 +9,13 @@ import com.jme3.font.BitmapText;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
+import com.jme3.math.ColorRGBA;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Mesh;
+import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Sphere;
+import com.jme3.material.Material;
+import com.jme3.renderer.ViewPort;
 
 import voxel.model.WorldModel;
 import voxel.model.ChunkModel;
@@ -34,15 +41,20 @@ public class WorldRenderer {
 
     /** Caméra pour obtenir la position du joueur */
     private Camera camera;
-    
+
     /** Text pour afficher les coordonnées */
     private BitmapText coordinatesText;
-    
+
     /** Flag pour indiquer si les coordonnées doivent être affichées */
     private boolean displayCoordinates = false;
-    
+
     /** Indique si une mise à jour du maillage est nécessaire */
     private boolean needsMeshUpdate = false;
+
+    private ColorRGBA[] skyColors = new ColorRGBA[192];
+    private long startTime;
+    private Geometry sunGeometry;
+    private Node skyNode = new Node("sky");
 
     /**
      * Crée un nouveau renderer pour le monde entier.
@@ -54,22 +66,25 @@ public class WorldRenderer {
         this.worldModel = worldModel;
         this.assetManager = assetManager;
         this.worldNode = new Node("world");
-        
+        this.skyNode = new Node("sky");
         initializeChunkRenderers();
+        initSkyColors();
+        initSun(assetManager);
+        this.startTime = System.currentTimeMillis() - 30_000; // Décale de 30 secondes en arrière
 
         this.entityRendererManager = new EntityRendererManager(this.worldModel.getEntityManager(), assetManager);
         worldNode.attachChild(entityRendererManager.getNode());
     }
-    
+
     /**
      * Initialise les éléments d'interface utilisateur.
-     * 
+     *
      * @param guiNode Nœud GUI auquel attacher les éléments
      * @param camera Caméra du joueur
      */
     public void initializeUI(Node guiNode, Camera camera) {
         this.camera = camera;
-        
+
         // Crée le texte pour afficher les coordonnées
         BitmapFont font = assetManager.loadFont("Interface/Fonts/Console.fnt");
         coordinatesText = new BitmapText(font);
@@ -77,7 +92,7 @@ public class WorldRenderer {
         coordinatesText.setColor(ColorRGBA.White);
         coordinatesText.setText("");
         coordinatesText.setLocalTranslation(10, camera.getHeight() - 10, 0);
-        
+
         // Ajoute le texte au nœud GUI
         guiNode.attachChild(coordinatesText);
     }
@@ -156,16 +171,16 @@ public class WorldRenderer {
                 for (int cz = 0; cz < sizeZ; cz++) {
                     if (chunkRenderers[cx][cy][cz] != null) {
                         ChunkRenderer renderer = chunkRenderers[cx][cy][cz];
-                        
+
                         // Conserver la référence à l'ancienne géométrie transparente
                         Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
-                        
+
                         // Mettre à jour le mesh
                         renderer.updateMesh();
-                        
+
                         // Gérer la nouvelle géométrie transparente
                         Geometry newTransparentGeometry = renderer.getTransparentGeometry();
-                        
+
                         // Si une nouvelle géométrie transparente a été créée
                         if (oldTransparentGeometry == null && newTransparentGeometry != null) {
                             worldNode.attachChild(newTransparentGeometry);
@@ -198,7 +213,7 @@ public class WorldRenderer {
                                     .getAdditionalRenderState()
                                     .setWireframe(wireframeEnabled);
                         }
-                        
+
                         // Appliquer le mode filaire au maillage transparent s'il existe
                         Geometry transparentGeometry = chunkRenderers[cx][cy][cz].getTransparentGeometry();
                         if (transparentGeometry != null && transparentGeometry.getMaterial() != null) {
@@ -227,16 +242,16 @@ public class WorldRenderer {
             chunkRenderers[chunkX][chunkY][chunkZ] != null) {
             
             ChunkRenderer renderer = chunkRenderers[chunkX][chunkY][chunkZ];
-            
+
             // Conserver la référence à l'ancienne géométrie transparente
             Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
-            
+
             // Mettre à jour le mesh
             renderer.updateMesh();
-            
+
             // Gérer la nouvelle géométrie transparente
             Geometry newTransparentGeometry = renderer.getTransparentGeometry();
-            
+
             // Si une nouvelle géométrie transparente a été créée
             if (oldTransparentGeometry == null && newTransparentGeometry != null) {
                 worldNode.attachChild(newTransparentGeometry);
@@ -266,30 +281,30 @@ public class WorldRenderer {
     
     /**
      * Active ou désactive l'affichage des coordonnées.
-     * 
+     *
      * @param display true pour afficher, false pour masquer
      */
     public void setDisplayCoordinates(boolean display) {
         this.displayCoordinates = display;
-        
+
         // Efface le texte si on désactive l'affichage
         if (!display && coordinatesText != null) {
             coordinatesText.setText("");
         }
     }
-    
+
     /**
      * Met à jour le texte des coordonnées.
      */
     private void updateCoordinatesText() {
         if (displayCoordinates && coordinatesText != null && camera != null) {
             Vector3f location = camera.getLocation();
-            
+
             // Calcul des coordonnées du chunk comme dans WorldModel
             // On ajoute le décalage pour convertir les coordonnées centrées en coordonnées d'index
             int offsetX = worldModel.getWorldSizeX() * ChunkModel.SIZE / 2;
             int offsetZ = worldModel.getWorldSizeZ() * ChunkModel.SIZE / 2;
-            
+
             // Conversion des coordonnées de la caméra en coordonnées globales des index
             int globalX = (int)location.x + offsetX;
             int globalY = (int)location.y;
@@ -316,20 +331,99 @@ public class WorldRenderer {
      * 
      * @param tpf Temps écoulé depuis la dernière frame
      */
-    public void update(float tpf) {
+    public void update(float tpf, ViewPort mainViewport) {
         if (needsMeshUpdate) {
             updateAllMeshes();
         }
-        
+        // Gestion du cycle jour/nuit
+        long elapsed = (System.currentTimeMillis() - startTime) / 1000; // secondes écoulées
+        int step = (int)((elapsed * 64 / 60) % 192); // 192 étapes sur le cycle
+        ColorRGBA skyColor = skyColors[step];
+        mainViewport.setBackgroundColor(skyColor);
+
+        // Calcule le centre de la map
+        float mapCenterX = (worldModel.getWorldSizeX() * ChunkModel.SIZE) / 2f;
+        float mapCenterZ = (worldModel.getWorldSizeZ() * ChunkModel.SIZE) / 2f;
+
+        // Décalage d'angle pour choisir la direction du lever
+        float angleOffset = (float)(-Math.PI / 2); // Ajuste pour le lever
+        float angle = (float)(2 * Math.PI * (step / 192.0)) + angleOffset;
+        float radius = 600;
+        float inclination = (float)(Math.PI / 4);
+
+        // Centre du cercle = centre de la map
+        float centerX = mapCenterX;
+        float centerZ = mapCenterZ;
+
+        float sunX = (float)(Math.cos(angle) * radius) + centerX;
+        float sunY = (float)(Math.sin(angle) * Math.cos(inclination) * 400);
+        float sunZ = (float)(Math.sin(angle) * Math.sin(inclination) * radius) + centerZ;
+
+        sunGeometry.setLocalTranslation(sunX, sunY, sunZ);
+    }
+
+    private void initSkyColors() {
+        // Bleu ciel (jour)
+        float rDay = 0.5f, gDay = 0.8f, bDay = 1.0f;
+        // Bleu marine très foncé (nuit)
+        float rNight = 0.01f, gNight = 0.03f, bNight = 0.08f;
+
+        float amplitude = 400f; // Doit être identique à l'amplitude utilisée pour sunY dans update()
+
+        for (int i = 0; i < 192; i++) {
+            float t = i / 192.0f;
+            // Angle du soleil sur le cercle
+            float angle = (float)(2 * Math.PI * t - Math.PI / 2);
+            float sunY = (float)(Math.sin(angle) * Math.cos(Math.PI / 4) * amplitude);
+
+            // Seuils pour le dégradé autour de l'horizon (augmenté pour un dégradé plus long)
+            float seuil = 0.40f * amplitude; // 40% de l'amplitude autour de l'horizon
+
+            float r, g, b;
+            if (sunY >= seuil) {
+                // Plein jour
+                r = rDay; g = gDay; b = bDay;
+            } else if (sunY <= -seuil) {
+                // Pleine nuit
+                r = rNight; g = gNight; b = bNight;
+            } else {
+                // Dégradé autour de l'horizon
+                float alpha = (sunY + seuil) / (2 * seuil); // alpha varie de 0 (nuit) à 1 (jour)
+                r = rNight * (1 - alpha) + rDay * alpha;
+                g = gNight * (1 - alpha) + gDay * alpha;
+                b = bNight * (1 - alpha) + bDay * alpha;
+            }
+            skyColors[i] = new ColorRGBA(r, g, b, 1.0f);
+        }
+    }
+
+    private void initSun(AssetManager assetManager) {
+        // Crée une sphère pour le soleil, segments élevés pour un rendu lisse
+        int zSamples = 32; // plus de segments = plus rond
+        int radialSamples = 32;
+        float radius = 14f; // plus grand rayon = soleil plus gros
+
+        Sphere sunSphere = new Sphere(zSamples, radialSamples, radius);
+        sunGeometry = new Geometry("Sun", sunSphere);
+        Material sunMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        sunMat.setColor("Color", ColorRGBA.Yellow);
+        sunMat.setColor("GlowColor", ColorRGBA.White); // Pour qu'il brille
+        sunGeometry.setMaterial(sunMat);
+        skyNode.attachChild(sunGeometry);
+    }
+
+    public Node getSkyNode() {
+        return skyNode;
+
         // Met à jour le texte des coordonnées si nécessaire
         if (displayCoordinates) {
             updateCoordinatesText();
         }
-        
+
         entityRendererManager.update();
     }
 
     public EntityRendererManager getEntityRendererManager() {
         return entityRendererManager;
     }
-}
+} 
