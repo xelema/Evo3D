@@ -45,7 +45,7 @@ public class MiniMap extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        // -- Monde : un sol simple
+        // Monde : un sol simple
         Box ground = new Box(20, 0.1f, 20);
         Geometry groundGeom = new Geometry("Ground", ground);
         Material groundMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -53,7 +53,7 @@ public class MiniMap extends SimpleApplication {
         groundGeom.setMaterial(groundMat);
         rootNode.attachChild(groundGeom);
 
-        // -- Créer le "joueur" : une petite sphère
+        // Créer le "joueur" : une petite sphère
         playerNode = new Node("PlayerNode");
         Sphere playerSphere = new Sphere(16, 16, 0.5f);
         playerGeom = new Geometry("Player", playerSphere);
@@ -65,7 +65,7 @@ public class MiniMap extends SimpleApplication {
         playerNode.setLocalTranslation(0, 1, 0); // Position initiale
         rootNode.attachChild(playerNode);
 
-        // -- Créer la mini-caméra (vue du dessus)
+        // Créer la mini-caméra (vue du dessus)
         miniMapCam = cam.clone();
         miniMapCam.setViewPort(0.75f, 1f, 0f, 0.25f); // en haut à droite
         miniMapCam.setLocation(new Vector3f(0, 40, 0)); // en hauteur
@@ -75,10 +75,10 @@ public class MiniMap extends SimpleApplication {
         miniMapView.setClearFlags(true, true, true);
         miniMapView.attachScene(rootNode);
 
-        // -- Déplacement libre désactivé
+        // Déplacement libre désactivé
         flyCam.setEnabled(false);
 
-        // -- Ajout des touches pour le mouvement en temps réel.
+        // Ajout des touches pour le mouvement en temps réel.
         inputManager.addMapping("Forward", new com.jme3.input.controls.KeyTrigger(com.jme3.input.KeyInput.KEY_W));
         inputManager.addMapping("Backward", new com.jme3.input.controls.KeyTrigger(com.jme3.input.KeyInput.KEY_S));
         inputManager.addMapping("Left", new com.jme3.input.controls.KeyTrigger(com.jme3.input.KeyInput.KEY_A));
@@ -88,13 +88,13 @@ public class MiniMap extends SimpleApplication {
 
     @Override
     public void simpleUpdate(float tpf) {
-        // -- Simulation : déplacer le joueur
+        // Simulation : déplacer le joueur
         float speed = 5f;
         if (forward) playerNode.move(0, 0, -speed * tpf);
         if (backward) playerNode.move(0, 0, speed * tpf);
         if (left) playerNode.move(-speed * tpf, 0, 0);
         if (right) playerNode.move(speed * tpf, 0, 0);
-        // -- Mettre à jour la position de la mini-cam pour suivre le joueur
+        // Mettre à jour la position de la mini-cam pour suivre le joueur
         Vector3f playerPos = playerNode.getWorldTranslation();
         miniMapCam.setLocation(new Vector3f(playerPos.x, 40, playerPos.z));
         miniMapCam.lookAt(new Vector3f(playerPos.x, 0, playerPos.z), Vector3f.UNIT_Y);

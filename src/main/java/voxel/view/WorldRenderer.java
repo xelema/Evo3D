@@ -179,4 +179,9 @@ public class WorldRenderer {
             updateAllMeshes();
         }
     }
+
+    //test mini map.
+    public AssetManager getAssetManager() {
+        return assetManager;
+    }
 } 
