@@ -11,7 +11,9 @@ import com.jme3.scene.shape.Box;
 
 import voxel.model.entity.Entity;
 import voxel.model.entity.Player;
-import voxel.model.entity.animals.Cow;
+import voxel.model.entity.animals.*;
+
+import java.util.List;
 
 public class EntityRenderer {
 
@@ -45,6 +47,30 @@ public class EntityRenderer {
             } else if (entity instanceof Cow) {
                 // Matériau rouge pour les vaches
                 material.setColor("Color", ColorRGBA.Brown);
+            } else if (entity instanceof Dromedary) {
+                // Matériau rouge pour les dromadaires
+                material.setColor("Color", ColorRGBA.Yellow);
+            } else if (entity instanceof Eagle) {
+                // Matériau rouge pour les aigles
+                material.setColor("Color", ColorRGBA.Brown);
+            } else if (entity instanceof Fox) {
+                // Matériau rouge pour les renards
+                material.setColor("Color", ColorRGBA.White);
+            } else if (entity instanceof Lizard) {
+                // Matériau rouge pour les lezards
+                material.setColor("Color", ColorRGBA.Green);
+            } else if (entity instanceof Owl) {
+                // Matériau rouge pour les chouettes
+                material.setColor("Color", ColorRGBA.Black);
+            } else if (entity instanceof Scorpion) {
+                // Matériau rouge pour les Scorpions
+                material.setColor("Color", ColorRGBA.Pink);
+            } else if (entity instanceof Sheep) {
+                // Matériau rouge pour les moutons
+                material.setColor("Color", ColorRGBA.Gray);
+            } else if (entity instanceof Wolf) {
+                // Matériau rouge pour les loups
+                material.setColor("Color", ColorRGBA.DarkGray);
             } else {
                 // Matériau rouge pour les autres entités
                 material.setColor("Color", ColorRGBA.Red);

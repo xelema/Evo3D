@@ -9,7 +9,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 32;
+    public static final int WORLD_SIZE = 8;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -35,7 +35,7 @@ public class WorldModel {
     private final Random random = new Random();
 
     /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
-    private final int worldSeed = 42;
+    private final int worldSeed = 0;
     private final int generation_height = 6; // Hauteur max de la génération avec Perlin
     private final float min_mountain = 0.001f;
     private final float max_mountain = 0.03f;  // Réduit pour des montagnes moins abruptes
