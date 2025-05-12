@@ -1,13 +1,10 @@
 package voxel;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.app.state.ScreenshotAppState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
-import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.system.AppSettings;
 
-import de.lessvoid.nifty.Nifty;
 import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
@@ -23,7 +20,6 @@ public class Main extends SimpleApplication {
 
     /** Référence au contrôleur principal du jeu */
     private GameController gameController;
-    private MenuPrincipalApp menu = new MenuPrincipalApp();
 
     /**
      * Point d'entrée du programme.
@@ -38,9 +34,6 @@ public class Main extends SimpleApplication {
         settings.setTitle("Evo3D");
         settings.setResolution(1600, 900);
         settings.setFullscreen(false);
-        settings.setVSync(true);
-        settings.setGammaCorrection(true);
-        settings.setSamples(4); // Anti-aliasing
         
         app.setSettings(settings);
         app.start();
@@ -52,18 +45,6 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleInitApp() {
-        // Permet de faire des screenshots
-        ScreenshotAppState screenShotState = new ScreenshotAppState(".");
-        this.stateManager.attach(screenShotState);
-        NiftyJmeDisplay niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
-        assetManager, inputManager, audioRenderer, guiViewPort);
-        Nifty nifty = niftyDisplay.getNifty();
-        //nifty.fromXml("menu.xml", "start", new MenuPrincipalApp()); // chemin à adapter
-
-        guiViewPort.addProcessor(niftyDisplay);
-
-
-        // Configurer la caméra et le jeu
         setupCamera();
         setupMVC();
     }
@@ -76,20 +57,23 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleUpdate(float tpf) {
-        if (gameController != null) {
-            gameController.update(tpf);
-        }
+        // Déléguer la mise à jour au contrôleur de jeu
+        gameController.update(tpf);
     }
 
     /**
      * Configure la caméra et les paramètres d'affichage.
      */
     private void setupCamera() {
-        cam.setLocation(new Vector3f(-4f, 153f, 7f));
-        viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
+        // Positionnement initial de la caméra
+        cam.setLocation(new Vector3f(10f, 10f, 30f));
         
-        flyCam.setEnabled(false); // Désactivé au début car on est dans le menu
-        flyCam.setMoveSpeed(0);
+        // Fond noir
+        viewPort.setBackgroundColor(ColorRGBA.Black);
+        
+        // Configuration de la caméra volante
+        flyCam.setEnabled(true);
+        flyCam.setMoveSpeed(0); // Désactive le mouvement par défaut (géré par InputController)
         flyCam.setRotationSpeed(1f);
         flyCam.setDragToRotate(false);
     }
@@ -99,11 +83,18 @@ public class Main extends SimpleApplication {
      */
     private void setupMVC() {
         // Création des composants selon l'architecture MVC
+        
+        // Modèle - Représente les données
         WorldModel worldModel = new WorldModel();
+        
+        // Menu - Initialise le menu principal comme un HUD
+        MenuPrincipalApp menu = new MenuPrincipalApp();
+        menu.initialize(this);
         
         // Vue - Gère l'affichage
         WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
         rootNode.attachChild(worldRenderer.getNode());
+        
         // Contrôleurs - Gèrent les interactions et la logique
         WorldController worldController = new WorldController(worldModel, worldRenderer);
         InputController inputController = new InputController(inputManager, worldController, cam, menu);

@@ -6,7 +6,6 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
-import com.jme3.system.AppSettings;
 
 import voxel.view.MenuPrincipalApp;
 
@@ -128,30 +127,9 @@ public class InputController implements ActionListener {
                 speedFly = isPressed;
                 break;
             case ACTION_OPEN_MENU:
-                if (isPressed) { 
-                    try {
-                        if (!menuPrincipal.isStarted()) {
-                            AppSettings reglages = new AppSettings(true);
-                            reglages.setResolution(1280, 720);
-                            reglages.setTitle("ProjetTOB");
-                            reglages.setFullscreen(false);
-                            menuPrincipal.setSettings(reglages);
-                            menuPrincipal.start(false); // Démarrage sans créer de nouvelle fenêtre
-                            System.out.println("Menu démarré");
-                        }
-                        // Dans tous les cas, on affiche le menu
-                        if (menuPrincipal.getNifty() != null) {
-                            menuPrincipal.getNifty().gotoScreen("start");
-                            System.out.println("Affichage du menu");
-                        } else {
-                            System.err.println("Nifty n'est pas initialisé");
-                        }
-                    } catch (Exception e) {
-                        System.err.println("Erreur lors de l'ouverture du menu : " + e.getMessage());
-                        e.printStackTrace();
-                    }
+                if (isPressed) {
+                    menuPrincipal.toggleMenuVisibility();
                 }   
-                break;
         }
     }
 

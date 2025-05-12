@@ -1,10 +1,8 @@
 package voxel.view;
 import com.jme3.app.SimpleApplication;
 import com.jme3.font.BitmapText;
-import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -25,7 +23,7 @@ import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
 
-public class MenuPrincipalApp extends SimpleApplication implements ScreenController {
+public class MenuPrincipalApp implements ScreenController {
 
     private static final int NOMBRECASESMAX = 6;
     private static final int NOMBREPARAMETRES = 3;
@@ -35,48 +33,86 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     private BitmapText[][] textes = new BitmapText[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[] titres = new BitmapText[NOMBREPARAMETRES];
     private Nifty nifty;
-    private boolean started = false;
-    
+    private NiftyJmeDisplay niftyDisplay;
+    private boolean menuVisible = false;
+    private SimpleApplication app;
 
     public static void main(String[] args) {
-        // Ce main ne sera plus utilisé car le menu est géré par le jeu principal
-        throw new UnsupportedOperationException("Ce main n'est plus utilisé. Le menu est géré par le jeu principal.");
+        // Ce code n'est utilisé que pour tester le menu indépendamment
+        SimpleApplication app = new SimpleApplication() {
+            @Override
+            public void simpleInitApp() {
+                MenuPrincipalApp menu = new MenuPrincipalApp();
+                menu.initialize(this);
+            }
+        };
+        
+        AppSettings reglages = new AppSettings(true);
+        reglages.setResolution(1280, 720);
+        reglages.setTitle("ProjetTOB");
+        reglages.setFullscreen(false);
+        app.setSettings(reglages);
+        app.start();
     }
 
+    /**
+     * Initialise le menu dans l'application fournie
+     * @param app L'application dans laquelle intégrer le menu
+     */
+    public void initialize(SimpleApplication app) {
+        this.app = app;
+        // Créer le système d'affichage Nifty lié à JME
+        niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
+                app.getAssetManager(), app.getInputManager(), app.getAudioRenderer(), app.getGuiViewPort());
 
-    @Override
-    public void simpleInitApp() {
-        try {
-            // Créer le système d'affichage Nifty lié à JME
-            NiftyJmeDisplay niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
-                    assetManager, inputManager, audioRenderer, guiViewPort);
+        nifty = niftyDisplay.getNifty();
 
-            nifty = niftyDisplay.getNifty();
-            nifty.loadStyleFile("nifty-default-styles.xml");
-            nifty.loadControlFile("nifty-default-controls.xml");
-            
-            int tailleEcran = settings.getHeight();
-            createMenu(tailleEcran);
+        nifty.loadStyleFile("nifty-default-styles.xml");
+        nifty.loadControlFile("nifty-default-controls.xml");
+        int tailleEcran = app.getContext().getSettings().getHeight();
+        createMenu(tailleEcran);
 
-            // Afficher le menu
-            nifty.gotoScreen("start");
-            inputManager.setCursorVisible(true);
-            flyCam.setEnabled(false);
+        // Initialiser le menu mais ne pas l'afficher immédiatement
+        nifty.gotoScreen("start");
+        app.getInputManager().setCursorVisible(false);
+        
+        // Ne pas attacher le processeur au début pour qu'il soit invisible
+        hideMenu();
+    }
 
-            // Attacher Nifty à la GUI de JME
-            guiViewPort.addProcessor(niftyDisplay);
-            
-            // Configuration supplémentaire
-            setDisplayFps(false);
-            setDisplayStatView(false);
-            
-            System.out.println("Menu initialisé avec succès");
-        } catch (Exception e) {
-            System.err.println("Erreur lors de l'initialisation du menu : " + e.getMessage());
-            e.printStackTrace();
+    /**
+     * Bascule la visibilité du menu
+     */
+    public void toggleMenuVisibility() {
+        if (menuVisible) {
+            hideMenu();
+        } else {
+            showMenu();
         }
     }
 
+    /**
+     * Affiche le menu
+     */
+    public void showMenu() {
+        if (!menuVisible) {
+            app.getInputManager().setCursorVisible(true);
+            app.getGuiViewPort().addProcessor(niftyDisplay);
+            menuVisible = true;
+            nifty.getNiftyMouse().enableMouseCursor("curseur1");
+        }
+    }
+
+    /**
+     * Cache le menu
+     */
+    public void hideMenu() {
+        if (menuVisible || app.getGuiViewPort().getProcessors().contains(niftyDisplay)) {
+            app.getInputManager().setCursorVisible(false);
+            app.getGuiViewPort().removeProcessor(niftyDisplay);
+            menuVisible = false;
+        }
+    }
 
     public void createMenu(int tailleEcran) {
 
@@ -261,19 +297,24 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     }
     
     public void formationCase(String nomParametre ,int nombreCases,int parametre) {
-        int largeurEcran = settings.getWidth();
-        int hauteurEcran = settings.getHeight();
+        int largeurEcran = app.getContext().getSettings().getWidth();
+        int hauteurEcran = app.getContext().getSettings().getHeight();
         float largeurCase = 20;
+        
+        // Get the GUI font
+        BitmapText tempText = new BitmapText(app.getAssetManager().loadFont("Interface/Fonts/Default.fnt"));
+        float charSize = tempText.getFont().getCharSet().getRenderedSize();
+        
         // Taille du texte
-        float tailleTexte = guiFont.getCharSet().getRenderedSize() * 0.8f;
-        float espaceParBloc = guiFont.getCharSet().getRenderedSize() + hauteurEcran * 0.3f + tailleTexte ;
+        float tailleTexte = charSize * 0.8f;
+        float espaceParBloc = charSize + hauteurEcran * 0.3f + tailleTexte;
         // Position de x et de y dynamique.
-        float ytitre = hauteurEcran - guiFont.getCharSet().getRenderedSize() - parametre* espaceParBloc;
-        BitmapText titre = new BitmapText(guiFont, false);
+        float ytitre = hauteurEcran - charSize - parametre * espaceParBloc;
+        BitmapText titre = new BitmapText(tempText.getFont(), false);
         float policeTexte = Math.max(18, hauteurEcran * 0.025f);
         titre.setSize(policeTexte);
         titre.setText(nomParametre);
-        float ycases = ytitre - guiFont.getCharSet().getRenderedSize() - hauteurEcran* 0.15f;
+        float ycases = ytitre - charSize - hauteurEcran* 0.15f;
         float ytexte = ycases - hauteurEcran * 0.025f;
         float yDebut = hauteurEcran * 0.75f ;//375
         float yEcart = hauteurEcran * 0.35f;
@@ -286,24 +327,24 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
         float totalLigne = (nombreCases * largeurCase) + ((nombreCases - 1) * espace2case); 
         float xinitial =  (largeurEcran - largeurDispo) /2 + decalageDroite;
         titre.setLocalTranslation(xinitial, ytitre, 0);
-        guiNode.attachChild(titre);
+        app.getGuiNode().attachChild(titre);
         String[] quantifieurs = {"aucun", "peu", "moyen", "beaucoup", "max"};
         for (int i = 0; i < nombreCases; i++) {
             Quad caseCoche = new Quad(largeurCase,20);
             Geometry geometry = new Geometry("Case" + i, caseCoche);
-            Material contour = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            Material contour = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
             contour.setColor("Color", ColorRGBA.White);
             geometry.setMaterial(contour); 
             float x = xinitial + i* (20 + espace2case);
             geometry.setLocalTranslation(x,ycases,0);
-            guiNode.attachChild(geometry);
-            BitmapText choix = new BitmapText(guiFont, false);
+            app.getGuiNode().attachChild(geometry);
+            BitmapText choix = new BitmapText(tempText.getFont(), false);
             choix.setSize(policeTexte);
             choix.setText(quantifieurs[i]);
             float texteX = x +(largeurCase/2f) - (choix.getLineWidth() / 2f);
             float texteY = ycases - 15;
             choix.setLocalTranslation(texteX, texteY, 0);
-            guiNode.attachChild(choix);
+            app.getGuiNode().attachChild(choix);
 
             textes[parametre][i] = choix;
             carres[parametre][i] = geometry;
@@ -317,7 +358,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
             for (int j = 0; j < NOMBREPARAMETRES; j++) {
                 if (carres[j][i] != null) {
     
-                    guiNode.detachChild(carres[j][i]);
+                    app.getGuiNode().detachChild(carres[j][i]);
     
                     carres[j][i] = null;
     
@@ -325,19 +366,19 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     
                 if (croix[j][i] != null) {
     
-                    guiNode.detachChild(croix[j][i]);
+                    app.getGuiNode().detachChild(croix[j][i]);
     
                     croix[j][i] = null;
                 }
 
                 if (textes[j][i] != null) {
     
-                    guiNode.detachChild(textes[j][i]);
+                    app.getGuiNode().detachChild(textes[j][i]);
     
                     textes[j][i] = null;
                 }
                 if (titres[j] != null) {
-                    guiNode.detachChild(titres[j]);
+                    app.getGuiNode().detachChild(titres[j]);
                     titres[j] = null;
                 }
             }
@@ -348,19 +389,19 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
     private void decocherCase(int parametre, int colonne) {
         if (croix[parametre][colonne] != null) {
-            guiNode.detachChild(croix[parametre][colonne]);
+            app.getGuiNode().detachChild(croix[parametre][colonne]);
         }
         croix[parametre][colonne] = null;
         coche[parametre][colonne] = false;
     }
 
     public void cliqueCase(int parametre) {
-        inputManager.addMapping("Click", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-        inputManager.addListener(new ActionListener() {
+        app.getInputManager().addMapping("Click", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        app.getInputManager().addListener(new ActionListener() {
             @Override 
             public void onAction(String Name, boolean clique, float tpf) {
                 if (!clique) return;
-                Vector2f souris = inputManager.getCursorPosition(); 
+                Vector2f souris = app.getInputManager().getCursorPosition(); 
                 for (int i = 0; i < 6; i++) {
                     if (carres[parametre][i] == null) continue;
                     Geometry carre = carres[parametre][i];
@@ -413,9 +454,9 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
         Geometry geometrieVerticale = new Geometry("BarreV", traitVertical);
 
-        Material materialHorizontal = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        Material materialHorizontal = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
 
-        Material materielVerticale = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        Material materielVerticale = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
 
         materialHorizontal.setColor("Color", ColorRGBA.Red);
 
@@ -441,7 +482,7 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
         croixNode.setLocalTranslation(x, y, 2); // couche au-dessus
 
-        guiNode.attachChild(croixNode);
+        app.getGuiNode().attachChild(croixNode);
 
 
 
@@ -598,8 +639,8 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
     public void quitGame() {
 
         System.out.println("Fermeture du jeu...");
-        // Fermer proprement l'application principale
-        System.exit(0);
+
+        app.stop(); // Ferme l'application JME
 
     }
 
@@ -622,24 +663,5 @@ public class MenuPrincipalApp extends SimpleApplication implements ScreenControl
 
 
     public void onEndScreen() {}
-
-    @Override
-    public void start() {
-        super.start();
-        this.started = true;
-        System.out.println("Menu démarré");
-    }
-
-    public void start(boolean waitFor) {
-        if (!started) {
-            super.start(waitFor);
-            this.started = true;
-            System.out.println("Menu démarré (waitFor=" + waitFor + ")");
-        }
-    }
-
-    public boolean isStarted() {
-        return this.started;
-    }
 
 }
