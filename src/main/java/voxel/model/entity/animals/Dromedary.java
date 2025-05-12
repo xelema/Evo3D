@@ -35,7 +35,7 @@ public class Dromedary extends Entity {
     private void startResting() {
         if (!isResting) {
             isResting = true;
-            System.out.println("Le dromadaire se repose sous le soleil du désert...");
+            // System.out.println("Le dromadaire se repose sous le soleil du désert...");
             new Thread(() -> {
                 try {
                     Thread.sleep(7000);  // Long repos de 7 secondes
@@ -43,7 +43,7 @@ public class Dromedary extends Entity {
                     e.printStackTrace();
                 }
                 isResting = false;
-                System.out.println("Le dromadaire reprend sa route.");
+                // System.out.println("Le dromadaire reprend sa route.");
             }).start();
         }
     }

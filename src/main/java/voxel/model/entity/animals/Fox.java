@@ -70,7 +70,7 @@ public class Fox extends Entity {
 
     public void startHunting() {
         if (!isHunting) {
-            System.out.println("Le renard part à la chasse !");
+            // System.out.println("Le renard part à la chasse !");
             isHunting = true;
             new Thread(() -> {
                 try {
@@ -79,7 +79,7 @@ public class Fox extends Entity {
                     e.printStackTrace();
                 }
                 isHunting = false;
-                System.out.println("Le renard a terminé sa chasse.");
+                // System.out.println("Le renard a terminé sa chasse.");
             }).start();
         }
     }

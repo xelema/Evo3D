@@ -240,7 +240,7 @@ public class InputController implements ActionListener {
                 speed = 60f;
             }
             else{
-                speed = 10f;
+                speed = 20f;
             }
 
             // Calcul des vecteurs de direction de la caméra

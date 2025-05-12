@@ -73,7 +73,7 @@ public class Sheep extends Entity {
      */
     public void startGrazing() {
         if (!isGrazing) {
-            System.out.println("Le mouton commence à brouter !");
+            // System.out.println("Le mouton commence à brouter !");
             isGrazing = true;
             // Simuler un broutage avec une petite attente (par exemple, 5 secondes de broutage)
             // Après 5 secondes, le mouton reprend son activité normale.
@@ -84,7 +84,7 @@ public class Sheep extends Entity {
                     e.printStackTrace();
                 }
                 isGrazing = false;  // Fin du broutage
-                System.out.println("Le mouton a fini de brouter.");
+                // System.out.println("Le mouton a fini de brouter.");
             }).start();
         }
     }

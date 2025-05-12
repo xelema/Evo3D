@@ -33,7 +33,7 @@ public class Owl extends Entity {
     }
 
     public void takeOff() {
-        System.out.println("Le hibou déploie ses ailes et décolle...");
+        // System.out.println("Le hibou déploie ses ailes et décolle...");
         isFlying = true;
         isResting = false;
         new Thread(() -> {
@@ -59,7 +59,7 @@ public class Owl extends Entity {
     }
 
     public void land() {
-        System.out.println("Le hibou retourne se percher.");
+        // System.out.println("Le hibou retourne se percher.");
         isFlying = false;
         isResting = true;
         new Thread(() -> {

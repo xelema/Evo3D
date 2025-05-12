@@ -35,7 +35,7 @@ public class Lizard extends Entity {
     private void startMoving() {
         targetDistance = (float) (Math.random() * maxDistance);
         isMoving = true;
-        System.out.println("Le lézard se déplace légèrement...");
+        // System.out.println("Le lézard se déplace légèrement...");
     }
 
     public void move(float tpf) {
@@ -44,7 +44,7 @@ public class Lizard extends Entity {
         if (targetDistance <= step) {
             moveForward(targetDistance);
             isMoving = false;
-            System.out.println("Le lézard s'arrête.");
+            // System.out.println("Le lézard s'arrête.");
         } else {
             moveForward(step);
             targetDistance -= step;
@@ -60,7 +60,7 @@ public class Lizard extends Entity {
 
     private void startBasking() {
         isBasking = true;
-        System.out.println("Le lézard se chauffe au soleil...");
+        // System.out.println("Le lézard se chauffe au soleil...");
         new Thread(() -> {
             try {
                 Thread.sleep(4000); // Il se chauffe pendant 4 secondes
@@ -68,7 +68,7 @@ public class Lizard extends Entity {
                 e.printStackTrace();
             }
             isBasking = false;
-            System.out.println("Le lézard a terminé sa séance de bronzage.");
+            // System.out.println("Le lézard a terminé sa séance de bronzage.");
         }).start();
     }
 

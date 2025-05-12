@@ -94,7 +94,7 @@ public class Main extends SimpleApplication {
         // Création des composants selon l'architecture MVC
         
         // Modèle - Représente les données
-        BiomeType selectedBiome = BiomeType.PLAINS;
+        BiomeType selectedBiome = BiomeType.SAVANNA;
         WorldModel worldModel = new WorldModel(selectedBiome);
         
         // Vue - Gère l'affichage
@@ -116,7 +116,6 @@ public class Main extends SimpleApplication {
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
                 entityController, cam);
-        gameController.initialize();
     }
 
 }

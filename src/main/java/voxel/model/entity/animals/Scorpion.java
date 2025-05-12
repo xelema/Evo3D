@@ -35,7 +35,7 @@ public class Scorpion extends Entity {
     private void hideUnderSand() {
         if (!isHiding) {
             isHiding = true;
-            System.out.println("Le scorpion se cache sous le sable...");
+            // System.out.println("Le scorpion se cache sous le sable...");
             new Thread(() -> {
                 try {
                     Thread.sleep(4000); // 4 secondes de camouflage
@@ -43,7 +43,7 @@ public class Scorpion extends Entity {
                     e.printStackTrace();
                 }
                 isHiding = false;
-                System.out.println("Le scorpion sort de sa cachette.");
+                // System.out.println("Le scorpion sort de sa cachette.");
             }).start();
         }
     }

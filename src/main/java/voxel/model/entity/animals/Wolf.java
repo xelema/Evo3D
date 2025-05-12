@@ -34,7 +34,7 @@ public class Wolf extends Entity {
     }
 
     private void startPatrolling() {
-        System.out.println("Le loup sort de sa tanière et commence à patrouiller...");
+        // System.out.println("Le loup sort de sa tanière et commence à patrouiller...");
         isResting = false;
         isPatrolling = true;
     }
@@ -50,7 +50,7 @@ public class Wolf extends Entity {
     }
 
     private void rest() {
-        System.out.println("Le loup retourne se cacher pour dormir.");
+        // System.out.println("Le loup retourne se cacher pour dormir.");
         isPatrolling = false;
         isResting = true;
     }

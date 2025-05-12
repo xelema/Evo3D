@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 8;
+    public static final int WORLD_SIZE = 16;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -38,7 +38,7 @@ public class WorldModel {
     private final Random random = new Random();
 
     /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
-    private final int worldSeed = 0;
+    private final int worldSeed = 424242;
     private final int generation_height = 6; // Hauteur max de la génération avec Perlin
     private final float min_mountain = 0.001f;
     private final float max_mountain = 0.03f;
@@ -77,7 +77,7 @@ public class WorldModel {
         mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain) * 0.5f;
         detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail) * 0.8f;
 
-        generateWorld(true);
+        generateWorld(false);
         entityManager = new EntityManager(this);
     }
 
@@ -101,7 +101,7 @@ public class WorldModel {
                 if(flat){
                     generateTerrainFlat(cx,cz);
                 } else {
-                    generateTerrainPerlin(cx, cz, 0);
+                    generateTerrainPerlin(cx, cz, 1);
                 }
             }
         }
@@ -236,7 +236,7 @@ public class WorldModel {
                             break;
                         case SAVANNA:
                             heightFactor = largeNoise * 0.5f + mediumNoise * 0.3f;
-                            waterLevel = 20;
+                            waterLevel = 26;
                             break;
                     }
 
@@ -273,7 +273,7 @@ public class WorldModel {
                             break;
                         case SAVANNA:
                             heightFactor *= 0.5f;
-                            waterLevel = 20;
+                            waterLevel = 26;
                             break;
                     }
                 }
@@ -387,8 +387,8 @@ public class WorldModel {
 
         for (int i = 0; i < numClouds; i++) {
             // Générer des positions aléatoires pour les nuages
-            int cloudX = random.nextInt(worldSizeX * ChunkModel.SIZE);
-            int cloudZ = random.nextInt(worldSizeZ * ChunkModel.SIZE);
+            int cloudX = random.nextInt(worldSizeX*ChunkModel.SIZE);
+            int cloudZ = random.nextInt(worldSizeZ*ChunkModel.SIZE);
 
             // Générer une taille aléatoire pour le nuage
             int cloudSizeX = 50 + random.nextInt(80); // Taille entre 50 et 130 blocs
