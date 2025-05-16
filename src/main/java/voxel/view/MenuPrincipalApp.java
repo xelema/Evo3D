@@ -99,7 +99,6 @@ public class MenuPrincipalApp implements ScreenController {
             app.getInputManager().setCursorVisible(true);
             app.getGuiViewPort().addProcessor(niftyDisplay);
             menuVisible = true;
-            nifty.getNiftyMouse().enableMouseCursor("curseur1");
         }
     }
 
@@ -296,10 +295,10 @@ public class MenuPrincipalApp implements ScreenController {
 
     }
     
-    public void formationCase(String nomParametre ,int nombreCases,int parametre) {
+    public void formationCase(String nomParametre, int nombreCases, int parametre) {
         int largeurEcran = app.getContext().getSettings().getWidth();
         int hauteurEcran = app.getContext().getSettings().getHeight();
-        float largeurCase = 20;
+        float largeurCase = 30;
         
         // Get the GUI font
         BitmapText tempText = new BitmapText(app.getAssetManager().loadFont("Interface/Fonts/Default.fnt"));
@@ -322,26 +321,24 @@ public class MenuPrincipalApp implements ScreenController {
         titres[parametre] = titre;
         float yinitial = yDebut - parametre* yEcart;
         float largeurDispo = largeurEcran * 0.8f;
-        float largeurTotalCase = nombreCases * largeurCase;
-        float espace2case = (largeurEcran -largeurDispo) / 2;
-        float totalLigne = (nombreCases * largeurCase) + ((nombreCases - 1) * espace2case); 
-        float xinitial =  (largeurEcran - largeurDispo) /2 + decalageDroite;
+        float espaceEntreCases = largeurEcran * 0.03f;
+        float xinitial = (largeurEcran - largeurDispo) / 2 + decalageDroite;
         titre.setLocalTranslation(xinitial, ytitre, 0);
         app.getGuiNode().attachChild(titre);
         String[] quantifieurs = {"aucun", "peu", "moyen", "beaucoup", "max"};
         for (int i = 0; i < nombreCases; i++) {
-            Quad caseCoche = new Quad(largeurCase,20);
+            Quad caseCoche = new Quad(largeurCase, largeurCase);
             Geometry geometry = new Geometry("Case" + i, caseCoche);
             Material contour = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
             contour.setColor("Color", ColorRGBA.White);
             geometry.setMaterial(contour); 
-            float x = xinitial + i* (20 + espace2case);
-            geometry.setLocalTranslation(x,ycases,0);
+            float x = xinitial + i * (largeurCase + espaceEntreCases);
+            geometry.setLocalTranslation(x, ycases, 0);
             app.getGuiNode().attachChild(geometry);
             BitmapText choix = new BitmapText(tempText.getFont(), false);
             choix.setSize(policeTexte);
             choix.setText(quantifieurs[i]);
-            float texteX = x +(largeurCase/2f) - (choix.getLineWidth() / 2f);
+            float texteX = x + (largeurCase / 2f) - (choix.getLineWidth() / 2f);
             float texteY = ycases - 15;
             choix.setLocalTranslation(texteX, texteY, 0);
             app.getGuiNode().attachChild(choix);
@@ -401,35 +398,38 @@ public class MenuPrincipalApp implements ScreenController {
             @Override 
             public void onAction(String Name, boolean clique, float tpf) {
                 if (!clique) return;
-                Vector2f souris = app.getInputManager().getCursorPosition(); 
+                Vector2f souris = app.getInputManager().getCursorPosition();
+                System.out.println("Position souris: " + souris.x + ", " + souris.y);
+                
                 for (int i = 0; i < 6; i++) {
                     if (carres[parametre][i] == null) continue;
                     Geometry carre = carres[parametre][i];
                     Vector3f position = carre.getLocalTranslation();
                     float x = position.x;
                     float y = position.y;
+                    
+                    System.out.println("Case " + i + ": " + x + ", " + y);
 
-                    boolean dansX = souris.x >= x && souris.x <= x + 50;
-                    boolean dansY = souris.y >= y && souris.y <= y + 50;
+                    float largeurCase = 30;
+                    boolean dansX = souris.x >= x && souris.x <= x + largeurCase;
+                    boolean dansY = souris.y >= y && souris.y <= y + largeurCase;
 
                     if (dansX && dansY) {
-                        cocherCase(i,x,y,parametre);
+                        System.out.println("Case " + i + " cliquée!");
+                        cocherCase(i, x, y, parametre);
                         coche[parametre][i] = true;
-                        for  (int caseCoche = 0; caseCoche < 6; caseCoche ++) {
+                        for (int caseCoche = 0; caseCoche < 6; caseCoche++) {
                             if (caseCoche == i) {
                                 continue;
                             }
                             if (coche[parametre][caseCoche] == true) {
-                                decocherCase(parametre,caseCoche);
+                                decocherCase(parametre, caseCoche);
                             }
                         }
                     }
-
                 }
-                    
             }
-        },"Click");
-
+        }, "Click");
     }
 
     private void cocherCase(int index, float x, float y, int parametre) {
@@ -444,11 +444,11 @@ public class MenuPrincipalApp implements ScreenController {
 
         // Trait horizontal
 
-        Quad traitHorizontal = new Quad(20, 5);
+        Quad traitHorizontal = new Quad(30, 5);
 
         // Trait vertical
 
-        Quad traitVertical = new Quad(5, 20);
+        Quad traitVertical = new Quad(5, 30);
 
         Geometry geometrieHorizontal = new Geometry("BarreH", traitHorizontal);
 
@@ -466,9 +466,9 @@ public class MenuPrincipalApp implements ScreenController {
 
         geometrieVerticale.setMaterial(materielVerticale);
 
-        geometrieHorizontal.setLocalTranslation(0f, 7.5f, 0); // centré horizontalement
+        geometrieHorizontal.setLocalTranslation(-15f, -2.5f, 0); // centré horizontalement
 
-        geometrieVerticale.setLocalTranslation(7.5f, 0f, 0); // centré verticalement
+        geometrieVerticale.setLocalTranslation(-2.5f, -15f, 0); // centré verticalement
 
 
 
@@ -480,7 +480,7 @@ public class MenuPrincipalApp implements ScreenController {
 
         // Positionner la croix dans la case
 
-        croixNode.setLocalTranslation(x, y, 2); // couche au-dessus
+        croixNode.setLocalTranslation(x + 15f, y + 15f, 2); // couche au-dessus
 
         app.getGuiNode().attachChild(croixNode);
 
