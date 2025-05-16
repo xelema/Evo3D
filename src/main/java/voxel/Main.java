@@ -33,7 +33,7 @@ public class Main extends SimpleApplication {
         AppSettings settings = new AppSettings(true);
         settings.setTitle("Evo3D");
         settings.setResolution(1280, 720);
-        settings.setFullscreen(false);
+        settings.setFullscreen(true);
         
         app.setSettings(settings);
         app.start();
@@ -48,7 +48,7 @@ public class Main extends SimpleApplication {
         setupCamera();
         setupMVC();
         inputManager.setCursorVisible(true);
-        flyCam.setEnabled(false);
+       // flyCam.setEnabled(false);
     }
 
     /**
