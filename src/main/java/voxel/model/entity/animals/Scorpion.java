@@ -4,6 +4,9 @@ import voxel.model.entity.Entity;
 
 public class Scorpion extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Gecko_Animations.glb";
+
+
     private boolean isMoving = false;
     private float targetDistance = 0.0f;
     private final float movementSpeed = 5.0f; // Plus rapide que la moyenne

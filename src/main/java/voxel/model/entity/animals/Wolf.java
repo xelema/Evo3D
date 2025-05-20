@@ -4,6 +4,9 @@ import voxel.model.entity.Entity;
 
 public class Wolf extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Pudu_Animations.glb";
+
+
     private boolean isPatrolling = false;
     private float patrolRadius = 6.0f;
     private float patrolSpeed = 4.0f;

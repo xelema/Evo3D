@@ -2,6 +2,7 @@ package voxel.model.entity;
 
 public class Player extends Entity {
 
+    public static String MODEL_PATH = "Sukuna Model/Sukuna Character GLTF.j3o";
 
     public Player(double x, double y, double z) {
         super(x, y, z);

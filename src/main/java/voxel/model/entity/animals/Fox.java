@@ -4,6 +4,8 @@ import voxel.model.entity.Entity;
 
 public class Fox extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Muskrat_Animations.glb";
+
     boolean isRotating = false;
     float targetRotation = 0.0f;
     float rotationSpeed = 1.2f;

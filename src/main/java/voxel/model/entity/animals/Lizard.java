@@ -4,6 +4,8 @@ import voxel.model.entity.Entity;
 
 public class Lizard extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Gecko_Animations.glb";
+
     private boolean isBasking = false; // En train de se chauffer au soleil
     private boolean isMoving = false;
 

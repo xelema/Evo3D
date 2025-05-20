@@ -4,6 +4,8 @@ import voxel.model.entity.Entity;
 
 public class Owl extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Sparrow_Animations.glb";
+
     boolean isFlying = false;
     float targetAltitude = 10.0f;   // Altitude de vol par défaut
     float flightSpeed = 3.5f;       // Vitesse de montée/descente

@@ -4,6 +4,8 @@ import voxel.model.entity.Entity;
 
 public class Eagle extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Sparrow_Animations.glb";
+
     private boolean isCircling = true;
     private float circleRadius = 12.0f;
     private float angle = 0.0f;
