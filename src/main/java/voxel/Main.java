@@ -10,6 +10,10 @@ import voxel.controller.GameStateManager;
 import voxel.model.BiomeType;
 import voxel.model.WorldModel;
 
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+
 /**
  * Classe principale qui est le point d'entrée du programme.
  * Hérite de SimpleApplication pour gérer le cycle de vie de l'application jMonkeyEngine.
@@ -26,12 +30,20 @@ public class Main extends SimpleApplication {
      */
     public static void main(String[] args) {
         Main app = new Main();
-        
+
+        // Obtention de la résolution et du taux de rafraîchissement de l'écran principal
+        GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode displayMode = device.getDisplayMode();
+        int screenWidth = displayMode.getWidth();
+        int screenHeight = displayMode.getHeight();
+        int refreshRate = displayMode.getRefreshRate();
+
         // Configuration des paramètres de l'application
         AppSettings settings = new AppSettings(true);
         settings.setTitle("Evo3D");
-        settings.setResolution(1600, 900);
-        settings.setFullscreen(false);
+        settings.setResolution(screenWidth, screenHeight);
+        settings.setFullscreen(true);
+        settings.setFrequency(refreshRate); // Définir le taux de rafraîchissement
         settings.setVSync(true);
         settings.setGammaCorrection(true);
         settings.setSamples(4); // Anti-aliasing

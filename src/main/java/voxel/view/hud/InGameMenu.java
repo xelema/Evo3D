@@ -11,6 +11,8 @@ import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
 import de.lessvoid.nifty.controls.slider.builder.SliderBuilder;
 import de.lessvoid.nifty.controls.CheckBox;
 import de.lessvoid.nifty.controls.Slider;
+import de.lessvoid.nifty.controls.Button;
+import de.lessvoid.nifty.elements.Element;
 
 import voxel.controller.GameStateManager;
 import voxel.model.BiomeType;
@@ -28,6 +30,10 @@ public class InGameMenu extends AbstractGameMenu {
     
     /** Référence au contrôleur du jeu pour effectuer les actions */
     private GameStateManager stateManager;
+    
+    // Garder en mémoire l'état des modes
+    private boolean wireframeMode = false;
+    private boolean lightningMode = false;
     
     /**
      * Constructeur du menu en jeu
@@ -71,20 +77,25 @@ public class InGameMenu extends AbstractGameMenu {
             layer(new LayerBuilder("background") {{
                 childLayoutCenter();
                 backgroundColor("#000a");
+                width("100%");
+                height("100%");
                 
                 panel(new PanelBuilder("mainPanel") {{
                     childLayoutVertical();
                     alignCenter();
                     valignCenter();
-                    width("50%");
-                    height("70%");
+                    width("50%");  // Pourcentage de la largeur de l'écran
+                    height("80%"); // Pourcentage de la hauteur de l'écran
                     backgroundColor("#444f");
-                    padding("20px");
+                    paddingLeft("2%");
+                    paddingRight("2%");
+                    paddingTop("2%");
+                    paddingBottom("2%");
                     
                     text(new TextBuilder() {{
                         text("Menu de Jeu");
                         font("Interface/Fonts/Default.fnt");
-                        height("10%");
+                        height("8%");
                         width("100%");
                         alignCenter();
                         color("#fff");
@@ -93,9 +104,10 @@ public class InGameMenu extends AbstractGameMenu {
                     panel(new PanelBuilder("timeControlPanel") {{
                         childLayoutHorizontal();
                         alignCenter();
-                        height("10%");
+                        height("8%");
                         width("100%");
-                        padding("10px");
+                        paddingLeft("2%");
+                        paddingRight("2%");
                         
                         text(new TextBuilder() {{
                             text("Vitesse du temps:");
@@ -110,7 +122,7 @@ public class InGameMenu extends AbstractGameMenu {
                             alignRight();
                             valignCenter();
                             width("65%");
-                            height("20px");
+                            height("50%");
                             initial(1.0f);
                             min(0.1f);
                             max(5.0f);
@@ -122,15 +134,17 @@ public class InGameMenu extends AbstractGameMenu {
                     panel(new PanelBuilder("displayPanel") {{
                         childLayoutVertical();
                         alignCenter();
-                        height("15%");
+                        height("16%");
                         width("100%");
-                        padding("10px");
+                        paddingLeft("2%");
+                        paddingRight("2%");
                         
                         panel(new PanelBuilder("wireframePanel") {{
                             childLayoutHorizontal();
                             alignCenter();
-                            height("50%");
+                            height("45%");
                             width("100%");
+                            marginBottom("2%");
                             
                             control(new ButtonBuilder("wireframeButton", "Mode filaire") {{
                                 alignCenter();
@@ -144,7 +158,7 @@ public class InGameMenu extends AbstractGameMenu {
                         panel(new PanelBuilder("lightningPanel") {{
                             childLayoutHorizontal();
                             alignCenter();
-                            height("50%");
+                            height("45%");
                             width("100%");
                             
                             control(new ButtonBuilder("lightningButton", "Éclairage") {{
@@ -158,45 +172,45 @@ public class InGameMenu extends AbstractGameMenu {
                     }});
                     
                     panel(new PanelBuilder("spacer") {{
-                        height("5%");
+                        height("3%");
                     }});
                     
                     control(new ButtonBuilder("worldSelectionButton", "Changer de monde") {{
                         alignCenter();
-                        height("10%");
+                        height("8%");
                         width("80%");
                         interactOnClick("openBiomeSelection()");
                     }});
                     
                     panel(new PanelBuilder("spacer2") {{
-                        height("5%");
+                        height("3%");
                     }});
                     
                     control(new ButtonBuilder("controlsButton", "Contrôles") {{
                         alignCenter();
-                        height("10%");
+                        height("8%");
                         width("80%");
                         interactOnClick("showControls()");
                     }});
                     
                     panel(new PanelBuilder("spacer3") {{
-                        height("5%");
+                        height("3%");
                     }});
                     
                     control(new ButtonBuilder("resumeButton", "Reprendre le jeu") {{
                         alignCenter();
-                        height("10%");
+                        height("8%");
                         width("80%");
                         interactOnClick("resumeGame()");
                     }});
                     
                     panel(new PanelBuilder("spacer4") {{
-                        height("5%");
+                        height("3%");
                     }});
                     
                     control(new ButtonBuilder("quitButton", "Quitter") {{
                         alignCenter();
-                        height("10%");
+                        height("8%");
                         width("80%");
                         interactOnClick("quitGame()");
                     }});
@@ -211,6 +225,8 @@ public class InGameMenu extends AbstractGameMenu {
             layer(new LayerBuilder("background") {{
                 childLayoutCenter();
                 backgroundColor("#000a");
+                width("100%");
+                height("100%");
                 
                 panel(new PanelBuilder("controlsPanel") {{
                     childLayoutVertical();
@@ -219,7 +235,10 @@ public class InGameMenu extends AbstractGameMenu {
                     width("60%");
                     height("80%");
                     backgroundColor("#444f");
-                    padding("20px");
+                    paddingLeft("2%");
+                    paddingRight("2%");
+                    paddingTop("2%");
+                    paddingBottom("2%");
                     
                     text(new TextBuilder() {{
                         text("Contrôles du jeu");
@@ -271,6 +290,8 @@ public class InGameMenu extends AbstractGameMenu {
             layer(new LayerBuilder("background") {{
                 childLayoutCenter();
                 backgroundColor("#000a");
+                width("100%");
+                height("100%");
                 
                 panel(new PanelBuilder("biomePanel") {{
                     childLayoutVertical();
@@ -279,7 +300,10 @@ public class InGameMenu extends AbstractGameMenu {
                     width("60%");
                     height("80%");
                     backgroundColor("#444f");
-                    padding("20px");
+                    paddingLeft("2%");
+                    paddingRight("2%");
+                    paddingTop("2%");
+                    paddingBottom("2%");
                     
                     text(new TextBuilder() {{
                         text("Sélection du biome");
@@ -301,10 +325,7 @@ public class InGameMenu extends AbstractGameMenu {
                             height("12%");
                             width("80%");
                             interactOnClick("changeBiome(SAVANNA)");
-                        }});
-                        
-                        panel(new PanelBuilder("spacer5") {{
-                            height("2%");
+                            marginBottom("2%");
                         }});
                         
                         control(new ButtonBuilder("desertButton", "Désert") {{
@@ -312,10 +333,7 @@ public class InGameMenu extends AbstractGameMenu {
                             height("12%");
                             width("80%");
                             interactOnClick("changeBiome(DESERT)");
-                        }});
-                        
-                        panel(new PanelBuilder("spacer6") {{
-                            height("2%");
+                            marginBottom("2%");
                         }});
                         
                         control(new ButtonBuilder("mountainsButton", "Montagnes") {{
@@ -323,10 +341,7 @@ public class InGameMenu extends AbstractGameMenu {
                             height("12%");
                             width("80%");
                             interactOnClick("changeBiome(MOUNTAINS)");
-                        }});
-                        
-                        panel(new PanelBuilder("spacer7") {{
-                            height("2%");
+                            marginBottom("2%");
                         }});
                         
                         control(new ButtonBuilder("plainsButton", "Plaines") {{
@@ -334,10 +349,7 @@ public class InGameMenu extends AbstractGameMenu {
                             height("12%");
                             width("80%");
                             interactOnClick("changeBiome(PLAINS)");
-                        }});
-                        
-                        panel(new PanelBuilder("spacer8") {{
-                            height("2%");
+                            marginBottom("2%");
                         }});
                         
                         control(new ButtonBuilder("jungleButton", "Jungle") {{
@@ -345,10 +357,7 @@ public class InGameMenu extends AbstractGameMenu {
                             height("12%");
                             width("80%");
                             interactOnClick("changeBiome(JUNGLE)");
-                        }});
-                        
-                        panel(new PanelBuilder("spacer9") {{
-                            height("2%");
+                            marginBottom("2%");
                         }});
                         
                         control(new ButtonBuilder("snowyButton", "Neige") {{
@@ -387,9 +396,41 @@ public class InGameMenu extends AbstractGameMenu {
             if (stateManager != null && stateManager.getWorldModel() != null) {
                 updateControls();
             }
+            
+            // Réinitialiser l'état des boutons pour qu'ils ne soient pas sélectionnés
+            resetButtonStates();
         } catch (Exception e) {
             System.err.println("Erreur lors de l'affichage du menu en jeu: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Réinitialise l'état des boutons standards pour qu'ils ne soient pas sélectionnés
+     */
+    private void resetButtonStates() {
+        if (nifty.getCurrentScreen() == null) {
+            return;
+        }
+        
+        // Liste des boutons standards qui ne doivent jamais être sélectionnés
+        String[] standardButtons = {
+            "worldSelectionButton", "controlsButton", "resumeButton", "quitButton",
+            "backButton", "backToMenuButton", "savannaButton", "desertButton",
+            "mountainsButton", "plainsButton", "jungleButton", "snowyButton"
+        };
+        
+        for (String buttonId : standardButtons) {
+            // Récupérer l'élément du bouton
+            Element element = nifty.getCurrentScreen().findElementById(buttonId);
+            if (element != null) {
+                // Réappliquer le style par défaut pour éviter la sélection visuelle
+                element.setStyle("default");
+            }
+        }
+        
+        // Mettre à jour l'apparence des boutons spéciaux en fonction de leur état
+        updateButtonAppearance("wireframeButton", wireframeMode);
+        updateButtonAppearance("lightningButton", lightningMode);
     }
     
     /**
@@ -408,21 +449,39 @@ public class InGameMenu extends AbstractGameMenu {
                 timeSlider.setValue(timeSpeed);
             }
             
-            // Nous n'utilisons pas de checkboxes mais des boutons dans l'interface
-            // Les deux références ci-dessous ne correspondent pas à des contrôles existants
-            // Nous n'avons donc pas besoin de les mettre à jour
-            /*
-            CheckBox wireframeBox = nifty.getCurrentScreen().findNiftyControl("wireframeCheckbox", CheckBox.class);
-            CheckBox lightningBox = nifty.getCurrentScreen().findNiftyControl("lightningCheckbox", CheckBox.class);
-            
-            if (wireframeBox != null && lightningBox != null && stateManager.getWorldModel() != null) {
-                wireframeBox.setChecked(stateManager.getWorldModel().getWireframeMode());
-                lightningBox.setChecked(stateManager.getWorldModel().getLightningMode());
+            // Récupérer l'état actuel des modes depuis le modèle de monde
+            if (stateManager != null && stateManager.getWorldModel() != null) {
+                wireframeMode = stateManager.getWorldModel().getWireframeMode();
+                lightningMode = stateManager.getWorldModel().getLightningMode();
+                
+                // Mettre à jour l'apparence des boutons en fonction de l'état
+                updateButtonAppearance("wireframeButton", wireframeMode);
+                updateButtonAppearance("lightningButton", lightningMode);
             }
-            */
         } catch (Exception e) {
             // Capture les erreurs potentielles lors de la mise à jour des contrôles
             System.err.println("Erreur lors de la mise à jour des contrôles du menu: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Met à jour l'apparence d'un bouton en fonction de son état
+     * 
+     * @param buttonId L'identifiant du bouton à mettre à jour
+     * @param active Si le mode est actif ou non
+     */
+    private void updateButtonAppearance(String buttonId, boolean active) {
+        Button button = nifty.getCurrentScreen().findNiftyControl(buttonId, Button.class);
+        Element element = nifty.getCurrentScreen().findElementById(buttonId);
+        
+        if (button != null && element != null) {
+            if (active) {
+                // Mode actif: bouton "sélectionné" (rouge)
+                element.setStyle("selected");
+            } else {
+                // Mode inactif: bouton normal
+                element.setStyle("default");
+            }
         }
     }
     
@@ -459,10 +518,13 @@ public class InGameMenu extends AbstractGameMenu {
     
     public void showControls() {
         nifty.gotoScreen("controlsScreen");
+        resetButtonStates();
     }
     
     public void backToMenu() {
         nifty.gotoScreen("inGameMenu");
+        updateControls(); // Met à jour l'état des boutons de mode
+        resetButtonStates(); // Réinitialise les boutons standards
     }
     
     public void resumeGame() {
@@ -479,6 +541,8 @@ public class InGameMenu extends AbstractGameMenu {
      */
     public void toggleWireframe() {
         stateManager.getWorldController().toggleWireframe();
+        wireframeMode = !wireframeMode;
+        updateButtonAppearance("wireframeButton", wireframeMode);
     }
     
     /**
@@ -486,6 +550,8 @@ public class InGameMenu extends AbstractGameMenu {
      */
     public void toggleLightning() {
         stateManager.getWorldController().toggleLightning();
+        lightningMode = !lightningMode;
+        updateButtonAppearance("lightningButton", lightningMode);
     }
     
     /**
@@ -493,6 +559,7 @@ public class InGameMenu extends AbstractGameMenu {
      */
     public void openBiomeSelection() {
         nifty.gotoScreen("biomeSelectionScreen");
+        resetButtonStates();
     }
     
     /**
@@ -510,5 +577,23 @@ public class InGameMenu extends AbstractGameMenu {
         } catch (IllegalArgumentException e) {
             System.err.println("Type de biome invalide: " + biomeType);
         }
+    }
+    
+    /**
+     * Ajoute un écouteur pour les changements de taille d'écran
+     */
+    public void onEndScreen() {
+        super.onEndScreen();
+        // Assurer que l'interface est correctement mise à jour lors des changements de résolution
+        nifty.update();
+    }
+    
+    /**
+     * Effectue les actions nécessaires avant d'afficher l'écran
+     */
+    public void onStartScreen() {
+        super.onStartScreen();
+        // Assurer que l'interface est correctement mise à jour lors des changements de résolution
+        nifty.update();
     }
 } 
