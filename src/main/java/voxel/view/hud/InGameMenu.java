@@ -12,7 +12,11 @@ import de.lessvoid.nifty.controls.slider.builder.SliderBuilder;
 import de.lessvoid.nifty.controls.CheckBox;
 import de.lessvoid.nifty.controls.Slider;
 import de.lessvoid.nifty.controls.Button;
+import de.lessvoid.nifty.controls.SliderChangedEvent;
+import de.lessvoid.nifty.NiftyEventSubscriber;
+import de.lessvoid.nifty.controls.NiftyControl;
 import de.lessvoid.nifty.elements.Element;
+import de.lessvoid.nifty.Nifty;
 
 import voxel.controller.GameStateManager;
 import voxel.model.BiomeType;
@@ -65,6 +69,17 @@ public class InGameMenu extends AbstractGameMenu {
         // Initialiser le menu mais ne pas l'afficher immédiatement
         nifty.gotoScreen("inGameMenu");
         hideMenu();
+        
+        // Enregistrer les écouteurs
+        nifty.subscribeAnnotations(this);
+    }
+    
+    @NiftyEventSubscriber(id="timeSpeedSlider")
+    public void onTimeSpeedSliderChanged(final String id, final SliderChangedEvent event) {
+        // Mettre à jour la vitesse du temps lorsque le slider change
+        float value = event.getValue();
+        setTimeSpeed(value);
+        System.out.println("Vitesse du temps modifiée: " + value);
     }
     
     /**
@@ -118,7 +133,7 @@ public class InGameMenu extends AbstractGameMenu {
                             color("#fff");
                         }});
                         
-                        control(new SliderBuilder("timeSpeedSlider", true) {{
+                        control(new SliderBuilder("timeSpeedSlider", false) {{
                             alignRight();
                             valignCenter();
                             width("65%");
