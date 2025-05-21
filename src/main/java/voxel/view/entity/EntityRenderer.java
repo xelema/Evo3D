@@ -1,5 +1,6 @@
 package voxel.view.entity;
 
+import com.jme3.anim.AnimComposer;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -14,7 +15,10 @@ import voxel.model.entity.Entity;
 import voxel.model.entity.Player;
 import voxel.model.entity.animals.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class EntityRenderer {
 
@@ -23,11 +27,16 @@ public class EntityRenderer {
     protected Entity entity;
     protected Geometry geometry;
     protected Spatial model;
+    protected AnimComposer animator;
+    protected String playingAnimation = "";
+    protected Map<String, List<String>> animations = null;
 
     public EntityRenderer(AssetManager assetManager, Entity entity) {
         this.assetManager = assetManager;
         this.entity = entity;
         this.entityNode = new Node("entity_" + entity.hashCode());
+        this.animations = new HashMap<>();
+
         createEntityGeometry();
     }
     
@@ -39,7 +48,7 @@ public class EntityRenderer {
         try {
             switch (entity) {
                 case Player player ->
-                        loadModel(Player.MODEL_PATH,0.002f);
+                        loadModel(Player.MODEL_PATH,1f);
                 case Cow cow ->
                         loadModel(Cow.MODEL_PATH,1f);
                 case Dromedary dromedary ->
@@ -99,6 +108,26 @@ public class EntityRenderer {
         Quaternion rotation = new Quaternion();
         rotation.fromAngleAxis(entity.getRotation(), new Vector3f(0, 1, 0));
         entityNode.setLocalRotation(rotation);
+
+        // Appliquer l'animation si l'entité remplit les conditions
+        if (this.animator != null ){
+            if (!this.playingAnimation.equals("idle") && !entity.isMoving()) {
+                this.playingAnimation = "idle";
+                playAnimation(playingAnimation);
+            } else if (!this.playingAnimation.equals("jump") && entity.isJumping()) {
+                this.playingAnimation = "jump";
+                playAnimation(playingAnimation);
+            } else if (!this.playingAnimation.equals("fly") && entity.isFalling()) {
+                this.playingAnimation = "fly";
+                playAnimation(playingAnimation);
+            } else if (!this.playingAnimation.equals("walk") && entity.isWalking()) {
+                this.playingAnimation = "walk";
+                playAnimation(playingAnimation);
+            } else if (!this.playingAnimation.equals("run") && entity.isRunning()) {
+                this.playingAnimation = "run";
+                playAnimation(playingAnimation);
+            }
+        }
     }
 
     /**
@@ -156,12 +185,77 @@ public class EntityRenderer {
             modelNode.setLocalTranslation(0, -entity.getHeight()/2, 0);
 
             // Charger les animation TO-DO
+            animator = findAnimComposer(model);
+
+            if (animator != null) {
+                // Regroupe les animations par type dans une Map
+                for(String animName : animator.getAnimClipsNames()) {
+                    String lowerAnimName = animName.toLowerCase();
+                    String key;
+                    if (lowerAnimName.contains("walk")) {
+                        key = "walk";
+                    } else if (lowerAnimName.contains("run")) {
+                        key = "run";
+                    } else if (lowerAnimName.contains("idle") || lowerAnimName.contains("sit")) {
+                        key = "idle";
+                    } else if (lowerAnimName.contains("jump")) {
+                        key = "jump";
+                    } else if (lowerAnimName.contains("fly")) {
+                        key = "fly";
+                    } else {
+                        continue;
+                    }
+                    animations
+                            .computeIfAbsent(key, k -> new ArrayList<>())
+                            .add(animName);
+                }
+            }
+            else {
+                System.err.println("Aucun AnimComposer trouvé dans le modèle (" + modelPath + ")");
+            }
 
             entityNode.attachChild(modelNode);
         }catch (Exception e){
             System.err.println("Erreur lors du chargement du modèle ("+ modelPath + ") : " + e.getMessage());
             e.printStackTrace();
             createBoxEntity();
+        }
+    }
+
+    /**
+     * Finds AnimComposer, checking the spatial and its children.
+     * Fonction récupérée sur le forum de JMonkeyEngine
+     */
+    private AnimComposer findAnimComposer(Spatial spatial) {
+        AnimComposer composer = spatial.getControl(AnimComposer.class);
+        if (composer != null) {
+            return composer;
+        }
+        if (spatial instanceof Node) {
+            for (Spatial child : ((Node) spatial).getChildren()) {
+                composer = findAnimComposer(child);
+                if (composer != null) {
+                    return composer;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Joue une animation aléatoire parmi un type d'animation sur le modèle.
+     */
+    private void playAnimation(String type) {
+        List<String> differentAnimations = animations.get(type);
+        if (differentAnimations != null && !differentAnimations.isEmpty()) {
+            differentAnimations.remove("Idle_B");
+            differentAnimations.remove("Idle_C");
+            String randomAnimation = differentAnimations.get((int) (Math.random() * differentAnimations.size()));
+            animator.setCurrentAction(randomAnimation);
+
+        }
+        else{
+            System.err.println("Aucune animation trouvée pour le type : " + type);
         }
     }
 

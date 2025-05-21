@@ -107,7 +107,7 @@ public class WorldModel {
         }
 
         // Ajout des nuages aléatoires dans le ciel
-        addClouds();
+        //addClouds();
     }
 
     /**

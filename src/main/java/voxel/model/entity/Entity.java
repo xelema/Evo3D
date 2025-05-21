@@ -238,4 +238,28 @@ public abstract class Entity {
             setVerticalVelocity(0);
         }
     }
+
+    public boolean isMoving(){
+        return vx != 0 || vz != 0;
+    }
+
+    public boolean isJumping(){
+        return vy > 0;
+    }
+
+    public float getSpeed(){
+        return (float) Math.sqrt(vx * vx + vy * vy + vz * vz);
+    }
+
+    public boolean isRunning(){
+        return getSpeed() > 8f;
+    }
+
+    public boolean isWalking(){
+        return getSpeed() > 0.5f && getSpeed() <= 8f;
+    }
+
+    public boolean isFalling(){
+        return vy < 0;
+    }
 }

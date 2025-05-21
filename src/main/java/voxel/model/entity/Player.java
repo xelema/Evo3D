@@ -2,7 +2,9 @@ package voxel.model.entity;
 
 public class Player extends Entity {
 
-    public static String MODEL_PATH = "Sukuna Model/Sukuna Character GLTF.j3o";
+    //public static String MODEL_PATH = "Sukuna Model/Sukuna Character GLTF.j3o";
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Sparrow_Animations.glb";
+
 
     public Player(double x, double y, double z) {
         super(x, y, z);
