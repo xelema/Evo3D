@@ -184,6 +184,16 @@ public class GameStateManager {
         // Afficher le curseur pour interagir avec le menu
         app.getInputManager().setCursorVisible(true);
         
+        // Réinitialiser le menu avant de l'afficher pour éviter les erreurs
+        try {
+            // Forcer le retour à l'écran principal du menu (pas l'écran de sélection de biome)
+            if (inGameMenu.getNifty() != null) {
+                inGameMenu.getNifty().gotoScreen("inGameMenu");
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors du changement d'écran: " + e.getMessage());
+        }
+        
         // Afficher le menu
         inGameMenu.showMenu();
     }
@@ -194,6 +204,9 @@ public class GameStateManager {
      * @param biome Le biome du nouveau monde
      */
     public void changeWorld(BiomeType biome) {
+        // Mémoriser l'état précédent pour y revenir après le chargement
+        GameState previousState = this.currentState;
+        
         // Afficher l'écran de chargement
         changeState(GameState.LOADING);
 
@@ -222,8 +235,30 @@ public class GameStateManager {
                     // Créer les nouveaux composants MVC
                     setupMVC(newWorld);
                     
-                    // Passer à l'état de jeu
-                    changeState(GameState.IN_GAME);
+                    // S'assurer que la référence au GameStateManager est correctement définie
+                    if (inputController != null) {
+                        // Reconfigurer complètement le contrôleur d'entrées
+                        inputController.setGameStateManager(this);
+                        
+                        // Réinitialiser les mappings d'entrées
+                        inputController.setupInputs();
+                    }
+                    
+                    // Appliquer un délai court pour s'assurer que tout est initialisé
+                    new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                // Passer à l'état de jeu
+                                app.enqueue(() -> {
+                                    changeState(GameState.IN_GAME);
+                                    return null;
+                                });
+                            }
+                        }, 
+                        500 // Délai de 500ms pour s'assurer que tout est bien initialisé
+                    );
+                    
                     return null;
                 });
             } catch (InterruptedException e) {
@@ -339,46 +374,9 @@ public class GameStateManager {
 
         // Si le joueur a cliqué sur "Démarrer le jeu" dans le menu principal
         if (worldSelectionMenu.hasGameStarted()){
-            // Réinitialiser le flag immédiatement pour éviter de répéter cette action
+
             worldSelectionMenu.setGameStarted(false);
-            
-            // Passer à l'écran de chargement
-            changeState(GameState.LOADING);
-            
-            // Lancer le chargement du monde avec un biome SAVANNA
-            Thread worldGenThread = new Thread(() -> {
-                try {
-                    // Simuler un temps de chargement (pour le démontrer visuellement)
-                    for (int i = 0; i <= 100; i++) {
-                        final int progress = i;
-                        // Mettre à jour la barre de progression
-                        app.enqueue(() -> {
-                            loadingScreen.setProgress(progress);
-                            return null;
-                        });
-                        Thread.sleep(20); // Petite pause pour simuler le chargement
-                    }
-                    
-                    // Créer le nouveau monde
-                    WorldModel newWorld = new WorldModel(BiomeType.SAVANNA);
-                    
-                    // Appliquer les changements sur le thread principal
-                    app.enqueue(() -> {
-                        // Nettoyer les anciennes ressources si nécessaire
-                        cleanupCurrentWorld();
-                        
-                        // Initialiser le monde et la vue
-                        setupMVC(newWorld);
-                        
-                        // Passer à l'état de jeu une fois terminé
-                        changeState(GameState.IN_GAME);
-                        return null;
-                    });
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
-            worldGenThread.start();
+            changeWorld(BiomeType.SAVANNA);
         }
     }
 } 

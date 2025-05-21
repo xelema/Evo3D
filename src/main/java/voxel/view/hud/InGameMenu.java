@@ -375,11 +375,20 @@ public class InGameMenu extends AbstractGameMenu {
      */
     @Override
     public void showMenu() {
-        super.showMenu();
-        
-        // Mettre à jour l'état des contrôles si nécessaire
-        if (stateManager != null && stateManager.getWorldModel() != null) {
-            updateControls();
+        try {
+            super.showMenu();
+            
+            // S'assurer que nous sommes sur le bon écran
+            if (nifty.getCurrentScreen() == null || !"inGameMenu".equals(nifty.getCurrentScreen().getScreenId())) {
+                nifty.gotoScreen("inGameMenu");
+            }
+            
+            // Mettre à jour l'état des contrôles si nécessaire
+            if (stateManager != null && stateManager.getWorldModel() != null) {
+                updateControls();
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'affichage du menu en jeu: " + e.getMessage());
         }
     }
     
@@ -387,19 +396,33 @@ public class InGameMenu extends AbstractGameMenu {
      * Met à jour l'état des contrôles du menu
      */
     private void updateControls() {
-        // Mettre à jour le slider de vitesse
-        Slider timeSlider = nifty.getCurrentScreen().findNiftyControl("timeSpeedSlider", Slider.class);
-        if (timeSlider != null) {
-            timeSlider.setValue(timeSpeed);
-        }
-        
-        // Mettre à jour les checkboxes
-        CheckBox wireframeBox = nifty.getCurrentScreen().findNiftyControl("wireframeCheckbox", CheckBox.class);
-        CheckBox lightningBox = nifty.getCurrentScreen().findNiftyControl("lightningCheckbox", CheckBox.class);
-        
-        if (wireframeBox != null && lightningBox != null && stateManager.getWorldModel() != null) {
-            wireframeBox.setChecked(stateManager.getWorldModel().getWireframeMode());
-            lightningBox.setChecked(stateManager.getWorldModel().getLightningMode());
+        try {
+            // Seulement si on est sur l'écran principal du menu
+            if (!"inGameMenu".equals(nifty.getCurrentScreen().getScreenId())) {
+                return;
+            }
+            
+            // Mettre à jour le slider de vitesse
+            Slider timeSlider = nifty.getCurrentScreen().findNiftyControl("timeSpeedSlider", Slider.class);
+            if (timeSlider != null) {
+                timeSlider.setValue(timeSpeed);
+            }
+            
+            // Nous n'utilisons pas de checkboxes mais des boutons dans l'interface
+            // Les deux références ci-dessous ne correspondent pas à des contrôles existants
+            // Nous n'avons donc pas besoin de les mettre à jour
+            /*
+            CheckBox wireframeBox = nifty.getCurrentScreen().findNiftyControl("wireframeCheckbox", CheckBox.class);
+            CheckBox lightningBox = nifty.getCurrentScreen().findNiftyControl("lightningCheckbox", CheckBox.class);
+            
+            if (wireframeBox != null && lightningBox != null && stateManager.getWorldModel() != null) {
+                wireframeBox.setChecked(stateManager.getWorldModel().getWireframeMode());
+                lightningBox.setChecked(stateManager.getWorldModel().getLightningMode());
+            }
+            */
+        } catch (Exception e) {
+            // Capture les erreurs potentielles lors de la mise à jour des contrôles
+            System.err.println("Erreur lors de la mise à jour des contrôles du menu: " + e.getMessage());
         }
     }
     

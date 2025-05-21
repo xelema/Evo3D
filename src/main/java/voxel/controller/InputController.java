@@ -116,6 +116,24 @@ public class InputController implements ActionListener {
      * Configure les mappings d'entrées et enregistre les listeners.
      */
     public void setupInputs() {
+        // Clean des mappings
+        inputManager.deleteMapping(ACTION_TOGGLE_WIREFRAME);
+        inputManager.deleteMapping(ACTION_TOGGLE_LIGHTNING);
+        inputManager.deleteMapping(ACTION_MOVE_FORWARD);
+        inputManager.deleteMapping(ACTION_MOVE_BACKWARD);
+        inputManager.deleteMapping(ACTION_MOVE_LEFT);
+        inputManager.deleteMapping(ACTION_MOVE_RIGHT);
+        inputManager.deleteMapping(ACTION_MOVE_UP);
+        inputManager.deleteMapping(ACTION_MOVE_DOWN);
+        inputManager.deleteMapping(ACTION_SPEED_FLY);
+        inputManager.deleteMapping(ACTION_SPAWN_PLAYER);
+        inputManager.deleteMapping(ACTION_TOGGLE_FULLSCREEN);
+        inputManager.deleteMapping(ACTION_TOGGLE_COORDINATES);
+        inputManager.deleteMapping(ACTION_TOGGLE_CAMERA_MODE);
+        inputManager.deleteMapping(ACTION_TOGGLE_THIRD_PERSON);
+        inputManager.deleteMapping(ACTION_DEBUG_ENTITES_LIST);
+        inputManager.deleteMapping(ACTION_OPEN_INGAME_MENU);
+        
         // Configuration des mappings (association touche/action)
         inputManager.addMapping(ACTION_TOGGLE_WIREFRAME, new KeyTrigger(KeyInput.KEY_T));
         inputManager.addMapping(ACTION_TOGGLE_LIGHTNING, new KeyTrigger(KeyInput.KEY_L));
@@ -153,6 +171,9 @@ public class InputController implements ActionListener {
                 ACTION_DEBUG_ENTITES_LIST,
                 ACTION_OPEN_INGAME_MENU
         );
+        
+        // S'assurer que les contrôles de caméra sont activés par défaut
+        cameraControlsEnabled = true;
     }
 
     /**
