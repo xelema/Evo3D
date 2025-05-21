@@ -1,4 +1,4 @@
-package voxel.view;
+package voxel.view.hud;
 import com.jme3.app.SimpleApplication;
 import com.jme3.font.BitmapText;
 import com.jme3.input.MouseInput;
@@ -12,18 +12,14 @@ import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
-import com.jme3.system.AppSettings;
 
-import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.builder.LayerBuilder;
 import de.lessvoid.nifty.builder.PanelBuilder;
 import de.lessvoid.nifty.builder.ScreenBuilder;
 import de.lessvoid.nifty.builder.TextBuilder;
 import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
-import de.lessvoid.nifty.screen.Screen;
-import de.lessvoid.nifty.screen.ScreenController;
 
-public class MenuPrincipalApp implements ScreenController {
+public class ChooseMenu extends AbstractGameMenu {
 
     private static final int NOMBRECASESMAX = 6;
     private static final int NOMBREPARAMETRES = 3;
@@ -32,17 +28,22 @@ public class MenuPrincipalApp implements ScreenController {
     private boolean[][] coche = new boolean[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[][] textes = new BitmapText[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[] titres = new BitmapText[NOMBREPARAMETRES];
-    private Nifty nifty;
-    private NiftyJmeDisplay niftyDisplay;
-    private boolean menuVisible = false;
-    private SimpleApplication app;
+
+    private boolean gameStarted = false;
 
     /**
-     * Initialise le menu dans l'application fournie
-     * @param app L'application dans laquelle intégrer le menu
+     * Constructeur du menu de choix
+     * @param app L'application SimpleApplication
      */
-    public void initialize(SimpleApplication app) {
-        this.app = app;
+    public ChooseMenu(SimpleApplication app) {
+        super(app);
+    }
+
+    /**
+     * Initialise le menu et ses composants
+     */
+    @Override
+    public void initialize() {
         // Créer le système d'affichage Nifty lié à JME
         niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
                 app.getAssetManager(), app.getInputManager(), app.getAudioRenderer(), app.getGuiViewPort());
@@ -108,7 +109,7 @@ public class MenuPrincipalApp implements ScreenController {
         }
         nifty.addScreen("start", new ScreenBuilder("start") {{
 
-            controller(MenuPrincipalApp.this); // liaison au ScreenController
+            controller(ChooseMenu.this); // liaison au ScreenController
 
 
             layer(new LayerBuilder("layer") {{
@@ -195,7 +196,7 @@ public class MenuPrincipalApp implements ScreenController {
 
         nifty.addScreen("reglage", new ScreenBuilder("reglage") {{
 
-            controller(MenuPrincipalApp.this); // liaison au ScreenController
+            controller(ChooseMenu.this); // liaison au ScreenController
 
 
             layer(new LayerBuilder("layerReglage") {{
@@ -478,7 +479,7 @@ public class MenuPrincipalApp implements ScreenController {
         
         nifty.addScreen("faune", new ScreenBuilder("faune") {{
 
-            controller(MenuPrincipalApp.this); // liaison au ScreenController
+            controller(ChooseMenu.this); // liaison au ScreenController
            
            
             layer(new LayerBuilder("Modifications") {{
@@ -592,7 +593,15 @@ public class MenuPrincipalApp implements ScreenController {
         System.out.println("Lancement du jeu...");
         System.out.println("Bouton démarrer cliqué !");
         // Tu peux ici changer d'écran ou démarrer la logique du jeu
+        this.gameStarted = true;
+    }
 
+    public boolean hasGameStarted() {
+        return gameStarted;
+    }
+
+    public void setGameStarted(boolean state) {
+        this.gameStarted = state;
     }
 
 
@@ -632,18 +641,5 @@ public class MenuPrincipalApp implements ScreenController {
         nifty.gotoScreen("faune");
     }
 
-    public Nifty getNifty() {
-        return this.nifty;
-    }
-
-    // Méthodes du ScreenController
-
-    public void bind(Nifty nifty, Screen screen) {}
-
-
-    public void onStartScreen() {}
-
-
-    public void onEndScreen() {}
-
+    // Les méthodes ScreenController sont héritées de AbstractGameMenu
 }

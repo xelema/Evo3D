@@ -6,14 +6,9 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.system.AppSettings;
 
-import voxel.controller.EntityController;
-import voxel.controller.GameController;
-import voxel.controller.InputController;
-import voxel.controller.WorldController;
+import voxel.controller.GameStateManager;
 import voxel.model.BiomeType;
 import voxel.model.WorldModel;
-import voxel.model.ChunkModel;
-import voxel.view.WorldRenderer;
 
 /**
  * Classe principale qui est le point d'entrée du programme.
@@ -21,8 +16,8 @@ import voxel.view.WorldRenderer;
  */
 public class Main extends SimpleApplication {
 
-    /** Référence au contrôleur principal du jeu */
-    private GameController gameController;
+    /** Référence au gestionnaire d'états du jeu */
+    private GameStateManager gameStateManager;
 
     /**
      * Point d'entrée du programme.
@@ -56,7 +51,12 @@ public class Main extends SimpleApplication {
         this.stateManager.attach(screenShotState);
 
         setupCamera();
-        setupMVC();
+        
+        // Initialiser le gestionnaire d'états du jeu
+        gameStateManager = new GameStateManager(this);
+        
+        // Démarrer avec le menu de sélection du monde
+        gameStateManager.changeState(GameStateManager.GameState.WORLD_SELECTION);
     }
 
     /**
@@ -67,8 +67,10 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleUpdate(float tpf) {
-        // Déléguer la mise à jour au contrôleur de jeu
-        gameController.update(tpf, viewPort);
+        // Déléguer la mise à jour au gestionnaire d'états du jeu
+        if (gameStateManager != null) {
+            gameStateManager.update(tpf);
+        }
     }
 
     /**
@@ -86,36 +88,4 @@ public class Main extends SimpleApplication {
         flyCam.setRotationSpeed(1f);
         flyCam.setDragToRotate(false);
     }
-
-    /**
-     * Configure l'architecture MVC (Modèle-Vue-Contrôleur).
-     */
-    private void setupMVC() {
-        // Création des composants selon l'architecture MVC
-        
-        // Modèle - Représente les données
-        BiomeType selectedBiome = BiomeType.SAVANNA;
-        WorldModel worldModel = new WorldModel(selectedBiome);
-        
-        // Vue - Gère l'affichage
-        WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
-        rootNode.attachChild(worldRenderer.getSkyNode());
-        rootNode.attachChild(worldRenderer.getNode());
-        
-        // Initialisation de l'interface utilisateur
-        worldRenderer.initializeUI(guiNode, cam);
-        
-        // Contrôleurs - Gèrent les interactions et la logique
-        WorldController worldController = new WorldController(worldModel, worldRenderer);
-        EntityController entityController = new EntityController(worldModel, worldRenderer, cam);
-        InputController inputController = new InputController(inputManager, worldController, entityController, cam);
-        
-        // Passer l'application et les paramètres pour le mode plein écran
-        inputController.setAppAndSettings(this, settings);
-
-        // Contrôleur principal qui coordonne tout
-        gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
-                entityController, cam);
-    }
-
 }

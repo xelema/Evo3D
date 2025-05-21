@@ -1,0 +1,366 @@
+package voxel.view.hud;
+
+import com.jme3.app.SimpleApplication;
+import com.jme3.niftygui.NiftyJmeDisplay;
+
+import de.lessvoid.nifty.builder.LayerBuilder;
+import de.lessvoid.nifty.builder.PanelBuilder;
+import de.lessvoid.nifty.builder.ScreenBuilder;
+import de.lessvoid.nifty.builder.TextBuilder;
+import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
+import de.lessvoid.nifty.controls.slider.builder.SliderBuilder;
+import de.lessvoid.nifty.controls.CheckBox;
+import de.lessvoid.nifty.controls.Slider;
+
+import voxel.controller.GameStateManager;
+
+/**
+ * Menu disponible pendant le jeu pour contrôler les paramètres en temps réel.
+ */
+public class InGameMenu extends AbstractGameMenu {
+    
+    /** Vitesse de base du temps dans le jeu */
+    private static final float DEFAULT_TIME_SPEED = 1.0f;
+    
+    /** Vitesse actuelle du temps dans le jeu */
+    private float timeSpeed = DEFAULT_TIME_SPEED;
+    
+    /** Référence au contrôleur du jeu pour effectuer les actions */
+    private GameStateManager stateManager;
+    
+    /**
+     * Constructeur du menu en jeu
+     * 
+     * @param app L'application SimpleApplication
+     * @param stateManager Le gestionnaire d'états du jeu
+     */
+    public InGameMenu(SimpleApplication app, GameStateManager stateManager) {
+        super(app);
+        this.stateManager = stateManager;
+    }
+    
+    /**
+     * Initialise le menu et ses composants
+     */
+    @Override
+    public void initialize() {
+        // Créer le système d'affichage Nifty lié à JME
+        niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
+                app.getAssetManager(), app.getInputManager(), app.getAudioRenderer(), app.getGuiViewPort());
+
+        nifty = niftyDisplay.getNifty();
+
+        nifty.loadStyleFile("nifty-default-styles.xml");
+        nifty.loadControlFile("nifty-default-controls.xml");
+        
+        createMenu();
+
+        // Initialiser le menu mais ne pas l'afficher immédiatement
+        nifty.gotoScreen("inGameMenu");
+        hideMenu();
+    }
+    
+    /**
+     * Crée l'interface du menu en jeu
+     */
+    private void createMenu() {
+        nifty.addScreen("inGameMenu", new ScreenBuilder("inGameMenu") {{
+            controller(InGameMenu.this);
+            
+            layer(new LayerBuilder("background") {{
+                childLayoutCenter();
+                backgroundColor("#000a");
+                
+                panel(new PanelBuilder("mainPanel") {{
+                    childLayoutVertical();
+                    alignCenter();
+                    valignCenter();
+                    width("50%");
+                    height("70%");
+                    backgroundColor("#444f");
+                    padding("20px");
+                    
+                    text(new TextBuilder() {{
+                        text("Menu de Jeu");
+                        font("Interface/Fonts/Default.fnt");
+                        height("10%");
+                        width("100%");
+                        alignCenter();
+                        color("#fff");
+                    }});
+                    
+                    panel(new PanelBuilder("timeControlPanel") {{
+                        childLayoutHorizontal();
+                        alignCenter();
+                        height("10%");
+                        width("100%");
+                        padding("10px");
+                        
+                        text(new TextBuilder() {{
+                            text("Vitesse du temps:");
+                            font("Interface/Fonts/Default.fnt");
+                            width("35%");
+                            height("100%");
+                            valignCenter();
+                            color("#fff");
+                        }});
+                        
+                        control(new SliderBuilder("timeSpeedSlider", true) {{
+                            alignRight();
+                            valignCenter();
+                            width("65%");
+                            height("20px");
+                            initial(1.0f);
+                            min(0.1f);
+                            max(5.0f);
+                            stepSize(0.1f);
+                            buttonStepSize(0.5f);
+                        }});
+                    }});
+                    
+                    panel(new PanelBuilder("displayPanel") {{
+                        childLayoutVertical();
+                        alignCenter();
+                        height("15%");
+                        width("100%");
+                        padding("10px");
+                        
+                        panel(new PanelBuilder("wireframePanel") {{
+                            childLayoutHorizontal();
+                            alignCenter();
+                            height("50%");
+                            width("100%");
+                            
+                            control(new ButtonBuilder("wireframeButton", "Mode filaire") {{
+                                alignCenter();
+                                valignCenter();
+                                height("100%");
+                                width("100%");
+                                interactOnClick("toggleWireframe()");
+                            }});
+                        }});
+                        
+                        panel(new PanelBuilder("lightningPanel") {{
+                            childLayoutHorizontal();
+                            alignCenter();
+                            height("50%");
+                            width("100%");
+                            
+                            control(new ButtonBuilder("lightningButton", "Éclairage") {{
+                                alignCenter();
+                                valignCenter();
+                                height("100%");
+                                width("100%");
+                                interactOnClick("toggleLightning()");
+                            }});
+                        }});
+                    }});
+                    
+                    panel(new PanelBuilder("spacer") {{
+                        height("5%");
+                    }});
+                    
+                    control(new ButtonBuilder("worldSelectionButton", "Changer de monde") {{
+                        alignCenter();
+                        height("10%");
+                        width("80%");
+                        interactOnClick("openWorldSelection()");
+                    }});
+                    
+                    panel(new PanelBuilder("spacer2") {{
+                        height("5%");
+                    }});
+                    
+                    control(new ButtonBuilder("controlsButton", "Contrôles") {{
+                        alignCenter();
+                        height("10%");
+                        width("80%");
+                        interactOnClick("showControls()");
+                    }});
+                    
+                    panel(new PanelBuilder("spacer3") {{
+                        height("5%");
+                    }});
+                    
+                    control(new ButtonBuilder("resumeButton", "Reprendre le jeu") {{
+                        alignCenter();
+                        height("10%");
+                        width("80%");
+                        interactOnClick("resumeGame()");
+                    }});
+                    
+                    panel(new PanelBuilder("spacer4") {{
+                        height("5%");
+                    }});
+                    
+                    control(new ButtonBuilder("quitButton", "Quitter") {{
+                        alignCenter();
+                        height("10%");
+                        width("80%");
+                        interactOnClick("quitGame()");
+                    }});
+                }});
+            }});
+        }}.build(nifty));
+        
+        // Écran de contrôles
+        nifty.addScreen("controlsScreen", new ScreenBuilder("controlsScreen") {{
+            controller(InGameMenu.this);
+            
+            layer(new LayerBuilder("background") {{
+                childLayoutCenter();
+                backgroundColor("#000a");
+                
+                panel(new PanelBuilder("controlsPanel") {{
+                    childLayoutVertical();
+                    alignCenter();
+                    valignCenter();
+                    width("60%");
+                    height("80%");
+                    backgroundColor("#444f");
+                    padding("20px");
+                    
+                    text(new TextBuilder() {{
+                        text("Contrôles du jeu");
+                        font("Interface/Fonts/Default.fnt");
+                        height("10%");
+                        width("100%");
+                        alignCenter();
+                        color("#fff");
+                    }});
+                    
+                    panel(new PanelBuilder("controlsList") {{
+                        childLayoutVertical();
+                        alignCenter();
+                        height("75%");
+                        width("90%");
+                        
+                        text(new TextBuilder() {{
+                            text("Z, Q, S, D : Déplacement\n"
+                                + "Espace : Saut\n"
+                                + "E : Interaction\n"
+                                + "Souris : Orientation\n"
+                                + "Clic gauche : Détruire un bloc\n"
+                                + "Clic droit : Placer un bloc\n"
+                                + "ESC : Menu en jeu\n"
+                                + "F : Mode plein écran\n"
+                                + "L : Mode filaire\n"
+                                + "T : Mode d'éclairage");
+                            font("Interface/Fonts/Default.fnt");
+                            height("100%");
+                            width("100%");
+                            color("#fff");
+                        }});
+                    }});
+                    
+                    control(new ButtonBuilder("backButton", "Retour") {{
+                        alignCenter();
+                        height("10%");
+                        width("40%");
+                        interactOnClick("backToMenu()");
+                    }});
+                }});
+            }});
+        }}.build(nifty));
+    }
+    
+    /**
+     * Effectue les actions nécessaires lorsque le menu est affiché
+     */
+    @Override
+    public void showMenu() {
+        super.showMenu();
+        
+        // Mettre à jour l'état des contrôles si nécessaire
+        if (stateManager != null && stateManager.getCurrentWorld() != null) {
+            updateControls();
+        }
+    }
+    
+    /**
+     * Met à jour l'état des contrôles du menu
+     */
+    private void updateControls() {
+        // Mettre à jour le slider de vitesse
+        Slider timeSlider = nifty.getCurrentScreen().findNiftyControl("timeSpeedSlider", Slider.class);
+        if (timeSlider != null) {
+            timeSlider.setValue(timeSpeed);
+        }
+        
+        // Mettre à jour les checkboxes
+        CheckBox wireframeBox = nifty.getCurrentScreen().findNiftyControl("wireframeCheckbox", CheckBox.class);
+        CheckBox lightningBox = nifty.getCurrentScreen().findNiftyControl("lightningCheckbox", CheckBox.class);
+        
+        if (wireframeBox != null && lightningBox != null && stateManager.getCurrentWorld() != null) {
+            wireframeBox.setChecked(stateManager.getCurrentWorld().getWireframeMode());
+            lightningBox.setChecked(stateManager.getCurrentWorld().getLightningMode());
+        }
+    }
+    
+    /**
+     * Définit la vitesse du temps dans le jeu
+     * 
+     * @param speed Nouvelle vitesse du temps
+     */
+    public void setTimeSpeed(float speed) {
+        this.timeSpeed = speed;
+        // Notifier le gestionnaire d'état
+        if (stateManager != null) {
+            stateManager.setTimeSpeed(speed);
+        }
+    }
+    
+    /**
+     * Récupère la vitesse actuelle du temps
+     * 
+     * @return La vitesse actuelle du temps
+     */
+    public float getTimeSpeed() {
+        return timeSpeed;
+    }
+    
+    // Méthodes appelées par les boutons
+    
+    public void openWorldSelection() {
+        if (stateManager != null) {
+            hideMenu();
+            stateManager.changeState(GameStateManager.GameState.WORLD_SELECTION);
+        }
+    }
+    
+    public void showControls() {
+        nifty.gotoScreen("controlsScreen");
+    }
+    
+    public void backToMenu() {
+        nifty.gotoScreen("inGameMenu");
+    }
+    
+    public void resumeGame() {
+        hideMenu();
+    }
+    
+    public void quitGame() {
+        app.stop();
+    }
+    
+    /**
+     * Bascule l'état du mode filaire
+     */
+    public void toggleWireframe() {
+        if (stateManager != null && stateManager.getCurrentWorld() != null) {
+            boolean isWireframe = stateManager.getCurrentWorld().toggleWireframe();
+            System.out.println("Mode filaire " + (isWireframe ? "activé" : "désactivé"));
+        }
+    }
+    
+    /**
+     * Bascule l'état de l'éclairage
+     */
+    public void toggleLightning() {
+        if (stateManager != null && stateManager.getCurrentWorld() != null) {
+            boolean isLightningOn = stateManager.getCurrentWorld().toggleLightning();
+            System.out.println("Éclairage " + (isLightningOn ? "activé" : "désactivé"));
+        }
+    }
+} 
