@@ -589,11 +589,12 @@ public class ChooseMenu extends AbstractGameMenu {
     // Méthodes déclenchées par les boutons
 
     public void startGame() {
-
         System.out.println("Lancement du jeu...");
         System.out.println("Bouton démarrer cliqué !");
-        // Tu peux ici changer d'écran ou démarrer la logique du jeu
+        // Indiquer que le jeu a démarré
         this.gameStarted = true;
+        // Cacher ce menu (le GameStateManager s'occupera d'afficher l'écran de chargement)
+        hideMenu();
     }
 
     public boolean hasGameStarted() {

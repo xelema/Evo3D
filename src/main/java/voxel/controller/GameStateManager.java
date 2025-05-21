@@ -2,6 +2,7 @@ package voxel.controller;
 
 import com.jme3.app.SimpleApplication;
 
+import voxel.Main;
 import voxel.model.BiomeType;
 import voxel.model.WorldModel;
 import voxel.view.hud.ChooseMenu;
@@ -158,7 +159,13 @@ public class GameStateManager {
     private void setupInGameState() {
         // Assurez-vous que le monde est initialisé
         if (worldRenderer != null) {
+            // Cacher le curseur en mode jeu
             app.getInputManager().setCursorVisible(false);
+            
+            // Activer les contrôles de la caméra
+            if (inputController != null) {
+                inputController.setCameraControlsEnabled(true);
+            }
         } else {
             WorldModel worldModel = new WorldModel(BiomeType.SAVANNA);
             setupMVC(worldModel);
@@ -169,6 +176,15 @@ public class GameStateManager {
      * Configure le menu en jeu
      */
     private void setupInGameMenu() {
+        // Désactiver les contrôles de caméra quand le menu est affiché
+        if (inputController != null) {
+            inputController.setCameraControlsEnabled(false);
+        }
+        
+        // Afficher le curseur pour interagir avec le menu
+        app.getInputManager().setCursorVisible(true);
+        
+        // Afficher le menu
         inGameMenu.showMenu();
     }
     
@@ -178,28 +194,41 @@ public class GameStateManager {
      * @param biome Le biome du nouveau monde
      */
     public void changeWorld(BiomeType biome) {
-        // Sauvegarder l'état du monde actuel si nécessaire
-        
-//        // Afficher l'écran de chargement
-//        changeState(GameState.LOADING);
+        // Afficher l'écran de chargement
+        changeState(GameState.LOADING);
 
         // Générer le nouveau monde (dans un thread séparé)
         Thread worldGenThread = new Thread(() -> {
-            // Créer le nouveau monde
-            WorldModel newWorld = new WorldModel(biome);
-
-            // Initialiser le rendu et les contrôleurs pour ce monde
-            app.enqueue(() -> {
-                // Détruire les anciennes ressources si elles existent
-                cleanupCurrentWorld();
-
-                // Créer les nouveaux composants MVC
-                setupMVC(newWorld);
+            try {
+                // Simuler les étapes de génération avec la progression
+                for (int i = 0; i <= 100; i++) {
+                    final int progress = i;
+                    // Mettre à jour la barre de progression
+                    app.enqueue(() -> {
+                        loadingScreen.setProgress(progress);
+                        return null;
+                    });
+                    Thread.sleep(20); // Petite pause pour simuler le chargement
+                }
                 
-                // Passer à l'état de jeu
-                changeState(GameState.IN_GAME);
-                return null;
-            });
+                // Créer le nouveau monde
+                WorldModel newWorld = new WorldModel(biome);
+
+                // Initialiser le rendu et les contrôleurs pour ce monde
+                app.enqueue(() -> {
+                    // Détruire les anciennes ressources si elles existent
+                    cleanupCurrentWorld();
+
+                    // Créer les nouveaux composants MVC
+                    setupMVC(newWorld);
+                    
+                    // Passer à l'état de jeu
+                    changeState(GameState.IN_GAME);
+                    return null;
+                });
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
         worldGenThread.start();
     }
@@ -243,6 +272,14 @@ public class GameStateManager {
         entityController = new EntityController(worldModel, worldRenderer, app.getCamera());
         inputController = new InputController(app.getInputManager(), worldController, entityController, app.getCamera());
         
+        // Définir la référence au GameStateManager dans l'InputController
+        inputController.setGameStateManager(this);
+        
+        // Définir la référence à l'application et aux paramètres
+        if (app instanceof voxel.Main) {
+            inputController.setAppAndSettings((Main) app, app.getContext().getSettings());
+        }
+        
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
                 entityController, app.getCamera());
@@ -262,12 +299,21 @@ public class GameStateManager {
     }
     
     /**
-     * Récupère le monde actuel
+     * Récupère le monde actuel (modele)
      * 
-     * @return Le modèle du monde actuel
+     * @return Le modèle du monde actuel (modele)
      */
-    public WorldModel getCurrentWorld() {
+    public WorldModel getWorldModel() {
         return currentWorld;
+    }
+
+    /**
+     * Récupère le monde actuel (controlleur)
+     *
+     * @return Le modèle du monde actuel (controlleur)
+     */
+    public WorldController getWorldController() {
+        return worldController;
     }
     
     /**
@@ -291,9 +337,48 @@ public class GameStateManager {
             gameController.update(tpf * timeSpeed, app.getViewPort());
         }
 
+        // Si le joueur a cliqué sur "Démarrer le jeu" dans le menu principal
         if (worldSelectionMenu.hasGameStarted()){
-            changeState(GameState.IN_GAME);
+            // Réinitialiser le flag immédiatement pour éviter de répéter cette action
             worldSelectionMenu.setGameStarted(false);
+            
+            // Passer à l'écran de chargement
+            changeState(GameState.LOADING);
+            
+            // Lancer le chargement du monde avec un biome SAVANNA
+            Thread worldGenThread = new Thread(() -> {
+                try {
+                    // Simuler un temps de chargement (pour le démontrer visuellement)
+                    for (int i = 0; i <= 100; i++) {
+                        final int progress = i;
+                        // Mettre à jour la barre de progression
+                        app.enqueue(() -> {
+                            loadingScreen.setProgress(progress);
+                            return null;
+                        });
+                        Thread.sleep(20); // Petite pause pour simuler le chargement
+                    }
+                    
+                    // Créer le nouveau monde
+                    WorldModel newWorld = new WorldModel(BiomeType.SAVANNA);
+                    
+                    // Appliquer les changements sur le thread principal
+                    app.enqueue(() -> {
+                        // Nettoyer les anciennes ressources si nécessaire
+                        cleanupCurrentWorld();
+                        
+                        // Initialiser le monde et la vue
+                        setupMVC(newWorld);
+                        
+                        // Passer à l'état de jeu une fois terminé
+                        changeState(GameState.IN_GAME);
+                        return null;
+                    });
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+            worldGenThread.start();
         }
     }
 } 

@@ -45,6 +45,8 @@ public abstract class AbstractGameMenu implements ScreenController {
     public void showMenu() {
         if (!menuVisible) {
             app.getInputManager().setCursorVisible(true);
+            
+            // Seulement ajouter le processeur Nifty sans toucher aux mappings
             app.getGuiViewPort().addProcessor(niftyDisplay);
             menuVisible = true;
         }

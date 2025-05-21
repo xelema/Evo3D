@@ -51,6 +51,9 @@ public class Main extends SimpleApplication {
         this.stateManager.attach(screenShotState);
 
         setupCamera();
+
+        // Enmpêche la possibilité de quitter le jeu via 'ESC'
+        inputManager.deleteMapping(INPUT_MAPPING_EXIT);
         
         // Initialiser le gestionnaire d'états du jeu
         gameStateManager = new GameStateManager(this);

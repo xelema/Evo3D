@@ -4,6 +4,7 @@ import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 
+import com.jme3.app.SimpleApplication;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
@@ -37,6 +38,7 @@ public class InputController implements ActionListener {
     private static final String ACTION_TOGGLE_CAMERA_MODE = "ToggleCameraMode"; // Action pour basculer entre caméra libre et joueur
     private static final String ACTION_TOGGLE_THIRD_PERSON = "ToggleThirdPerson"; // Action pour basculer entre vue 1ère et 3ème personne
     private static final String ACTION_DEBUG_ENTITES_LIST = "DebugEntitiesList"; // Action pour afficher la liste des entités
+    private static final String ACTION_OPEN_INGAME_MENU = "OpenInGameMenu"; // Action pour ouvrir le menu en jeu
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
@@ -44,6 +46,7 @@ public class InputController implements ActionListener {
     private final Camera camera; // Référence à la caméra de la scène
     private Main app; // Référence à l'application principale
     private AppSettings settings; // Paramètres de l'application
+    private GameStateManager gameStateManager; // Référence au gestionnaire d'états du jeu
     
     // Paramètres originaux pour restaurer la fenêtre
     private int originalWidth;
@@ -62,12 +65,14 @@ public class InputController implements ActionListener {
     private boolean displayCoordinates = false; // État d'affichage des coordonnées
     
     private PlayerController playerController; // Contrôleur du joueur
+    private boolean cameraControlsEnabled = true; // Ajout: état des contrôles de caméra
 
     /**
      * Crée un nouveau contrôleur d'entrées.
      *
      * @param inputManager Le gestionnaire d'entrées de jMonkey
      * @param worldController Référence au contrôleur de monde
+     * @param entityController Référence au contrôleur d'entités
      * @param camera Référence à la caméra
      */
     public InputController(InputManager inputManager, WorldController worldController,
@@ -78,6 +83,15 @@ public class InputController implements ActionListener {
         this.entityController = entityController;
         this.playerController = new PlayerController(worldController, entityController, camera, inputManager);
         setupInputs();
+    }
+    
+    /**
+     * Définit le gestionnaire d'états du jeu
+     * 
+     * @param gameStateManager Le gestionnaire d'états du jeu
+     */
+    public void setGameStateManager(GameStateManager gameStateManager) {
+        this.gameStateManager = gameStateManager;
     }
 
     /**
@@ -101,7 +115,7 @@ public class InputController implements ActionListener {
     /**
      * Configure les mappings d'entrées et enregistre les listeners.
      */
-    private void setupInputs() {
+    public void setupInputs() {
         // Configuration des mappings (association touche/action)
         inputManager.addMapping(ACTION_TOGGLE_WIREFRAME, new KeyTrigger(KeyInput.KEY_T));
         inputManager.addMapping(ACTION_TOGGLE_LIGHTNING, new KeyTrigger(KeyInput.KEY_L));
@@ -118,6 +132,7 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_TOGGLE_CAMERA_MODE, new KeyTrigger(KeyInput.KEY_V));
         inputManager.addMapping(ACTION_TOGGLE_THIRD_PERSON, new KeyTrigger(KeyInput.KEY_F5));
         inputManager.addMapping(ACTION_DEBUG_ENTITES_LIST, new KeyTrigger(KeyInput.KEY_F6));
+        inputManager.addMapping(ACTION_OPEN_INGAME_MENU, new KeyTrigger(KeyInput.KEY_ESCAPE));
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this,
@@ -135,8 +150,54 @@ public class InputController implements ActionListener {
                 ACTION_TOGGLE_COORDINATES,
                 ACTION_TOGGLE_CAMERA_MODE,
                 ACTION_TOGGLE_THIRD_PERSON,
-                ACTION_DEBUG_ENTITES_LIST
+                ACTION_DEBUG_ENTITES_LIST,
+                ACTION_OPEN_INGAME_MENU
         );
+    }
+
+    /**
+     * Active ou désactive les contrôles de la caméra (souris et clavier)
+     * @param enabled true pour activer, false pour désactiver
+     */
+    public void setCameraControlsEnabled(boolean enabled) {
+        this.cameraControlsEnabled = enabled;
+        
+        // Si désactivés, annuler tous les mouvements en cours
+        if (!enabled) {
+            movingForward = false;
+            movingBackward = false;
+            movingLeft = false;
+            movingRight = false;
+            movingUp = false;
+            movingDown = false;
+            speedFly = false;
+            
+            // Informer le contrôleur du joueur
+            playerController.setMovingForward(false);
+            playerController.setMovingBackward(false);
+            playerController.setMovingLeft(false);
+            playerController.setMovingRight(false);
+            playerController.setMovingUp(false);
+            playerController.setSpeedFly(false);
+            
+            // Désactiver FlyByCamera si l'app est disponible
+            if (app != null) {
+                app.getFlyByCamera().setEnabled(false);
+            }
+        } else if (app != null) {
+            // Réactiver FlyByCamera si l'app est disponible
+            app.getFlyByCamera().setEnabled(true);
+        }
+        
+        // Configurer le curseur de souris
+        inputManager.setCursorVisible(!enabled);
+    }
+    
+    /**
+     * @return true si les contrôles de caméra sont activés
+     */
+    public boolean areCameraControlsEnabled() {
+        return cameraControlsEnabled;
     }
 
     /**
@@ -148,6 +209,11 @@ public class InputController implements ActionListener {
      */
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
+        // Si dans un menu et que ce n'est pas la touche ESCAPE, ignorer les entrées
+        if (!cameraControlsEnabled && !name.equals(ACTION_OPEN_INGAME_MENU)) {
+            return;
+        }
+        
         switch (name) {
             case ACTION_TOGGLE_WIREFRAME:
                 if (isPressed) {
@@ -217,6 +283,20 @@ public class InputController implements ActionListener {
                     entityController.printEntitiesList();
                 }
                 break;
+            case ACTION_OPEN_INGAME_MENU:
+                if (isPressed && gameStateManager != null) {
+                    // Si on est en jeu, afficher le menu en jeu
+                    if (gameStateManager.getCurrentState() == GameStateManager.GameState.IN_GAME) {
+                        gameStateManager.changeState(GameStateManager.GameState.IN_GAME_MENU);
+                        setCameraControlsEnabled(false); // Désactiver les contrôles de caméra en mode menu
+                    } 
+                    // Si on est déjà dans le menu en jeu, revenir au jeu
+                    else if (gameStateManager.getCurrentState() == GameStateManager.GameState.IN_GAME_MENU) {
+                        gameStateManager.changeState(GameStateManager.GameState.IN_GAME);
+                        setCameraControlsEnabled(true); // Réactiver les contrôles de caméra en mode jeu
+                    }
+                }
+                break;
         }
     }
 
@@ -227,6 +307,11 @@ public class InputController implements ActionListener {
      * @param tpf Temps écoulé depuis la dernière image
      */
     public void updateCameraMovement(float tpf) {
+        // Ne pas mettre à jour la caméra si les contrôles sont désactivés
+        if (!cameraControlsEnabled) {
+            return;
+        }
+        
         if (playerController.isInPlayerMode() && playerController.getCurrentPlayer() != null) {
             // En mode joueur, la caméra suit le joueur
             playerController.updatePlayerMovement(tpf);

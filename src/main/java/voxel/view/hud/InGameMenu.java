@@ -13,6 +13,7 @@ import de.lessvoid.nifty.controls.CheckBox;
 import de.lessvoid.nifty.controls.Slider;
 
 import voxel.controller.GameStateManager;
+import voxel.model.BiomeType;
 
 /**
  * Menu disponible pendant le jeu pour contrôler les paramètres en temps réel.
@@ -164,7 +165,7 @@ public class InGameMenu extends AbstractGameMenu {
                         alignCenter();
                         height("10%");
                         width("80%");
-                        interactOnClick("openWorldSelection()");
+                        interactOnClick("openBiomeSelection()");
                     }});
                     
                     panel(new PanelBuilder("spacer2") {{
@@ -262,6 +263,111 @@ public class InGameMenu extends AbstractGameMenu {
                 }});
             }});
         }}.build(nifty));
+        
+        // Écran de sélection de biome
+        nifty.addScreen("biomeSelectionScreen", new ScreenBuilder("biomeSelectionScreen") {{
+            controller(InGameMenu.this);
+            
+            layer(new LayerBuilder("background") {{
+                childLayoutCenter();
+                backgroundColor("#000a");
+                
+                panel(new PanelBuilder("biomePanel") {{
+                    childLayoutVertical();
+                    alignCenter();
+                    valignCenter();
+                    width("60%");
+                    height("80%");
+                    backgroundColor("#444f");
+                    padding("20px");
+                    
+                    text(new TextBuilder() {{
+                        text("Sélection du biome");
+                        font("Interface/Fonts/Default.fnt");
+                        height("10%");
+                        width("100%");
+                        alignCenter();
+                        color("#fff");
+                    }});
+                    
+                    panel(new PanelBuilder("biomeButtonsPanel") {{
+                        childLayoutVertical();
+                        alignCenter();
+                        height("75%");
+                        width("90%");
+                        
+                        control(new ButtonBuilder("savannaButton", "Savane") {{
+                            alignCenter();
+                            height("12%");
+                            width("80%");
+                            interactOnClick("changeBiome(SAVANNA)");
+                        }});
+                        
+                        panel(new PanelBuilder("spacer5") {{
+                            height("2%");
+                        }});
+                        
+                        control(new ButtonBuilder("desertButton", "Désert") {{
+                            alignCenter();
+                            height("12%");
+                            width("80%");
+                            interactOnClick("changeBiome(DESERT)");
+                        }});
+                        
+                        panel(new PanelBuilder("spacer6") {{
+                            height("2%");
+                        }});
+                        
+                        control(new ButtonBuilder("mountainsButton", "Montagnes") {{
+                            alignCenter();
+                            height("12%");
+                            width("80%");
+                            interactOnClick("changeBiome(MOUNTAINS)");
+                        }});
+                        
+                        panel(new PanelBuilder("spacer7") {{
+                            height("2%");
+                        }});
+                        
+                        control(new ButtonBuilder("plainsButton", "Plaines") {{
+                            alignCenter();
+                            height("12%");
+                            width("80%");
+                            interactOnClick("changeBiome(PLAINS)");
+                        }});
+                        
+                        panel(new PanelBuilder("spacer8") {{
+                            height("2%");
+                        }});
+                        
+                        control(new ButtonBuilder("jungleButton", "Jungle") {{
+                            alignCenter();
+                            height("12%");
+                            width("80%");
+                            interactOnClick("changeBiome(JUNGLE)");
+                        }});
+                        
+                        panel(new PanelBuilder("spacer9") {{
+                            height("2%");
+                        }});
+                        
+                        control(new ButtonBuilder("snowyButton", "Neige") {{
+                            alignCenter();
+                            height("12%");
+                            width("80%");
+                            interactOnClick("changeBiome(SNOWY)");
+                        }});
+                    }});
+                    
+                    control(new ButtonBuilder("backToMenuButton", "Retour") {{
+                        alignCenter();
+                        height("10%");
+                        width("40%");
+                        interactOnClick("backToMenu()");
+                    }});
+                }});
+            }});
+        }}.build(nifty));
     }
     
     /**
@@ -272,7 +378,7 @@ public class InGameMenu extends AbstractGameMenu {
         super.showMenu();
         
         // Mettre à jour l'état des contrôles si nécessaire
-        if (stateManager != null && stateManager.getCurrentWorld() != null) {
+        if (stateManager != null && stateManager.getWorldModel() != null) {
             updateControls();
         }
     }
@@ -291,9 +397,9 @@ public class InGameMenu extends AbstractGameMenu {
         CheckBox wireframeBox = nifty.getCurrentScreen().findNiftyControl("wireframeCheckbox", CheckBox.class);
         CheckBox lightningBox = nifty.getCurrentScreen().findNiftyControl("lightningCheckbox", CheckBox.class);
         
-        if (wireframeBox != null && lightningBox != null && stateManager.getCurrentWorld() != null) {
-            wireframeBox.setChecked(stateManager.getCurrentWorld().getWireframeMode());
-            lightningBox.setChecked(stateManager.getCurrentWorld().getLightningMode());
+        if (wireframeBox != null && lightningBox != null && stateManager.getWorldModel() != null) {
+            wireframeBox.setChecked(stateManager.getWorldModel().getWireframeMode());
+            lightningBox.setChecked(stateManager.getWorldModel().getLightningMode());
         }
     }
     
@@ -337,6 +443,7 @@ public class InGameMenu extends AbstractGameMenu {
     }
     
     public void resumeGame() {
+        stateManager.changeState(GameStateManager.GameState.IN_GAME);
         hideMenu();
     }
     
@@ -348,19 +455,37 @@ public class InGameMenu extends AbstractGameMenu {
      * Bascule l'état du mode filaire
      */
     public void toggleWireframe() {
-        if (stateManager != null && stateManager.getCurrentWorld() != null) {
-            boolean isWireframe = stateManager.getCurrentWorld().toggleWireframe();
-            System.out.println("Mode filaire " + (isWireframe ? "activé" : "désactivé"));
-        }
+        stateManager.getWorldController().toggleWireframe();
     }
     
     /**
      * Bascule l'état de l'éclairage
      */
     public void toggleLightning() {
-        if (stateManager != null && stateManager.getCurrentWorld() != null) {
-            boolean isLightningOn = stateManager.getCurrentWorld().toggleLightning();
-            System.out.println("Éclairage " + (isLightningOn ? "activé" : "désactivé"));
+        stateManager.getWorldController().toggleLightning();
+    }
+    
+    /**
+     * Ouvre l'écran de sélection de biome
+     */
+    public void openBiomeSelection() {
+        nifty.gotoScreen("biomeSelectionScreen");
+    }
+    
+    /**
+     * Change le biome actuel pour un nouveau monde
+     * 
+     * @param biomeType Le type de biome à générer
+     */
+    public void changeBiome(String biomeType) {
+        try {
+            BiomeType biome = BiomeType.valueOf(biomeType);
+            if (stateManager != null) {
+                hideMenu();
+                stateManager.changeWorld(biome);
+            }
+        } catch (IllegalArgumentException e) {
+            System.err.println("Type de biome invalide: " + biomeType);
         }
     }
 } 
