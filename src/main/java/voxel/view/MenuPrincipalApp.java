@@ -37,24 +37,6 @@ public class MenuPrincipalApp implements ScreenController {
     private boolean menuVisible = false;
     private SimpleApplication app;
 
-    public static void main(String[] args) {
-        // Ce code n'est utilisé que pour tester le menu indépendamment
-        SimpleApplication app = new SimpleApplication() {
-            @Override
-            public void simpleInitApp() {
-                MenuPrincipalApp menu = new MenuPrincipalApp();
-                menu.initialize(this);
-            }
-        };
-        
-        AppSettings reglages = new AppSettings(true);
-        reglages.setResolution(1280, 720);
-        reglages.setTitle("ProjetTOB");
-        reglages.setFullscreen(false);
-        app.setSettings(reglages);
-        app.start();
-    }
-
     /**
      * Initialise le menu dans l'application fournie
      * @param app L'application dans laquelle intégrer le menu
