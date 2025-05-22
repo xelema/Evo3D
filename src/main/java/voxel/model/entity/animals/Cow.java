@@ -21,7 +21,7 @@ public class Cow extends Entity {
 
     public Cow(double x, double y, double z) {
         super(x, y, z);
-        setSize(2.0f, 2.0f, 4.0f);
+        setSize(1.5f, 1.8f, 4.0f);
     }
 
     @Override

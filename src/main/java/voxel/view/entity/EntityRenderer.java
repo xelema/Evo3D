@@ -30,6 +30,16 @@ public class EntityRenderer {
     protected AnimComposer animator;
     protected String playingAnimation = "";
     protected Map<String, List<String>> animations = null;
+    
+    // Taille de référence des modèles (en unités du modèle original)
+    // Ces valeurs peuvent être ajustées selon la taille réelle des modèles
+    private static final float DEFAULT_MODEL_HEIGHT = 2.0f; // Hauteur de référence des modèles
+    
+    // Facteur d'ajustement pour la relation entre modèle visuel et bounding box
+    // > 1.0f = modèle plus grand que la bounding box
+    // < 1.0f = modèle plus petit que la bounding box
+    // = 1.0f = modèle et bounding box de même taille
+    private static final float VISUAL_SCALE_FACTOR = 1.5f;
 
     public EntityRenderer(AssetManager assetManager, Entity entity) {
         this.assetManager = assetManager;
@@ -41,32 +51,69 @@ public class EntityRenderer {
     }
     
     /**
+     * Calcule le facteur d'échelle approprié pour le modèle basé sur les dimensions de l'entité.
+     * @return Le facteur d'échelle à appliquer au modèle
+     */
+    private float calculateScaleFactor() {
+        // Utilise la hauteur de l'entité comme référence principale
+        float entityHeight = entity.getHeight();
+        
+        // Obtient la taille de référence spécifique au type d'entité
+        float referenceHeight = getEntityReferenceHeight();
+        
+        // Calcule le facteur d'échelle basé sur la hauteur
+        float scaleFactor = (entityHeight / referenceHeight) * VISUAL_SCALE_FACTOR;
+        
+        return scaleFactor;
+    }
+    
+    /**
+     * Retourne la hauteur de référence du modèle original pour ce type d'entité.
+     * Cette méthode peut être ajustée si certains modèles ont des tailles très différentes.
+     * @return La hauteur de référence du modèle original
+     */
+    private float getEntityReferenceHeight() {
+        // Pour la plupart des entités, utilise la hauteur par défaut
+        // Peut être spécialisé pour certains types si nécessaire
+        return switch (entity) {
+            case Player player -> 2.5f; // Le modèle de joueur pourrait être différent
+            case Lizard lizard -> 1.0f; // Les lézards sont naturellement plus bas
+            case Scorpion scorpion -> 1.0f; // Les scorpions aussi
+            case Eagle eagle -> 1.5f; // Les aigles peuvent avoir une pose différente
+            case Owl owl -> 1.5f; // Les hiboux aussi
+            default -> DEFAULT_MODEL_HEIGHT; // Utilise la taille par défaut pour les autres
+        };
+    }
+    
+    /**
      * Crée la géométrie pour représenter l'entité.
      * Par défaut, utilise un cube simple, mais peut être surchargé pour des rendus plus complexes.
      */
     protected void createEntityGeometry() {
         try {
+            float scaleFactor = calculateScaleFactor();
+            
             switch (entity) {
                 case Player player ->
-                        loadModel(Player.MODEL_PATH,1f);
+                        loadModel(Player.MODEL_PATH, scaleFactor);
                 case Cow cow ->
-                        loadModel(Cow.MODEL_PATH,1f);
+                        loadModel(Cow.MODEL_PATH, scaleFactor);
                 case Dromedary dromedary ->
-                        loadModel(Dromedary.MODEL_PATH,1f);
+                        loadModel(Dromedary.MODEL_PATH, scaleFactor);
                 case Eagle eagle ->
-                        loadModel(Eagle.MODEL_PATH,1f);
+                        loadModel(Eagle.MODEL_PATH, scaleFactor);
                 case Fox fox ->
-                        loadModel(Fox.MODEL_PATH,1f);
+                        loadModel(Fox.MODEL_PATH, scaleFactor);
                 case Lizard lizard ->
-                        loadModel(Lizard.MODEL_PATH,1f);
+                        loadModel(Lizard.MODEL_PATH, scaleFactor);
                 case Owl owl ->
-                        loadModel(Owl.MODEL_PATH,1f);
+                        loadModel(Owl.MODEL_PATH, scaleFactor);
                 case Scorpion scorpion ->
-                        loadModel(Scorpion.MODEL_PATH,1f);
+                        loadModel(Scorpion.MODEL_PATH, scaleFactor);
                 case Sheep sheep ->
-                        loadModel(Sheep.MODEL_PATH,1f);
+                        loadModel(Sheep.MODEL_PATH, scaleFactor);
                 case Wolf wolf ->
-                        loadModel(Wolf.MODEL_PATH,1f);
+                        loadModel(Wolf.MODEL_PATH, scaleFactor);
 
                 default -> {
                     createBoxEntity();

@@ -17,7 +17,7 @@ public class Wolf extends Entity {
 
     public Wolf(double x, double y, double z) {
         super(x, y, z);
-        setSize(2.2f, 2.2f, 3.5f); // Taille un peu plus grande qu'un mouton
+        setSize(2.2f, 1.9f, 3.5f); // Taille un peu plus grande qu'un mouton
     }
 
     @Override

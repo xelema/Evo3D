@@ -208,10 +208,9 @@ public abstract class Entity {
         this.depth = depth;
         if (boundingBox != null) {
             // Recréer la boîte de collision avec la nouvelle taille
-            boundingBox = new BoundingBox(x, y, z, (width+depth)/2, height, (width+depth)/2);
+            boundingBox = new BoundingBox(x, y, z, width, height, depth);
         }
     }
-    
     /**
      * Récupère la boîte de collision de l'entité.
      * @return La boîte de collision

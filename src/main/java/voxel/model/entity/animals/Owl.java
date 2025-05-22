@@ -19,7 +19,7 @@ public class Owl extends Entity {
 
     public Owl(double x, double y, double z) {
         super(x, y, z);
-        setSize(1.5f, 1.5f, 1.5f); // Plus petit qu'un mouton
+        setSize(1.5f, 1f, 1.5f); // Plus petit qu'un mouton
     }
 
     @Override

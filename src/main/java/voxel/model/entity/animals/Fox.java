@@ -23,7 +23,7 @@ public class Fox extends Entity {
 
     public Fox(double x, double y, double z) {
         super(x, y, z);
-        setSize(2.0f, 2.0f, 3.0f); // Taille proche du mouton
+        setSize(0.8f, 1f, 2f); // Taille proche du mouton
     }
 
     @Override
