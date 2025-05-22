@@ -14,6 +14,10 @@ public class Cow extends Entity {
     float targetDistance = 0.0f;
     float movementSpeed = 5.0f;
     float maxDistance = 10.0f;
+    
+    // Nouveaux attributs pour le système de vélocité
+    float movingTime = 0.0f;
+    float targetMovingTime = 0.0f;
 
     public Cow(double x, double y, double z) {
         super(x, y, z);
@@ -26,26 +30,28 @@ public class Cow extends Entity {
         if (!isRotating) {
             // Démarrer une nouvelle rotation aléatoire entre -PI et PI
             targetRotation = (float) ((Math.random() * 2*Math.PI) - Math.PI);
-//            System.out.println("Nouvelle rotation cible: " + targetRotation);
             isRotating = true;
         } else {
             // Continuer la rotation en cours
-            setRotation(targetRotation, tpf);
+            updateRotation(targetRotation, tpf);
         }
         
         // Gestion du mouvement
         if (!isMoving) {
-            // Démarrer un nouveau mouvement avec une distance aléatoire
-            targetDistance = (float) (Math.random() * maxDistance);
-//            System.out.println("Nouvelle distance cible: " + targetDistance);
-            isMoving = true;
+            // Démarrer un nouveau mouvement
+            startMoving();
         } else {
             // Continuer le mouvement en cours
-            setMoving(targetDistance, tpf);
+            updateMovement(tpf);
+        }
+        
+        // Si l'entité n'est pas en mouvement, arrêter la vélocité
+        if (!isMoving) {
+            stopHorizontalMovement();
         }
     }
 
-    public void setRotation(float targetRot, float tpf) {
+    public void updateRotation(float targetRot, float tpf) {
         // Calculer l'incrément de rotation pour cette frame
         float step = rotationSpeed * tpf;
         
@@ -65,6 +71,34 @@ public class Cow extends Entity {
         }
     }
 
+    public void startMoving() {
+        // Calculer le temps nécessaire pour parcourir la distance cible
+        targetDistance = (float) (Math.random() * maxDistance);
+        targetMovingTime = targetDistance / movementSpeed;
+        movingTime = 0.0f;
+        isMoving = true;
+        
+        // Définir la vélocité en fonction de la direction actuelle
+        double vx = movementSpeed * Math.sin(rotation);
+        double vz = movementSpeed * Math.cos(rotation);
+        setVelocity(vx, getVy(), vz);
+    }
+
+    public void updateMovement(float tpf) {
+        movingTime += tpf;
+        
+        // Vérifier si le mouvement est terminé
+        if (movingTime >= targetMovingTime) {
+            isMoving = false;
+            stopHorizontalMovement();
+        } else {
+            // Maintenir la direction de mouvement (au cas où la rotation change)
+            double vx = movementSpeed * Math.sin(rotation);
+            double vz = movementSpeed * Math.cos(rotation);
+            setVelocity(vx, getVy(), vz);
+        }
+    }
+
     /**
      * Fait sauter l'entité s'il est au sol.
      */
@@ -73,32 +107,6 @@ public class Cow extends Entity {
             setVerticalVelocity(8.0);
             onGround = false;
         }
-    }
-    
-    public void setMoving(float distance, float tpf) {
-        // Calculer l'incrément de mouvement pour cette frame
-        float step = movementSpeed * tpf;
-        
-        // Si on est presque à la destination, terminer le mouvement
-        if (distance <= step) {
-            // Avancer de la distance restante
-            moveForward(distance);
-            isMoving = false;  // Mouvement terminé
-        } else {
-            // Avancer d'un pas
-            moveForward(step);
-            targetDistance -= step;
-        }
-    }
-    
-    private void moveForward(float distance) {
-        // Calculer le déplacement en fonction de la rotation actuelle
-        double dx = distance * Math.sin(rotation);
-        double dz = distance * Math.cos(rotation);
-        
-        // Mettre à jour la position
-        setX(getX() + dx);
-        setZ(getZ() + dz);
     }
 
     @Override

@@ -13,6 +13,9 @@ public class Owl extends Entity {
 
     boolean isResting = true;
     boolean isNight = false;
+    
+    boolean isTakingOff = false;
+    boolean isLanding = false;
 
     public Owl(double x, double y, double z) {
         super(x, y, z);
@@ -22,39 +25,46 @@ public class Owl extends Entity {
     @Override
     public void update(float tpf) {
         if (isNight) {
-            if (isResting) {
+            if (isResting && !isTakingOff) {
                 takeOff();
-            } else {
+            } else if (isTakingOff) {
+                updateTakeOff(tpf);
+            } else if (isFlying) {
                 glide(tpf);
             }
         } else {
-            if (!isResting) {
+            if (!isResting && !isLanding) {
                 land();
+            } else if (isLanding) {
+                updateLanding(tpf);
             }
         }
     }
 
     public void takeOff() {
         // System.out.println("Le hibou déploie ses ailes et décolle...");
-        isFlying = true;
+        isTakingOff = true;
         isResting = false;
-        new Thread(() -> {
-            try {
-                while (this.y < targetAltitude) {
-                    this.y += 0.5f;
-                    Thread.sleep(200);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
+        // Définir une vélocité verticale pour monter
+        setVelocity(0, flightSpeed, 0);
+    }
+
+    public void updateTakeOff(float tpf) {
+        // Vérifier si on a atteint l'altitude cible
+        if (getY() >= targetAltitude) {
+            isTakingOff = false;
+            isFlying = true;
+            // Commencer le vol horizontal
+            setVelocity(0, 0, 0);
+        }
+        // Sinon, continuer à monter avec la vélocité déjà définie
     }
 
     public void glide(float tpf) {
-        float dx = (float) (glideSpeed * Math.sin(rotation) * tpf);
-        float dz = (float) (glideSpeed * Math.cos(rotation) * tpf);
-        setX(getX() + dx);
-        setZ(getZ() + dz);
+        // Mouvement horizontal pendant le vol
+        double vx = glideSpeed * Math.sin(rotation);
+        double vz = glideSpeed * Math.cos(rotation);
+        setVelocity(vx, 0, vz);
 
         // Tourne doucement
         this.rotation += 0.1f * tpf;
@@ -63,18 +73,21 @@ public class Owl extends Entity {
     public void land() {
         // System.out.println("Le hibou retourne se percher.");
         isFlying = false;
-        isResting = true;
-        new Thread(() -> {
-            try {
-                while (this.y > 2.0f) {
-                    this.y -= 0.5f;
-                    Thread.sleep(200);
-                }
-                this.y = 2.0f;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
+        isLanding = true;
+        // Définir une vélocité verticale négative pour descendre
+        setVelocity(0, -flightSpeed, 0);
+    }
+
+    public void updateLanding(float tpf) {
+        // Vérifier si on a atteint le sol (hauteur minimale)
+        if (getY() <= 2.0f) {
+            isLanding = false;
+            isResting = true;
+            // Arrêter tout mouvement
+            setVelocity(0, 0, 0);
+            setY(2.0f); // Fixer la position au sol
+        }
+        // Sinon, continuer à descendre avec la vélocité déjà définie
     }
 
     public void setNight(boolean isNight) {

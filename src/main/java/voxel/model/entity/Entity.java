@@ -13,6 +13,8 @@ public abstract class Entity {
     protected boolean onGround = false;
     protected BoundingBox boundingBox; // Boîte de collision
 
+    final private float IDLE_THRESHOLD = 0.1f; // Seuil pour considérer que l'entité est immobile
+
     public Entity(double x, double y, double z) {
         this.x = x;
         this.y = y;
@@ -240,7 +242,7 @@ public abstract class Entity {
     }
 
     public boolean isMoving(){
-        return vx != 0 || vz != 0;
+        return getSpeed() > IDLE_THRESHOLD;
     }
 
     public boolean isJumping(){

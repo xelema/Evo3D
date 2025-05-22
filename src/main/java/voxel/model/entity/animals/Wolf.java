@@ -6,7 +6,6 @@ public class Wolf extends Entity {
 
     public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Pudu_Animations.glb";
 
-
     private boolean isPatrolling = false;
     private float patrolRadius = 6.0f;
     private float patrolSpeed = 4.0f;
@@ -45,17 +44,27 @@ public class Wolf extends Entity {
     private void patrol(float tpf) {
         // Mouvement circulaire autour de son point de départ
         patrolAngle += patrolSpeed * tpf;
-        double dx = patrolRadius * Math.cos(patrolAngle);
-        double dz = patrolRadius * Math.sin(patrolAngle);
-
-        setX(getX() + dx * tpf);
-        setZ(getZ() + dz * tpf);
+        
+        // Calculer la vélocité pour le mouvement circulaire
+        double vx = -patrolRadius * patrolSpeed * Math.sin(patrolAngle);
+        double vz = patrolRadius * patrolSpeed * Math.cos(patrolAngle);
+        
+        // Appliquer la vélocité
+        setVelocity(vx, getVy(), vz);
+        
+        // Mettre à jour la rotation pour que le loup regarde dans la direction du mouvement
+        if (vx != 0 || vz != 0) {
+            float newRotation = (float) Math.atan2(vx, vz);
+            setRotation(newRotation);
+        }
     }
 
     private void rest() {
         // System.out.println("Le loup retourne se cacher pour dormir.");
         isPatrolling = false;
         isResting = true;
+        // Arrêter le mouvement pendant le repos
+        stopHorizontalMovement();
     }
 
     public void setNight(boolean isNight) {

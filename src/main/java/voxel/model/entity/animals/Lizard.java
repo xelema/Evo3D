@@ -12,6 +12,10 @@ public class Lizard extends Entity {
     private float targetDistance = 0.0f;
     private float movementSpeed = 2.0f; // Lent et saccadé
     private float maxDistance = 3.0f;
+    
+    // Nouveaux attributs pour le système de vélocité
+    private float movingTime = 0.0f;
+    private float targetMovingTime = 0.0f;
 
     public Lizard(double x, double y, double z) {
         super(x, y, z);
@@ -30,38 +34,49 @@ public class Lizard extends Entity {
         }
 
         if (isMoving) {
-            move(tpf);
+            updateMovement(tpf);
+        }
+        
+        // Si l'entité n'est pas en mouvement, arrêter la vélocité
+        if (!isMoving) {
+            stopHorizontalMovement();
         }
     }
 
     private void startMoving() {
+        // Calculer le temps nécessaire pour parcourir la distance cible
         targetDistance = (float) (Math.random() * maxDistance);
+        targetMovingTime = targetDistance / movementSpeed;
+        movingTime = 0.0f;
         isMoving = true;
+        
+        // Définir la vélocité en fonction de la direction actuelle
+        double vx = movementSpeed * Math.sin(rotation);
+        double vz = movementSpeed * Math.cos(rotation);
+        setVelocity(vx, getVy(), vz);
+        
         // System.out.println("Le lézard se déplace légèrement...");
     }
 
-    public void move(float tpf) {
-        float step = movementSpeed * tpf;
-
-        if (targetDistance <= step) {
-            moveForward(targetDistance);
+    public void updateMovement(float tpf) {
+        movingTime += tpf;
+        
+        // Vérifier si le mouvement est terminé
+        if (movingTime >= targetMovingTime) {
             isMoving = false;
+            stopHorizontalMovement();
             // System.out.println("Le lézard s'arrête.");
         } else {
-            moveForward(step);
-            targetDistance -= step;
+            // Maintenir la direction de mouvement
+            double vx = movementSpeed * Math.sin(rotation);
+            double vz = movementSpeed * Math.cos(rotation);
+            setVelocity(vx, getVy(), vz);
         }
-    }
-
-    private void moveForward(float distance) {
-        double dx = distance * Math.sin(rotation);
-        double dz = distance * Math.cos(rotation);
-        setX(getX() + dx);
-        setZ(getZ() + dz);
     }
 
     private void startBasking() {
         isBasking = true;
+        stopHorizontalMovement(); // Arrêter le mouvement pendant le bain de soleil
         // System.out.println("Le lézard se chauffe au soleil...");
         new Thread(() -> {
             try {
