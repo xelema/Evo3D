@@ -126,7 +126,7 @@ public class GameController {
             Owl.class, Scorpion.class, Sheep.class, Wolf.class
         );
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             for (Class<? extends Entity> animalType : animalTypes) {
                 float randomX = (float) (Math.random() * worldSize) - worldHalfSize;
                 float randomZ = (float) (Math.random() * worldSize) - worldHalfSize;

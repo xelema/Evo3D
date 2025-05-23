@@ -13,7 +13,7 @@ public class Eagle extends Entity {
     private double centerX, centerZ; // Centre du cercle de vol
 
     public Eagle(double x, double y, double z) {
-        super(x, y + 20, z); // Commence en altitude
+        super(x, y + 80, z); // Commence en altitude
         setSize(2.5f, 1.0f, 3.0f); // Envergure
         // Mémoriser le centre du cercle de vol
         this.centerX = x;
@@ -28,7 +28,7 @@ public class Eagle extends Entity {
             // Calculer la position cible dans le cercle
             double targetX = centerX + circleRadius * Math.cos(angle);
             double targetZ = centerZ + circleRadius * Math.sin(angle);
-            double targetY = 25 + 2 * Math.sin(angle * 0.5); // Oscillation douce
+            double targetY = 80 + 2 * Math.sin(angle * 0.5); // Oscillation douce
             
             // Calculer les vélocités pour atteindre cette position
             double vx = (targetX - getX()) / tpf;

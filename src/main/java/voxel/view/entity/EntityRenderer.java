@@ -34,18 +34,20 @@ public class EntityRenderer {
     // Taille de référence des modèles (en unités du modèle original)
     // Ces valeurs peuvent être ajustées selon la taille réelle des modèles
     private static final float DEFAULT_MODEL_HEIGHT = 2.0f; // Hauteur de référence des modèles
-    
-    // Facteur d'ajustement pour la relation entre modèle visuel et bounding box
-    // > 1.0f = modèle plus grand que la bounding box
-    // < 1.0f = modèle plus petit que la bounding box
-    // = 1.0f = modèle et bounding box de même taille
-    private static final float VISUAL_SCALE_FACTOR = 1.5f;
+    private static final float MARGIN_WIDTH = 1.4f; // Marge ajoutée pour agrandir la bounding box
+    private static final float MARGIN_HEIGHT = 1.3f; // Marge ajoutée pour agrandir la bounding box
+    private static final float MARGIN_DEPTH = 1.5f; // Marge ajoutée pour agrandir la bounding box
+
+
+
+    private float scaleFactor = 1f;
 
     public EntityRenderer(AssetManager assetManager, Entity entity) {
         this.assetManager = assetManager;
         this.entity = entity;
         this.entityNode = new Node("entity_" + entity.hashCode());
         this.animations = new HashMap<>();
+        this.scaleFactor = calculateScaleFactor();
 
         createEntityGeometry();
     }
@@ -62,7 +64,7 @@ public class EntityRenderer {
         float referenceHeight = getEntityReferenceHeight();
         
         // Calcule le facteur d'échelle basé sur la hauteur
-        float scaleFactor = (entityHeight / referenceHeight) * VISUAL_SCALE_FACTOR;
+        float scaleFactor = (entityHeight / referenceHeight);
         
         return scaleFactor;
     }
@@ -79,7 +81,7 @@ public class EntityRenderer {
             case Player player -> 2.5f; // Le modèle de joueur pourrait être différent
             case Lizard lizard -> 1.0f; // Les lézards sont naturellement plus bas
             case Scorpion scorpion -> 1.0f; // Les scorpions aussi
-            case Eagle eagle -> 1.5f; // Les aigles peuvent avoir une pose différente
+            case Eagle eagle -> 2f; // Les aigles peuvent avoir une pose différente
             case Owl owl -> 1.5f; // Les hiboux aussi
             default -> DEFAULT_MODEL_HEIGHT; // Utilise la taille par défaut pour les autres
         };
@@ -91,8 +93,6 @@ public class EntityRenderer {
      */
     protected void createEntityGeometry() {
         try {
-            float scaleFactor = calculateScaleFactor();
-            
             switch (entity) {
                 case Player player ->
                         loadModel(Player.MODEL_PATH, scaleFactor);
@@ -229,6 +229,9 @@ public class EntityRenderer {
 
             applyUnshadedMaterials(model);
 
+            // Mettre à jour la bounding box de l'entité en fonction du modèle
+            updateBoundingBoxFromModel(modelNode);
+
             modelNode.setLocalTranslation(0, -entity.getHeight()/2, 0);
 
             // Charger les animation TO-DO
@@ -308,5 +311,38 @@ public class EntityRenderer {
 
     public Node getNode() {
         return entityNode;
+    }
+
+    /**
+     * Met à jour la bounding box de l'entité en fonction des dimensions réelles du modèle 3D.
+     * Cette méthode calcule la bounding box du modèle mis à l'échelle et ajuste
+     * les dimensions de l'entité en conséquence.
+     *
+     * @param modelNode Le noeud contenant le modèle 3D mis à l'échelle
+     */
+    private void updateBoundingBoxFromModel(Node modelNode) {
+        try {
+            // Mettre à jour les bounds du modèle
+            modelNode.updateModelBound();
+            modelNode.updateGeometricState();
+
+            // Obtenir la bounding box du modèle
+            com.jme3.bounding.BoundingBox modelBounds =
+                    (com.jme3.bounding.BoundingBox) modelNode.getWorldBound();
+
+            if (modelBounds != null) {
+                // Calculer les dimensions réelles du modèle
+                float modelWidth = modelBounds.getXExtent() * 2 * scaleFactor * MARGIN_WIDTH;
+                float modelHeight = modelBounds.getYExtent() * 2 * scaleFactor * MARGIN_HEIGHT;
+                float modelDepth = modelBounds.getZExtent() * 2 * scaleFactor * MARGIN_DEPTH;
+
+                // Mettre à jour la taille de l'entité (ce qui mettra à jour automatiquement la bounding box)
+                entity.setSize(modelWidth, modelHeight, modelDepth);
+
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la mise à jour de la bounding box à partir du modèle: " + e.getMessage());
+            // Ne pas faire échouer le chargement du modèle pour cette erreur
+        }
     }
 }

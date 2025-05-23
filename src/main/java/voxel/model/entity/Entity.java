@@ -219,6 +219,7 @@ public abstract class Entity {
         return boundingBox;
     }
 
+
     /**
      * Vérifie si le joueur est au sol.
      * @return true si le joueur est au sol, false sinon
