@@ -345,7 +345,7 @@ public class WorldRenderer {
 
         // Gestion du cycle jour/nuit
         long elapsed = (System.currentTimeMillis() - startTime) / 1000; // secondes écoulées
-        int step = (int)((elapsed * 64 / 60) % 192); // 192 étapes sur le cycle
+        int step = (int)((elapsed * 32 / 60) % 192); // 32 étapes par minute (192 étapes en tout)
         ColorRGBA skyColor = skyColors[step];
         mainViewport.setBackgroundColor(skyColor);
 

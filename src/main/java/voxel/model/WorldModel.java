@@ -382,18 +382,24 @@ public class WorldModel {
      */
     private void addClouds() {
         int cloudY = 100; // Altitude moyenne des nuages
-        int numClouds = 80; // Nombre total de nuages à générer
+        int numClouds = 80; // Nombre de nuages
         java.util.Random random = new java.util.Random();
 
+        // Taille totale de la map
+        int mapSizeX = worldSizeX * ChunkModel.SIZE;
+        int mapSizeZ = worldSizeZ * ChunkModel.SIZE;
+        int minX = -mapSizeX / 2;
+        int minZ = -mapSizeZ / 2;
+
         for (int i = 0; i < numClouds; i++) {
-            // Générer des positions aléatoires pour les nuages
-            int cloudX = random.nextInt(worldSizeX*ChunkModel.SIZE);
-            int cloudZ = random.nextInt(worldSizeZ*ChunkModel.SIZE);
+            // Générer des positions aléatoires centrées sur la map
+            int cloudX = minX + random.nextInt(mapSizeX);
+            int cloudZ = minZ + random.nextInt(mapSizeZ);
 
             // Générer une taille aléatoire pour le nuage
-            int cloudSizeX = 50 + random.nextInt(80); // Taille entre 50 et 130 blocs
-            int cloudSizeY = 2; // Hauteur de 2 blocs
-            int cloudSizeZ = 50 + random.nextInt(80); // Taille entre 50 et 130 blocs
+            int cloudSizeX = 50 + random.nextInt(80); // Taille entre 30 et 80 blocs
+            int cloudSizeY = 1; // Hauteur de 1 bloc
+            int cloudSizeZ = 50 + random.nextInt(80); // Taille entre 30 et 80 blocs
 
             // Créer le nuage
             createCloud(cloudX, cloudY, cloudZ, cloudSizeX, cloudSizeY, cloudSizeZ);
