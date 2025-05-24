@@ -12,6 +12,7 @@ public abstract class Entity {
     protected float rotation = 0.0f; // rotation horizontale de l'entité (en radians)
     protected boolean onGround = false;
     protected BoundingBox boundingBox; // Boîte de collision
+    protected boolean markedForRemoval = false; // Indique si l'entité doit être supprimée
 
     public Entity(double x, double y, double z) {
         this.x = x;
@@ -186,6 +187,21 @@ public abstract class Entity {
      * @return true si l'entité doit être supprimée, false sinon.
      */
     public abstract boolean isMarkedForRemoval();
+
+    /**
+     * Marque l'entité pour suppression.
+     */
+    public void markForRemoval() {
+        this.markedForRemoval = true;
+    }
+
+    /**
+     * Vérifie si l'entité a été marquée manuellement pour suppression.
+     * @return true si l'entité a été marquée pour suppression, false sinon.
+     */
+    protected boolean isManuallyMarkedForRemoval() {
+        return markedForRemoval;
+    }
 
     public float getWidth() {
         return width;

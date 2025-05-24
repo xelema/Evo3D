@@ -77,6 +77,52 @@ public class EntityManager {
         }
     }
 
+    /**
+     * Met à jour toutes les entités avec un facteur de vitesse pour l'environnement.
+     * Les animaux sont affectés par environmentSpeed mais pas le joueur.
+     * 
+     * @param tpf Temps écoulé depuis la dernière frame
+     * @param environmentSpeed Vitesse de l'environnement pour les animaux
+     */
+    public void updateAll(float tpf, float environmentSpeed) {
+        // Appliquer les effets physiques (gravité, friction) sur toutes les entités
+        physicsManager.applyPhysics(entities, tpf);
+        
+        Iterator<Entity> iterator = entities.iterator();
+        while (iterator.hasNext()) {
+            Entity entity = iterator.next();
+            
+            // Calculer le tpf ajusté pour cette entité
+            float adjustedTpf = tpf;
+            if (!(entity instanceof voxel.model.entity.Player)) {
+                // Pour les animaux, appliquer la vitesse de l'environnement
+                adjustedTpf = tpf * environmentSpeed;
+            }
+            
+            // Mise à jour de l'entité (logique, IA, etc.) avec le tpf ajusté
+            entity.update(adjustedTpf);
+            
+            // Calculer la nouvelle position prévue (utiliser le tpf normal pour la physique)
+            double newX = entity.getX() + entity.getVx() * tpf;
+            double newY = entity.getY() + entity.getVy() * tpf;
+            double newZ = entity.getZ() + entity.getVz() * tpf;
+            
+            // Vérifier et résoudre les collisions avec le monde
+            Vector3f correctedPosition = collisionManager.checkAndResolveWorldCollision(entity, newX, newY, newZ);
+            
+            // Appliquer le mouvement avec la position corrigée
+            entity.moveWithCollision(tpf, correctedPosition.x, correctedPosition.y, correctedPosition.z);
+            
+            // Vérifier si l'entité doit être supprimée
+            if (entity.isMarkedForRemoval()) {
+                iterator.remove(); // Suppression sécurisée avec l'itérateur
+            }
+        }
+        
+        // Vérifier les collisions entre entités
+        checkEntityCollisions();
+    }
+
     public List<Entity> getEntities() {
         return Collections.unmodifiableList(entities);
     }

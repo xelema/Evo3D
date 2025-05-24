@@ -104,6 +104,21 @@ public class EntityController {
         // Cette opération est désormais gérée par EntityRendererManager.update()
     }
 
+    /**
+     * Met à jour toutes les entités avec un facteur de vitesse pour l'environnement.
+     * Les animaux sont affectés par environmentSpeed mais pas le joueur.
+     *
+     * @param tpf Temps écoulé depuis la dernière frame
+     * @param environmentSpeed Vitesse de l'environnement pour les animaux
+     */
+    public void update(float tpf, float environmentSpeed) {
+        // Déléguer la mise à jour des entités à l'EntityManager avec la vitesse de l'environnement
+        entityManager.updateAll(tpf, environmentSpeed);
+        
+        // Nettoyer les renderers des entités supprimées
+        // Cette opération est désormais gérée par EntityRendererManager.update()
+    }
+
     public void printEntitiesList() {
         System.out.println("Liste des entités:");
         for (Entity entity : entityManager.getEntities()) {

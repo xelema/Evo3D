@@ -378,6 +378,9 @@ public class GameStateManager {
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
                 entityController, app.getCamera());
+        
+        // Définir la référence au GameStateManager dans le GameController pour la vitesse du temps de l'environnement
+        gameController.setGameStateManager(this);
     }
     
     /**
