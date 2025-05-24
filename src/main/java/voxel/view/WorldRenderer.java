@@ -15,6 +15,8 @@ import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.material.Material;
 import com.jme3.renderer.ViewPort;
+import com.jme3.post.FilterPostProcessor;
+import com.jme3.post.filters.BloomFilter;
 
 import voxel.controller.GameController;
 import voxel.controller.PlayerController;
@@ -65,6 +67,12 @@ public class WorldRenderer {
     
     /** Temps virtuel accumulé pour le cycle jour/nuit, affecté par la vitesse de l'environnement */
     private float virtualTime = 0.0f;
+    
+    /** Processeur de filtres pour les effets post-traitement */
+    private FilterPostProcessor fpp;
+    
+    /** Filtre de bloom pour l'effet lumineux du soleil */
+    private BloomFilter bloomFilter;
 
     /**
      * Crée un nouveau renderer pour le monde entier.
@@ -440,6 +448,9 @@ public class WorldRenderer {
         int step = (int)((virtualTime * 64 / 60) % 192); // 192 étapes sur le cycle
         ColorRGBA skyColor = skyColors[step];
         mainViewport.setBackgroundColor(skyColor);
+        
+        // Mettre à jour l'intensité du bloom en fonction de l'heure du jour
+        updateBloomIntensity(step);
 
         // Calcule le centre de la map
         float mapCenterX = (worldModel.getWorldSizeX() * ChunkModel.SIZE) / 2f;
@@ -518,5 +529,61 @@ public class WorldRenderer {
 
     public EntityRendererManager getEntityRendererManager() {
         return entityRendererManager;
+    }
+    
+    /**
+     * Initialise l'effet de bloom pour le soleil.
+     * Cette méthode doit être appelée après que le ViewPort soit disponible.
+     * 
+     * @param viewPort Le ViewPort principal de l'application
+     */
+    public void initializeBloomEffect(ViewPort viewPort) {
+        // Créer le FilterPostProcessor avec antialiasing
+        fpp = new FilterPostProcessor(assetManager);
+        
+        // Configurer l'antialiasing sur le FilterPostProcessor
+        // Cela compense la perte d'antialiasing MSAA due au post-traitement
+        fpp.setNumSamples(4); // Même valeur que dans Main.java
+        
+        // Créer le BloomFilter avec le mode Objects pour utiliser les GlowColor
+        bloomFilter = new BloomFilter(BloomFilter.GlowMode.Objects);
+        
+        // Configurer les paramètres du bloom selon la documentation
+        bloomFilter.setBlurScale(3.5f);        // Échelle du flou (défaut: 1.5f)
+        bloomFilter.setExposurePower(7.0f);    // Puissance d'exposition (défaut: 5.0f)
+        bloomFilter.setExposureCutOff(0.0f);   // Seuil d'exposition (défaut: 0.0f)
+        bloomFilter.setBloomIntensity(2.5f);   // Intensité du bloom (défaut: 2.0f)
+        
+        // Ajouter le filtre bloom au processeur
+        fpp.addFilter(bloomFilter);
+        
+        // Ajouter le processeur au ViewPort
+        viewPort.addProcessor(fpp);
+    }
+    
+    /**
+     * Met à jour l'intensité du bloom en fonction de l'heure du jour.
+     * Le bloom est plus intense quand le soleil est visible.
+     * 
+     * @param step L'étape actuelle du cycle jour/nuit (0-191)
+     */
+    public void updateBloomIntensity(int step) {
+        if (bloomFilter != null) {
+            // Calculer l'intensité basée sur la position du soleil
+            float angle = (float)(2 * Math.PI * (step / 192.0) - Math.PI / 2);
+            float sunY = (float)(Math.sin(angle) * Math.cos(Math.PI / 4) * 400);
+            
+            // Le bloom est plus intense quand le soleil est au-dessus de l'horizon
+            float intensity;
+            if (sunY > 0) {
+                // Jour : intensité normale à forte
+                intensity = 2.0f + (sunY / 400f) * 1.5f; // Entre 2.0 et 3.5
+            } else {
+                // Nuit : bloom très faible ou désactivé
+                intensity = 0.2f;
+            }
+            
+            bloomFilter.setBloomIntensity(intensity);
+        }
     }
 } 

@@ -202,7 +202,7 @@ public class ChooseMenu extends AbstractGameMenu {
                         height("3%");
                     }});
 
-                    control(new ButtonBuilder("demarrerLeJeu", "DÉMARRER LE JEU") {{
+                    control(new ButtonBuilder("demarrerLeJeu", "DÉMARRER LA SIMULATION") {{
                         alignCenter();
                         height("12%");
                         width("70%");

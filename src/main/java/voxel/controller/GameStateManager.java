@@ -357,6 +357,9 @@ public class GameStateManager {
         app.getRootNode().attachChild(worldRenderer.getSkyNode());
         app.getRootNode().attachChild(worldRenderer.getNode());
         
+        // Initialiser l'effet de bloom pour le soleil
+        worldRenderer.initializeBloomEffect(app.getViewPort());
+        
         // Initialisation de l'interface utilisateur
         worldRenderer.initializeUI(app.getGuiNode(), app.getCamera());
         

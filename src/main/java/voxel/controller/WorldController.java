@@ -212,25 +212,51 @@ public class WorldController {
                                 boolean modified = worldModel.setBlockAt(blockX, blockY, blockZ, blockType, treeId);
 
                                 if (modified){
-                                    Vector3f chunkCoords = worldModel.getChunkCoordAt(blockX, blockY, blockZ);
-                                    int cx = (int) chunkCoords.x;
-                                    int cy = (int) chunkCoords.y;
-                                    int cz = (int) chunkCoords.z;
+                                    try {
+                                        Vector3f chunkCoords = worldModel.getChunkCoordAt(blockX, blockY, blockZ);
+                                        int cx = (int) chunkCoords.x;
+                                        int cy = (int) chunkCoords.y;
+                                        int cz = (int) chunkCoords.z;
 
-                                    // Indique que le chunk doit être rechargé
-                                    worldModel.getChunk(cx, cy, cz).setNeedsUpdate(true);
+                                        // Indique que le chunk doit être rechargé (vérification sécurisée)
+                                        ChunkModel currentChunk = worldModel.getChunk(cx, cy, cz);
+                                        if (currentChunk != null) {
+                                            currentChunk.setNeedsUpdate(true);
 
-                                    int localX = worldX - (cx - worldModel.getWorldSizeX() / 2) * ChunkModel.SIZE;
-                                    int localY = worldY - cy * ChunkModel.SIZE;
-                                    int localZ = worldZ - (cz - worldModel.getWorldSizeZ() / 2) * ChunkModel.SIZE;
+                                            int localX = worldX - (cx - worldModel.getWorldSizeX() / 2) * ChunkModel.SIZE;
+                                            int localY = worldY - cy * ChunkModel.SIZE;
+                                            int localZ = worldZ - (cz - worldModel.getWorldSizeZ() / 2) * ChunkModel.SIZE;
 
-                                    // Si on est en bordure d'un chunk, mettre à jour les chunks voisins
-                                    if (localX == 0) worldModel.getChunk(cx-1, cy, cz).setNeedsUpdate(true);
-                                    if (localX == 15) worldModel.getChunk(cx+1, cy, cz).setNeedsUpdate(true);
-                                    if (localY == 0) worldModel.getChunk(cx, cy-1, cz).setNeedsUpdate(true);
-                                    if (localY == 15) worldModel.getChunk(cx, cy+1, cz).setNeedsUpdate(true);
-                                    if (localZ == 0) worldModel.getChunk(cx, cy, cz-1).setNeedsUpdate(true);
-                                    if (localZ == 15) worldModel.getChunk(cx, cy, cz+1).setNeedsUpdate(true);
+                                            // Si on est en bordure d'un chunk, mettre à jour les chunks voisins
+                                            if (localX == 0) {
+                                                ChunkModel neighborChunk = worldModel.getChunk(cx-1, cy, cz);
+                                                if (neighborChunk != null) neighborChunk.setNeedsUpdate(true);
+                                            }
+                                            if (localX == 15) {
+                                                ChunkModel neighborChunk = worldModel.getChunk(cx+1, cy, cz);
+                                                if (neighborChunk != null) neighborChunk.setNeedsUpdate(true);
+                                            }
+                                            if (localY == 0) {
+                                                ChunkModel neighborChunk = worldModel.getChunk(cx, cy-1, cz);
+                                                if (neighborChunk != null) neighborChunk.setNeedsUpdate(true);
+                                            }
+                                            if (localY == 15) {
+                                                ChunkModel neighborChunk = worldModel.getChunk(cx, cy+1, cz);
+                                                if (neighborChunk != null) neighborChunk.setNeedsUpdate(true);
+                                            }
+                                            if (localZ == 0) {
+                                                ChunkModel neighborChunk = worldModel.getChunk(cx, cy, cz-1);
+                                                if (neighborChunk != null) neighborChunk.setNeedsUpdate(true);
+                                            }
+                                            if (localZ == 15) {
+                                                ChunkModel neighborChunk = worldModel.getChunk(cx, cy, cz+1);
+                                                if (neighborChunk != null) neighborChunk.setNeedsUpdate(true);
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        System.err.println("Erreur lors de la génération d'arbre à la position (" + blockX + ", " + blockY + ", " + blockZ + "): " + e.getMessage());
+                                        // Continue sans planter le jeu
+                                    }
                                 }
                             }
                         }

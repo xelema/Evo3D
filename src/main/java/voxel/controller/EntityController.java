@@ -114,9 +114,6 @@ public class EntityController {
     public void update(float tpf, float environmentSpeed) {
         // Déléguer la mise à jour des entités à l'EntityManager avec la vitesse de l'environnement
         entityManager.updateAll(tpf, environmentSpeed);
-        
-        // Nettoyer les renderers des entités supprimées
-        // Cette opération est désormais gérée par EntityRendererManager.update()
     }
 
     public void printEntitiesList() {
