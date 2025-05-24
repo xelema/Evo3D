@@ -1,7 +1,12 @@
 package voxel.controller;
 
 import com.jme3.app.SimpleApplication;
-
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.shape.Quad;
 import voxel.Main;
 import voxel.model.BiomeType;
 import voxel.model.WorldModel;
@@ -48,6 +53,15 @@ public class GameStateManager {
     /** État actuel du jeu */
     private GameState currentState;
     
+    /** Variables pour l'affichage du message dans WORLD_SELECTION */
+    private float worldSelectionTimer = 0.0f;
+    private BitmapText instructionText;
+    private float blinkTimer = 0.0f;
+    private boolean textVisible = true;
+    
+    /** Référence au rectangle d'arrière-plan */
+    private Geometry backgroundRectangle;
+    
     /**
      * États possibles du jeu
      */
@@ -72,7 +86,7 @@ public class GameStateManager {
      */
     public GameStateManager(SimpleApplication app) {
         this.app = app;
-        this.currentState = GameState.IN_GAME;
+        this.currentState = GameState.WORLD_SELECTION;
         
         // Initialisation des menus
         this.worldSelectionMenu = new ChooseMenu(app);
@@ -125,7 +139,9 @@ public class GameStateManager {
         // Actions spécifiques selon l'état actuel
         switch (currentState) {
             case WORLD_SELECTION:
-                // Rien de spécial à nettoyer
+                // Nettoyer le message d'instruction
+                hideInstructionText();
+                worldSelectionTimer = 0.0f;
                 break;
             case LOADING:
                 // Rien de spécial à nettoyer
@@ -143,7 +159,25 @@ public class GameStateManager {
      * Configure l'état de sélection du monde
      */
     private void setupWorldSelection() {
-        worldSelectionMenu.showMenu();
+        // Créer un monde avec le biome FLOATING_ISLAND
+        if (worldRenderer == null) {
+            WorldModel worldModel = new WorldModel(BiomeType.FLOATING_ISLAND, 4);
+            setupMVC(worldModel);
+        }
+        
+        // Garder le curseur visible pour les interactions avec le menu de sélection
+        app.getInputManager().setCursorVisible(true);
+        
+        // Activer les contrôles de la caméra pour explorer le monde
+        if (inputController != null) {
+            inputController.setCameraControlsEnabled(true);
+        }
+        
+        // Réinitialiser le timer
+        worldSelectionTimer = 0.0f;
+        
+        // Cacher le menu de sélection du monde pour le moment
+        worldSelectionMenu.hideMenu();
     }
     
     /**
@@ -359,6 +393,32 @@ public class GameStateManager {
     public GameState getCurrentState() {
         return currentState;
     }
+
+    public ChooseMenu getWorldSelectionMenu() {
+        return worldSelectionMenu;
+    }
+    
+    /**
+     * Ouvre le menu de création de simulation (ChooseMenu)
+     * Utilisé quand on appuie sur X dans l'état WORLD_SELECTION
+     */
+    public void openCreationMenu() {
+        if (currentState == GameState.WORLD_SELECTION) {
+            // Désactiver les contrôles de caméra pour permettre l'interaction avec le menu
+            if (inputController != null) {
+                inputController.setCameraControlsEnabled(false);
+            }
+            
+            // Afficher le curseur pour le menu
+            app.getInputManager().setCursorVisible(true);
+            
+            // Cacher le texte d'instruction
+            hideInstructionText();
+            
+            // Afficher le menu de choix
+            worldSelectionMenu.showMenu();
+        }
+    }
     
     /**
      * Met à jour le jeu
@@ -371,12 +431,133 @@ public class GameStateManager {
             // Appliquer la vitesse du temps
             gameController.update(tpf * timeSpeed, app.getViewPort());
         }
+        
+        // Gestion spéciale pour l'état WORLD_SELECTION
+        if (currentState == GameState.WORLD_SELECTION) {
+            // Mettre à jour le monde en arrière-plan
+            if (gameController != null) {
+                gameController.update(tpf * timeSpeed, app.getViewPort());
+            }
+            
+            // Gérer l'affichage du message après 5 secondes
+            worldSelectionTimer += tpf;
+            if (worldSelectionTimer >= 5.0f) {
+                showInstructionText();
+                updateBlinkingText(tpf);
+            }
+        }
 
         // Si le joueur a cliqué sur "Démarrer le jeu" dans le menu principal
         if (worldSelectionMenu.hasGameStarted()){
-
             worldSelectionMenu.setGameStarted(false);
             changeWorld(BiomeType.SAVANNA);
+        }
+    }
+    
+    /**
+     * Affiche le texte d'instruction clignotant
+     */
+    private void showInstructionText() {
+        // Ne pas afficher le texte si le menu ChooseMenu est ouvert
+        if (worldSelectionMenu.isMenuVisible()) {
+            return;
+        }
+        
+        if (instructionText == null) {
+            BitmapFont font = app.getAssetManager().loadFont("Fonts/ArialBlack_24.fnt");
+            instructionText = new BitmapText(font, false);
+//            instructionText.setSize(font.getCharSet().getRenderedSize() * 1.2f);
+
+            // try {
+            //     FtBitmapFont ftFont = new FtBitmapFont(app.getAssetManager(), "Fonts/arial.ttf", 28);
+            //     instructionText = new BitmapText(ftFont, false);
+            //     instructionText.setSize(28);
+            // } catch (Exception e) {
+            //     // Fallback vers police bitmap si TTF échoue
+            //     BitmapFont font = app.getAssetManager().loadFont("Fonts/ArialBlack_24.fnt");
+            //     instructionText = new BitmapText(font, false);
+            //     instructionText.setSize(font.getCharSet().getRenderedSize() * 1.2f);
+            // }
+            
+            // Configuration du texte
+            instructionText.setText("Appuyer sur X pour ouvrir les paramètres de création de la simulation");
+            instructionText.setColor(ColorRGBA.White);
+            
+            // Positionner le texte au centre avec des coordonnées entières
+            float textWidth = instructionText.getLineWidth();
+            float textHeight = instructionText.getLineHeight();
+            float screenWidth = app.getCamera().getWidth();
+            float screenHeight = app.getCamera().getHeight();
+            
+            int centerX = Math.round((screenWidth - textWidth) / 2);
+            int centerY = Math.round(screenHeight / 2);
+            
+            // Arrière-plan semi-transparent
+            backgroundRectangle = new Geometry("InstructionBackground", new Quad(textWidth + 60, textHeight + 40));
+            Material material = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+            material.setColor("Color", new ColorRGBA(0, 0, 0, 0.7f));
+            material.getAdditionalRenderState().setBlendMode(com.jme3.material.RenderState.BlendMode.Alpha);
+            material.setTransparent(true);
+            backgroundRectangle.setMaterial(material);
+            
+            // Positionnement
+            backgroundRectangle.setLocalTranslation(centerX - 30, centerY - textHeight - 20, -0.1f);
+            instructionText.setLocalTranslation(centerX, centerY, 0);
+            
+            // Ajout au GUI
+            app.getGuiNode().attachChild(backgroundRectangle);
+            app.getGuiNode().attachChild(instructionText);
+        }
+    }
+    
+    /**
+     * Cache le texte d'instruction
+     */
+    private void hideInstructionText() {
+        if (instructionText != null) {
+            app.getGuiNode().detachChild(instructionText);
+            instructionText = null;
+        }
+        
+        if (backgroundRectangle != null) {
+            app.getGuiNode().detachChild(backgroundRectangle);
+            backgroundRectangle = null;
+        }
+    }
+    
+    /**
+     * Met à jour le clignotement du texte
+     * 
+     * @param tpf Temps écoulé depuis la dernière image
+     */
+    private void updateBlinkingText(float tpf) {
+        // Cacher le texte si le menu ChooseMenu est ouvert
+        if (worldSelectionMenu.isMenuVisible()) {
+            if (instructionText != null) {
+                hideInstructionText();
+            }
+            return;
+        }
+        
+        if (instructionText != null) {
+            blinkTimer += tpf;
+            if (blinkTimer >= 1.5f) {  // Clignoter toutes les 1.5 secondes
+                textVisible = !textVisible;
+                
+                // Appliquer le clignotement au texte
+                instructionText.setCullHint(textVisible ? 
+                    com.jme3.scene.Spatial.CullHint.Never : 
+                    com.jme3.scene.Spatial.CullHint.Always);
+                
+                // Appliquer le clignotement à l'arrière-plan
+                if (backgroundRectangle != null) {
+                    backgroundRectangle.setCullHint(textVisible ? 
+                        com.jme3.scene.Spatial.CullHint.Never : 
+                        com.jme3.scene.Spatial.CullHint.Always);
+                }
+                
+                blinkTimer = 0.0f;
+            }
         }
     }
 } 

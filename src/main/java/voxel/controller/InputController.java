@@ -39,6 +39,7 @@ public class InputController implements ActionListener {
     private static final String ACTION_TOGGLE_THIRD_PERSON = "ToggleThirdPerson"; // Action pour basculer entre vue 1ère et 3ème personne
     private static final String ACTION_DEBUG_ENTITES_LIST = "DebugEntitiesList"; // Action pour afficher la liste des entités
     private static final String ACTION_OPEN_INGAME_MENU = "OpenInGameMenu"; // Action pour ouvrir le menu en jeu
+    private static final String ACTION_OPEN_CREATION_MENU = "OpenCreationMenu"; // Action pour ouvrir le menu de création de simulation
 
     private final InputManager inputManager; // Gestionnaire d'entrées de jMonkeyEngine
     private final WorldController worldController; // Référence au contrôleur de monde
@@ -133,6 +134,7 @@ public class InputController implements ActionListener {
         inputManager.deleteMapping(ACTION_TOGGLE_THIRD_PERSON);
         inputManager.deleteMapping(ACTION_DEBUG_ENTITES_LIST);
         inputManager.deleteMapping(ACTION_OPEN_INGAME_MENU);
+        inputManager.deleteMapping(ACTION_OPEN_CREATION_MENU);
         
         // Configuration des mappings (association touche/action)
         inputManager.addMapping(ACTION_TOGGLE_WIREFRAME, new KeyTrigger(KeyInput.KEY_T));
@@ -151,6 +153,7 @@ public class InputController implements ActionListener {
         inputManager.addMapping(ACTION_TOGGLE_THIRD_PERSON, new KeyTrigger(KeyInput.KEY_F5));
         inputManager.addMapping(ACTION_DEBUG_ENTITES_LIST, new KeyTrigger(KeyInput.KEY_F6));
         inputManager.addMapping(ACTION_OPEN_INGAME_MENU, new KeyTrigger(KeyInput.KEY_ESCAPE));
+        inputManager.addMapping(ACTION_OPEN_CREATION_MENU, new KeyTrigger(KeyInput.KEY_X));
 
         // Enregistrement du listener pour toutes les actions
         inputManager.addListener(this,
@@ -169,7 +172,8 @@ public class InputController implements ActionListener {
                 ACTION_TOGGLE_CAMERA_MODE,
                 ACTION_TOGGLE_THIRD_PERSON,
                 ACTION_DEBUG_ENTITES_LIST,
-                ACTION_OPEN_INGAME_MENU
+                ACTION_OPEN_INGAME_MENU,
+                ACTION_OPEN_CREATION_MENU
         );
         
         // S'assurer que les contrôles de caméra sont activés par défaut
@@ -230,8 +234,8 @@ public class InputController implements ActionListener {
      */
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
-        // Si dans un menu et que ce n'est pas la touche ESCAPE, ignorer les entrées
-        if (!cameraControlsEnabled && !name.equals(ACTION_OPEN_INGAME_MENU)) {
+        // Si dans un menu et que ce n'est pas la touche ESCAPE ou X, ignorer les entrées
+        if (!cameraControlsEnabled && !name.equals(ACTION_OPEN_INGAME_MENU) && !name.equals(ACTION_OPEN_CREATION_MENU)) {
             return;
         }
         
@@ -310,13 +314,29 @@ public class InputController implements ActionListener {
                     if (gameStateManager.getCurrentState() == GameStateManager.GameState.IN_GAME) {
                         gameStateManager.changeState(GameStateManager.GameState.IN_GAME_MENU);
                         setCameraControlsEnabled(false); // Désactiver les contrôles de caméra en mode menu
-                    } 
+                    }
                     // Si on est déjà dans le menu en jeu, revenir au jeu
                     else if (gameStateManager.getCurrentState() == GameStateManager.GameState.IN_GAME_MENU) {
                         gameStateManager.changeState(GameStateManager.GameState.IN_GAME);
                         setCameraControlsEnabled(true); // Réactiver les contrôles de caméra en mode jeu
                     }
                 }
+                break;
+            case ACTION_OPEN_CREATION_MENU:                
+                if (isPressed && gameStateManager != null) { // Si on est dans l'état WORLD_SELECTION, ouvrir le menu de création                    
+                    if (gameStateManager.getCurrentState() == GameStateManager.GameState.WORLD_SELECTION) {
+                        // Si on est dans le menu, on retourne au "jeu""
+                        if (gameStateManager.getWorldSelectionMenu().isMenuVisible()){
+                            gameStateManager.getWorldSelectionMenu().hideMenu();
+                            setCameraControlsEnabled(true);
+                        }
+                        // Si on est dans "jeu", on ouvre le menu
+                        else {
+                            gameStateManager.getWorldSelectionMenu().showMenu();
+                            setCameraControlsEnabled(false);
+                        }
+                    }                
+                }                
                 break;
         }
     }

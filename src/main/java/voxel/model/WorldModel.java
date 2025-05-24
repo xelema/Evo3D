@@ -11,20 +11,20 @@ import java.util.Random;
  * Cette classe gère uniquement les données du monde sans le rendu.
  */
 public class WorldModel {
-    /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 8;
+    /** Taille par défaut du monde en nombre de chunks sur les axes X et Z */
+    public static final int DEFAULT_WORLD_SIZE = 32;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
     
     /** Taille du monde en nombre de chunks sur l'axe X */
-    private final int worldSizeX = WORLD_SIZE;
+    private int worldSizeX;
     
     /** Taille du monde en nombre de chunks sur l'axe Y */
-    private final int worldSizeY = 8;
+    private int worldSizeY;
     
     /** Taille du monde en nombre de chunks sur l'axe Z */
-    private final int worldSizeZ = WORLD_SIZE;
+    private int worldSizeZ;
     
     /** Eclairage oui ou non */
     private boolean lightningMode = true;
@@ -62,10 +62,23 @@ public class WorldModel {
     private BiomeType activeBiome;
 
     /**
-     * Crée un nouveau monde de voxels.
+     * Crée un nouveau monde de voxels avec la taille par défaut.
      */
     public WorldModel(BiomeType biome) {
+        this(biome, DEFAULT_WORLD_SIZE);
+    }
+
+    /**
+     * Crée un nouveau monde de voxels avec une taille spécifiée.
+     * 
+     * @param biome Le type de biome du monde
+     * @param worldSize La taille du monde en nombre de chunks (axes X et Z)
+     */
+    public WorldModel(BiomeType biome, int worldSize) {
         this.activeBiome = biome;
+        this.worldSizeX = worldSize;
+        this.worldSizeY = 8; // Hauteur fixe pour l'instant
+        this.worldSizeZ = worldSize;
 
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
 
@@ -822,6 +835,47 @@ public class WorldModel {
 
     public EntityManager getEntityManager() {
         return entityManager;
+    }
+
+    /**
+     * Définit une nouvelle taille pour le monde (axes X et Z).
+     * Note: Cette méthode ne redimensionne pas le monde existant.
+     * 
+     * @param worldSize La nouvelle taille du monde
+     */
+    public void setWorldSize(int worldSize) {
+        this.worldSizeX = worldSize;
+        this.worldSizeZ = worldSize;
+    }
+
+    /**
+     * Définit une nouvelle taille pour l'axe X du monde.
+     * Note: Cette méthode ne redimensionne pas le monde existant.
+     * 
+     * @param worldSizeX La nouvelle taille en X
+     */
+    public void setWorldSizeX(int worldSizeX) {
+        this.worldSizeX = worldSizeX;
+    }
+
+    /**
+     * Définit une nouvelle taille pour l'axe Y du monde.
+     * Note: Cette méthode ne redimensionne pas le monde existant.
+     * 
+     * @param worldSizeY La nouvelle taille en Y
+     */
+    public void setWorldSizeY(int worldSizeY) {
+        this.worldSizeY = worldSizeY;
+    }
+
+    /**
+     * Définit une nouvelle taille pour l'axe Z du monde.
+     * Note: Cette méthode ne redimensionne pas le monde existant.
+     * 
+     * @param worldSizeZ La nouvelle taille en Z
+     */
+    public void setWorldSizeZ(int worldSizeZ) {
+        this.worldSizeZ = worldSizeZ;
     }
 
     public void update(float tpf) {

@@ -118,7 +118,7 @@ public class GameController {
 
         // Fait spawn des animaux aléatoirement (10 de chaque espèces)
         // Note : ne sera pas comme ça dans la version finale
-        float worldSize = (float) (WorldModel.WORLD_SIZE * ChunkModel.SIZE);
+        float worldSize = (float) (WorldModel.DEFAULT_WORLD_SIZE * ChunkModel.SIZE);
         float worldHalfSize = worldSize / 2.0f;
 
         List<Class<? extends Entity>> animalTypes = Arrays.asList(

@@ -83,6 +83,15 @@ public abstract class AbstractGameMenu implements ScreenController {
         return this.nifty;
     }
     
+    /**
+     * Vérifie si le menu est actuellement visible
+     * 
+     * @return true si le menu est visible, false sinon
+     */
+    public boolean isMenuVisible() {
+        return menuVisible;
+    }
+    
     // Implémentation des méthodes de ScreenController
     
     @Override
