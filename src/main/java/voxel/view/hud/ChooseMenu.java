@@ -18,6 +18,7 @@ import de.lessvoid.nifty.builder.PanelBuilder;
 import de.lessvoid.nifty.builder.ScreenBuilder;
 import de.lessvoid.nifty.builder.TextBuilder;
 import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
+import de.lessvoid.nifty.builder.ElementBuilder;
 
 import voxel.controller.GameStateManager;
 
@@ -173,7 +174,7 @@ public class ChooseMenu extends AbstractGameMenu {
 
                     // Titre principal avec style amélioré
                     text(new TextBuilder() {{
-                        text("CRÉATION DU MONDE");
+                        text("--- CRÉATION DU MONDE ---");
                         font("Interface/Fonts/Default.fnt");
                         height("15%");
                         width("100%");
@@ -187,12 +188,13 @@ public class ChooseMenu extends AbstractGameMenu {
                         height("5%");
                     }});
 
-                    control(new ButtonBuilder("demarrerLeJeu", "DÉMARRER LE JEU") {{
+                    control(new ButtonBuilder("optionsButton", "CONFIGURATION DU MONDE") {{
                         alignCenter();
                         height("12%");
                         width("70%");
-                        interactOnClick("startGame()");
+                        interactOnClick("openOptions()");
                         style("nifty-button");
+                        focusable(!hasAllParametersConfigured());
                     }});
 
                     // Espacement
@@ -200,12 +202,13 @@ public class ChooseMenu extends AbstractGameMenu {
                         height("3%");
                     }});
 
-                    control(new ButtonBuilder("optionsButton", "CONFIGURATION DU MONDE") {{
+                    control(new ButtonBuilder("demarrerLeJeu", "DÉMARRER LE JEU") {{
                         alignCenter();
                         height("12%");
                         width("70%");
-                        interactOnClick("openOptions()");
+                        interactOnClick("startGame()");
                         style("nifty-button");
+                        focusable(hasAllParametersConfigured());
                     }});
 
                     // Espacement
@@ -264,7 +267,7 @@ public class ChooseMenu extends AbstractGameMenu {
 
                     // Titre avec style amélioré
                     text(new TextBuilder() {{
-                        text("CONFIGURATION DE L'ENVIRONNEMENT");
+                        text("--- CONFIGURATION DE L'ENVIRONNEMENT ---");
                         font("Interface/Fonts/Default.fnt");
                         height("15%");
                         width("100%");
@@ -273,9 +276,9 @@ public class ChooseMenu extends AbstractGameMenu {
                         style("nifty-label");
                     }});
 
-                    // Espacement
+                    // Espacement (réduit pour monter les sections)
                     panel(new PanelBuilder() {{
-                        height("5%");
+                        height("2%");
                     }});
 
                     // Section Biomes
@@ -297,18 +300,19 @@ public class ChooseMenu extends AbstractGameMenu {
                             color("#66ff66");
                         }});
 
-                        control(new ButtonBuilder("faune", "Configuration des Biomes") {{
+                        control(new ButtonBuilder("faune", "Paramètres d'Écosystème") {{
                             alignCenter();
                             height("50%");
                             width("80%");
-                        interactOnClick("reglageFaune()");
+                            interactOnClick("reglageFaune()");
                             style("nifty-button");
+                            focusable(false);
                         }});
                     }});
 
-                    // Espacement
+                    // Espacement (réduit)
                     panel(new PanelBuilder() {{
-                        height("3%");
+                        height("2%");
                     }});
 
                     // Section Terrain
@@ -334,14 +338,15 @@ public class ChooseMenu extends AbstractGameMenu {
                             alignCenter();
                             height("50%");
                             width("80%");
-                        interactOnClick("reglageFlore");
+                            interactOnClick("reglageFlore");
                             style("nifty-button");
+                            focusable(false);
                         }});
                     }});
 
-                    // Espacement
+                    // Espacement (réduit)
                     panel(new PanelBuilder() {{
-                        height("3%");
+                        height("2%");
                     }});
 
                     // Section Climat
@@ -369,12 +374,13 @@ public class ChooseMenu extends AbstractGameMenu {
                             width("80%");
                             interactOnClick("reglageEnvironnement()");
                             style("nifty-button");
+                            focusable(false);
                         }});
                     }});
 
-                    // Espacement
+                    // Espacement avant le bouton retour (pour le descendre)
                     panel(new PanelBuilder() {{
-                        height("8%");
+                        height("5%");
                     }});
 
                     // Bouton retour stylisé
@@ -527,26 +533,30 @@ public class ChooseMenu extends AbstractGameMenu {
                         height("8%");
                         width("80%");
 
-                        control(new ButtonBuilder("Retour", "← RETOUR") {{
+                        control(new ButtonBuilder("retourButton", "RETOUR ←") {{
                             alignLeft();
                             valignCenter();
                             height("100%");
                             width("30%");
                             interactOnClick("retour()");
                             style("nifty-button");
+                            focusable(false);
                         }});
 
+                        // Espacement pour séparer les boutons
                         panel(new PanelBuilder() {{
                             width("40%");
+                            height("100%");
                         }});
 
-                        control(new ButtonBuilder("Valider", "VALIDER ✓") {{
+                        control(new ButtonBuilder("validerButton", "VALIDER ✓") {{
                             alignRight();
                             valignCenter();
                             height("100%");
                             width("30%");
                             interactOnClick("validerConfiguration()");
                             style("nifty-button");
+                            focusable(true); // Ce bouton peut avoir le focus
                         }});
                     }});
                 }});
@@ -764,9 +774,9 @@ public class ChooseMenu extends AbstractGameMenu {
         System.out.println("Lancement du jeu...");
         System.out.println("Bouton démarrer cliqué !");
         
-        // Vérifier si des paramètres ont été configurés
-        if (!hasConfiguredParameters()) {
-            // Aucun paramètre configuré, afficher l'avertissement
+        // Vérifier si tous les paramètres ont été configurés
+        if (!hasAllParametersConfigured()) {
+            // Au moins un paramètre manque, afficher l'avertissement
             creerEcranAvertissement();
             nifty.gotoScreen("avertissementParametres");
             return;
@@ -880,6 +890,36 @@ public class ChooseMenu extends AbstractGameMenu {
         return false;
     }
 
+    /**
+     * Vérifie si TOUS les paramètres ont été configurés
+     * @return true si tous les paramètres ont été sélectionnés
+     */
+    public boolean hasAllParametersConfigured() {
+        for (int i = 0; i < NOMBREPARAMETRES; i++) {
+            if (selectionsParametres[i] < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Récupère la liste des paramètres non configurés
+     * @return String avec les paramètres manquants
+     */
+    public String getMissingParameters() {
+        StringBuilder missing = new StringBuilder();
+        for (int i = 0; i < NOMBREPARAMETRES; i++) {
+            if (selectionsParametres[i] < 0) {
+                if (missing.length() > 0) {
+                    missing.append(", ");
+                }
+                missing.append(nomsParametres[i]);
+            }
+        }
+        return missing.toString();
+    }
+
     public void validerConfiguration() {
         System.out.println("Configuration validée !");
         
@@ -896,6 +936,10 @@ public class ChooseMenu extends AbstractGameMenu {
                 System.out.println(nomsParametres[i] + ": Non sélectionné (utilisation par défaut: niveau 2)");
             }
         }
+        
+        // Recréer le menu principal pour mettre à jour le focus
+        int tailleEcran = app.getContext().getSettings().getHeight();
+        createMenu(tailleEcran);
         
         retour();
     }
@@ -946,14 +990,42 @@ public class ChooseMenu extends AbstractGameMenu {
                     
                     // Message d'avertissement
                     text(new TextBuilder() {{
-                        text("Aucun paramètre environnemental n'a été configuré.\n\n" +
-                             "Le monde sera créé avec les paramètres par défaut :\n" +
-                             "• Température : Modérée\n" +
-                             "• Humidité : Modérée\n" +
-                             "• Relief : Modéré\n\n" +
-                             "Souhaitez-vous continuer ?");
+                        String parametresManquants = getMissingParameters();
+                        String messageConfigures = "";
+                        String messageParDefaut = "";
+                        
+                        // Construire le message pour les paramètres configurés
+                        for (int i = 0; i < NOMBREPARAMETRES; i++) {
+                            if (selectionsParametres[i] >= 0) {
+                                if (messageConfigures.length() > 0) {
+                                    messageConfigures += "\n";
+                                }
+                                messageConfigures += "• " + nomsParametres[i] + " : " + optionsNiveaux[selectionsParametres[i]];
+                            }
+                        }
+                        
+                        // Construire le message pour les paramètres par défaut
+                        for (int i = 0; i < NOMBREPARAMETRES; i++) {
+                            if (selectionsParametres[i] < 0) {
+                                if (messageParDefaut.length() > 0) {
+                                    messageParDefaut += "\n";
+                                }
+                                messageParDefaut += "• " + nomsParametres[i] + " : Modéré (par défaut)";
+                            }
+                        }
+                        
+                        String messageComplet = "Paramètres manquants : " + parametresManquants + "\n\n";
+                        
+                        if (messageConfigures.length() > 0) {
+                            messageComplet += "Paramètres configurés :\n" + messageConfigures + "\n\n";
+                        }
+                        
+                        messageComplet += "Paramètres qui seront utilisés par défaut :\n" + messageParDefaut + "\n\n";
+                        messageComplet += "Souhaitez-vous continuer ?";
+                        
+                        text(messageComplet);
                         font("Interface/Fonts/Default.fnt");
-                        height("50%");
+                        height("60%");
                         width("100%");
                         alignCenter();
                         valignCenter();
@@ -980,20 +1052,23 @@ public class ChooseMenu extends AbstractGameMenu {
                             width("40%");
                             interactOnClick("continuerAvecParametresDefaut()");
                             style("nifty-button");
+                            focusable(false);
                         }});
                         
-                        // Espacement entre boutons
+                        // Espacement entre les boutons
                         panel(new PanelBuilder() {{
                             width("20%");
+                            height("100%");
                         }});
                         
-                        control(new ButtonBuilder("annulerButton", "CONFIGURER") {{
+                        control(new ButtonBuilder("configurerButton", "CONFIGURER") {{
                             alignRight();
                             valignCenter();
                             height("100%");
                             width("40%");
                             interactOnClick("retournerConfiguration()");
                             style("nifty-button");
+                            focusable(true); // Ce bouton encourage la configuration
                         }});
                     }});
                 }});
