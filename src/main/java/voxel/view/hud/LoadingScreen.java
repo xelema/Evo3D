@@ -92,7 +92,6 @@ public class LoadingScreen extends AbstractGameMenu {
                         alignCenter();
                         width("80%");
                         height("40%");
-                        backgroundColor("#222a");
                         
                         // Panneau pour afficher le fond de la barre de progression
                         panel(new PanelBuilder("progressBackground") {{

@@ -569,8 +569,17 @@ public class GameStateManager {
         
         if (instructionText != null) {
             blinkTimer += tpf;
-            if (blinkTimer >= 1.5f) {  // Clignoter toutes les 1.5 secondes
-                textVisible = !textVisible;
+            
+            // Cycle total de 2.0 secondes (1.5 visible + 0.5 invisible)
+            float cycleTime = 2.0f;
+            float timeInCycle = blinkTimer % cycleTime;
+            
+            // Le texte est visible pendant les 1.5 premières secondes du cycle
+            boolean shouldBeVisible = timeInCycle < 1.5f;
+            
+            // Mettre à jour la visibilité seulement si elle a changé
+            if (textVisible != shouldBeVisible) {
+                textVisible = shouldBeVisible;
                 
                 // Appliquer le clignotement au texte
                 instructionText.setCullHint(textVisible ? 
@@ -583,8 +592,6 @@ public class GameStateManager {
                         com.jme3.scene.Spatial.CullHint.Never : 
                         com.jme3.scene.Spatial.CullHint.Always);
                 }
-                
-                blinkTimer = 0.0f;
             }
         }
     }

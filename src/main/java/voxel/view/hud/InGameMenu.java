@@ -108,7 +108,7 @@ public class InGameMenu extends AbstractGameMenu {
                     paddingBottom("2%");
                     
                     text(new TextBuilder() {{
-                        text("Menu de Jeu");
+                        text("--- MENU ---");
                         font("Interface/Fonts/Default.fnt");
                         height("8%");
                         width("100%");
@@ -143,6 +143,7 @@ public class InGameMenu extends AbstractGameMenu {
                             max(5.0f);
                             stepSize(0.1f);
                             buttonStepSize(0.5f);
+                            focusable(false);
                         }});
                     }});
                     
@@ -167,6 +168,7 @@ public class InGameMenu extends AbstractGameMenu {
                                 height("100%");
                                 width("100%");
                                 interactOnClick("toggleWireframe()");
+                                focusable(wireframeMode);
                             }});
                         }});
                         
@@ -182,6 +184,7 @@ public class InGameMenu extends AbstractGameMenu {
                                 height("100%");
                                 width("100%");
                                 interactOnClick("toggleLightning()");
+                                focusable(lightningMode);
                             }});
                         }});
                     }});
@@ -195,6 +198,7 @@ public class InGameMenu extends AbstractGameMenu {
                         height("8%");
                         width("80%");
                         interactOnClick("openBiomeSelection()");
+                        focusable(false);
                     }});
                     
                     panel(new PanelBuilder("spacer2") {{
@@ -206,6 +210,7 @@ public class InGameMenu extends AbstractGameMenu {
                         height("8%");
                         width("80%");
                         interactOnClick("showControls()");
+                        focusable(false);
                     }});
                     
                     panel(new PanelBuilder("spacer3") {{
@@ -217,6 +222,7 @@ public class InGameMenu extends AbstractGameMenu {
                         height("8%");
                         width("80%");
                         interactOnClick("resumeGame()");
+                        focusable(false);
                     }});
                     
                     panel(new PanelBuilder("spacer4") {{
@@ -228,6 +234,7 @@ public class InGameMenu extends AbstractGameMenu {
                         height("8%");
                         width("80%");
                         interactOnClick("quitGame()");
+                        focusable(false);
                     }});
                 }});
             }});
@@ -293,6 +300,7 @@ public class InGameMenu extends AbstractGameMenu {
                         height("10%");
                         width("40%");
                         interactOnClick("backToMenu()");
+                        focusable(false);
                     }});
                 }});
             }});
@@ -341,6 +349,7 @@ public class InGameMenu extends AbstractGameMenu {
                             width("80%");
                             interactOnClick("changeBiome(SAVANNA)");
                             marginBottom("2%");
+                            focusable(false);
                         }});
                         
                         control(new ButtonBuilder("desertButton", "Désert") {{
@@ -349,6 +358,7 @@ public class InGameMenu extends AbstractGameMenu {
                             width("80%");
                             interactOnClick("changeBiome(DESERT)");
                             marginBottom("2%");
+                            focusable(false);
                         }});
                         
                         control(new ButtonBuilder("mountainsButton", "Montagnes") {{
@@ -357,6 +367,7 @@ public class InGameMenu extends AbstractGameMenu {
                             width("80%");
                             interactOnClick("changeBiome(MOUNTAINS)");
                             marginBottom("2%");
+                            focusable(false);
                         }});
                         
                         control(new ButtonBuilder("plainsButton", "Plaines") {{
@@ -365,6 +376,7 @@ public class InGameMenu extends AbstractGameMenu {
                             width("80%");
                             interactOnClick("changeBiome(PLAINS)");
                             marginBottom("2%");
+                            focusable(false);
                         }});
                         
                         control(new ButtonBuilder("jungleButton", "Jungle") {{
@@ -373,6 +385,7 @@ public class InGameMenu extends AbstractGameMenu {
                             width("80%");
                             interactOnClick("changeBiome(JUNGLE)");
                             marginBottom("2%");
+                            focusable(false);
                         }});
                         
                         control(new ButtonBuilder("snowyButton", "Neige") {{
@@ -380,6 +393,7 @@ public class InGameMenu extends AbstractGameMenu {
                             height("12%");
                             width("80%");
                             interactOnClick("changeBiome(SNOWY)");
+                            focusable(false);
                         }});
                     }});
                     
@@ -388,6 +402,7 @@ public class InGameMenu extends AbstractGameMenu {
                         height("10%");
                         width("40%");
                         interactOnClick("backToMenu()");
+                        focusable(false);
                     }});
                 }});
             }});
