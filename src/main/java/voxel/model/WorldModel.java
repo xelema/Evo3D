@@ -1170,4 +1170,74 @@ public class WorldModel {
     public BiomeType getActiveBiome() {
         return activeBiome;
     }
+
+    /**
+     * Modifie le type de bloc et l'ID de structure à partir de coordonnées globales.
+     * 
+     * @param globalX Coordonnée globale X
+     * @param globalY Coordonnée globale Y
+     * @param globalZ Coordonnée globale Z
+     * @param blockType Identifiant du type de bloc
+     * @param structureId ID de la structure propriétaire (0 si aucune)
+     * @return true si le bloc a été modifié, false si hors des limites
+     */
+    public boolean setBlockAt(int globalX, int globalY, int globalZ, int blockType, int structureId) {
+        // Calcul des coordonnées du chunk sans décalage
+        int chunkX = Math.floorDiv(globalX, ChunkModel.SIZE);
+        int chunkY = Math.floorDiv(globalY, ChunkModel.SIZE);
+        int chunkZ = Math.floorDiv(globalZ, ChunkModel.SIZE);
+
+        // Calcul des coordonnées locales à l'intérieur du chunk
+        int localX = globalX - chunkX * ChunkModel.SIZE;
+        int localY = globalY - chunkY * ChunkModel.SIZE;
+        int localZ = globalZ - chunkZ * ChunkModel.SIZE;
+
+        // Appliquer le décalage pour le stockage dans le tableau de chunks
+        int cx = chunkX + worldSizeX / 2;
+        int cy = chunkY;
+        int cz = chunkZ + worldSizeZ / 2;
+
+        // Vérification que les coordonnées sont dans les limites du monde
+        if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
+            return false;
+        }
+
+        // Modification du bloc et de l'ID de structure dans le chunk
+        chunks[cx][cy][cz].setBlock(localX, localY, localZ, blockType);
+        chunks[cx][cy][cz].setStructureId(localX, localY, localZ, structureId);
+        return true;
+    }
+    
+    /**
+     * Récupère l'ID de la structure propriétaire d'un bloc.
+     * 
+     * @param globalX Coordonnée globale X
+     * @param globalY Coordonnée globale Y
+     * @param globalZ Coordonnée globale Z
+     * @return L'ID de la structure (0 si aucune structure)
+     */
+    public int getStructureIdAt(int globalX, int globalY, int globalZ) {
+        // Calcul des coordonnées du chunk
+        int chunkX = Math.floorDiv(globalX, ChunkModel.SIZE);
+        int chunkY = Math.floorDiv(globalY, ChunkModel.SIZE);
+        int chunkZ = Math.floorDiv(globalZ, ChunkModel.SIZE);
+
+        // Calcul des coordonnées locales à l'intérieur du chunk
+        int localX = globalX - chunkX * ChunkModel.SIZE;
+        int localY = globalY - chunkY * ChunkModel.SIZE;
+        int localZ = globalZ - chunkZ * ChunkModel.SIZE;
+
+        // Appliquer le décalage pour le stockage dans le tableau de chunks
+        int cx = chunkX + worldSizeX / 2;
+        int cy = chunkY;
+        int cz = chunkZ + worldSizeZ / 2;
+
+        // Vérification que les coordonnées sont dans les limites du monde
+        if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
+            return 0; // Aucune structure pour tout ce qui est en dehors du monde
+        }
+
+        // Récupération de l'ID de structure dans le chunk
+        return chunks[cx][cy][cz].getStructureId(localX, localY, localZ);
+    }
 }

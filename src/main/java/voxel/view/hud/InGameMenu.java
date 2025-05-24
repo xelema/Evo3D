@@ -535,9 +535,9 @@ public class InGameMenu extends AbstractGameMenu {
     }
     
     /**
-     * Définit la vitesse du temps dans le jeu
+     * Définit la vitesse du temps pour l'environnement (soleil et arbres)
      * 
-     * @param speed Nouvelle vitesse du temps
+     * @param speed Nouvelle vitesse du temps pour l'environnement
      */
     public void setTimeSpeed(float speed) {
         this.timeSpeed = speed;
@@ -548,9 +548,9 @@ public class InGameMenu extends AbstractGameMenu {
     }
     
     /**
-     * Récupère la vitesse actuelle du temps
+     * Récupère la vitesse actuelle du temps pour l'environnement
      * 
-     * @return La vitesse actuelle du temps
+     * @return La vitesse actuelle du temps pour l'environnement
      */
     public float getTimeSpeed() {
         return timeSpeed;

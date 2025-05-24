@@ -23,6 +23,7 @@ import voxel.model.ChunkModel;
 import voxel.view.entity.EntityRendererManager;
 import voxel.model.BiomeType;
 import voxel.model.BlockType;
+import voxel.controller.GameStateManager;
 
 /**
  * Classe responsable du rendu du monde entier.
@@ -34,6 +35,9 @@ public class WorldRenderer {
     
     /** Asset manager pour accéder aux ressources */
     private final AssetManager assetManager;
+    
+    /** Référence au gestionnaire d'états pour la vitesse du temps */
+    private GameStateManager gameStateManager;
     
     /** Nœud racine contenant tous les chunks du monde */
     private Node worldNode;
@@ -56,9 +60,11 @@ public class WorldRenderer {
     private boolean needsMeshUpdate = false;
 
     private ColorRGBA[] skyColors = new ColorRGBA[192];
-    private long startTime;
     private Geometry sunGeometry;
     private Node skyNode = new Node("sky");
+    
+    /** Temps virtuel accumulé pour le cycle jour/nuit, affecté par la vitesse de l'environnement */
+    private float virtualTime = 0.0f;
 
     /**
      * Crée un nouveau renderer pour le monde entier.
@@ -74,7 +80,8 @@ public class WorldRenderer {
         initializeChunkRenderers();
         initSkyColors();
         initSun(assetManager);
-        this.startTime = System.currentTimeMillis() - 30_000; // Décale de 30 secondes en arrière
+        // Initialiser le temps virtuel pour démarrer au lever du soleil (étape 48 sur 192)
+        this.virtualTime = 48.0f * 60.0f / 64.0f; // Correspond à l'étape 48
 
         this.entityRendererManager = new EntityRendererManager(this.worldModel.getEntityManager(), assetManager);
         worldNode.attachChild(entityRendererManager.getNode());
@@ -90,7 +97,7 @@ public class WorldRenderer {
         this.camera = camera;
 
         // Crée le texte pour afficher les coordonnées
-        BitmapFont font = assetManager.loadFont("Interface/Fonts/Console.fnt");
+        BitmapFont font = assetManager.loadFont("Fonts/IBMDOSVGA9x16.fnt");
         coordinatesText = new BitmapText(font);
         coordinatesText.setSize(font.getCharSet().getRenderedSize());
         coordinatesText.setColor(ColorRGBA.White);
@@ -365,7 +372,7 @@ public class WorldRenderer {
                 "\n=== BIOME ACTUEL ===\n" +
                 "Nom: %s\n" +
                 "Temperature: %s (%d/4)\n" +
-                "Humidite: %s (%d/4)\n" +
+                "Humidité: %s (%d/4)\n" +
                 "Relief: %s (%d/4)\n" +
                 "\n=== COMPOSITION BIOME ===\n" +
                 "Surface: %s\n" +
@@ -398,6 +405,15 @@ public class WorldRenderer {
     }
 
     /**
+     * Définit le gestionnaire d'états du jeu pour accéder à la vitesse du temps de l'environnement
+     * 
+     * @param gameStateManager Le gestionnaire d'états du jeu
+     */
+    public void setGameStateManager(GameStateManager gameStateManager) {
+        this.gameStateManager = gameStateManager;
+    }
+
+    /**
      * Méthode appelée à chaque frame pour mettre à jour le rendu.
      * 
      * @param tpf Temps écoulé depuis la dernière frame
@@ -414,9 +430,14 @@ public class WorldRenderer {
 
         entityRendererManager.update();
 
-        // Gestion du cycle jour/nuit
-        long elapsed = (System.currentTimeMillis() - startTime) / 1000; // secondes écoulées
-        int step = (int)((elapsed * 64 / 60) % 192); // 192 étapes sur le cycle
+        // Gestion du cycle jour/nuit avec la vitesse de l'environnement
+        float environmentSpeed = (gameStateManager != null) ? gameStateManager.getEnvironmentTimeSpeed() : 1.0f;
+        
+        // Accumuler le temps virtuel progressivement en appliquant la vitesse de l'environnement
+        virtualTime += tpf * environmentSpeed;
+        
+        // Calculer l'étape du cycle basée sur le temps virtuel accumulé
+        int step = (int)((virtualTime * 64 / 60) % 192); // 192 étapes sur le cycle
         ColorRGBA skyColor = skyColors[step];
         mainViewport.setBackgroundColor(skyColor);
 

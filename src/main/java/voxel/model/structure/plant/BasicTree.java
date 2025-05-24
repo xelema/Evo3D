@@ -10,10 +10,16 @@ public class BasicTree extends Structure {
     public BasicTree(int width, int height) {
         super(width, height, width);
         random = new Random();
+        // Configurer les paramètres de croissance pour les arbres
+        this.growthInterval = 1f; // 1 seconde entre les tentatives
+        this.growthProbability = 0.2f; // 20% de chance de grandir
+        this.maxWidth = 60;
+        this.maxHeight = 45;
         createBasicTree();
     }
 
     public void createBasicTree() {
+        fillWithVoid();
         // Utiliser une approche différente selon la taille
         if (width <= 5 || height <= 5) {
             createTinyTree();
@@ -261,4 +267,82 @@ public class BasicTree extends Structure {
             blocks[realX][y][realZ] = blockType;
         }
     }
-}
+    
+    /**
+     * Met à jour l'arbre. Gère la croissance automatique dans le temps.
+     * @param tpf Temps écoulé depuis la dernière frame
+     */
+    @Override
+    public void update(float tpf) {
+        if (!canGrow || !canGrowInSize()) {
+            return; // L'arbre ne peut pas grandir
+        }
+        
+        // Incrémenter le temps depuis la dernière croissance
+        timeSinceLastGrowth += tpf;
+        
+        // Vérifier s'il est temps d'essayer de faire grandir l'arbre
+        if (timeSinceLastGrowth >= growthInterval) {
+            // Réinitialiser le timer
+            timeSinceLastGrowth = 0f;
+            
+            // Tenter de faire grandir l'arbre selon la probabilité
+            if (random.nextDouble() < growthProbability) {
+                grow();
+            }
+        }
+    }
+    
+    /**
+     * Fait grandir l'arbre en augmentant ses dimensions et en régénérant sa structure.
+     * @return true si la croissance a eu lieu, false sinon
+     */
+    @Override
+    public boolean grow() {
+        if (!canGrowInSize()) {
+            return false; // L'arbre a atteint sa taille maximale
+        }
+        
+        // Calculer les nouvelles dimensions (augmentation de 1-3 blocs)
+        int newWidth = Math.min(maxWidth, width + 1 + random.nextInt(3));
+        int newHeight = Math.min(maxHeight, height + 1 + random.nextInt(3));
+        
+        // Vérifier si les dimensions ont vraiment changé
+        if (newWidth == width && newHeight == height) {
+            return false; // Pas de croissance
+        }
+        
+        // Sauvegarder les anciennes dimensions
+        int oldWidth = width;
+        int oldHeight = height;
+        
+        // Mettre à jour les dimensions
+        width = newWidth;
+        height = newHeight;
+        depth = newWidth; // L'arbre est carré
+        
+        // Créer un nouveau tableau de blocs avec les nouvelles dimensions
+        blocks = new int[width][height][depth];
+        fillWithVoid();
+        
+        // Régénérer l'arbre avec les nouvelles dimensions
+        createBasicTree();
+        
+        System.out.println("Arbre grandi de " + oldWidth + "x" + oldHeight + " à " + width + "x" + height + " à la position (" + worldX + ", " + worldY + ", " + worldZ + ")");
+        
+        return true;
+    }
+    
+    /**
+     * Remplit le tableau de blocs avec des blocs vides (0).
+     */
+    private void fillWithVoid() {
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    blocks[x][y][z] = 0;
+                }
+            }
+        }
+    }
+} 

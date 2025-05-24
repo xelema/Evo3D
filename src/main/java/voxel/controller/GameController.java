@@ -44,44 +44,6 @@ public class GameController {
 
     /** Compteur de temps */
     float timeElapsed = 0;
-    float lastTimeElapsed = 0;
-
-    int[][] treeSize = {
-            // Très petits arbres (width <= 5 || height <= 5)
-            {3, 3},
-            {3, 4},
-            {5, 5},
-            // Petits arbres (width <= 10 || height <= 10)
-            {6, 6},
-            {7, 8},
-            {9, 9},
-            {10, 10},
-            // Grands arbres (width > 10 && height > 10)
-            {12, 12},
-            {15, 15},
-            {18, 18},
-            {24, 20},
-            {30, 22},
-            {35, 25},
-            {40, 28},
-            {45, 31},
-            {50, 35},
-            {55, 38},
-            {60, 40},
-            {65, 45},
-            {70, 50},
-            {75, 55},
-            {80, 60},
-            {85, 65},
-            {90, 70},
-            {95, 75},
-            {100, 80},
-            {105, 85},
-
-    };
-
-    int state = 0;
-
 
     /** Indique si les entités ont été initialisées */
     private boolean entitiesInitialized = false;

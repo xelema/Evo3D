@@ -11,6 +11,9 @@ public class ChunkModel {
     
     /** Tableau contenant les identifiants des blocs du chunk */
     private final int[] blocks;
+    
+    /** Tableau contenant les IDs de structure de chaque bloc (0 = aucune structure) */
+    private final int[] structureIds;
 
     boolean needsUpdate = false;
 
@@ -26,6 +29,7 @@ public class ChunkModel {
      */
     public ChunkModel(boolean empty, int cx, int cy, int cz) {
         blocks = new int[SIZE * SIZE * SIZE];
+        structureIds = new int[SIZE * SIZE * SIZE];
         this.cx = cx;
         this.cy = cy;
         this.cz = cz;
@@ -116,6 +120,35 @@ public class ChunkModel {
     public void setBlock(int x, int y, int z, int value) {
         if (x >= 0 && x < SIZE && y >= 0 && y < SIZE && z >= 0 && z < SIZE) {
             blocks[getIndex(x, y, z)] = value;
+        }
+    }
+
+    /**
+     * Récupère l'ID de la structure propriétaire d'un bloc.
+     * 
+     * @param x Coordonnée X dans le chunk (0-31)
+     * @param y Coordonnée Y dans le chunk (0-31)
+     * @param z Coordonnée Z dans le chunk (0-31)
+     * @return L'ID de la structure (0 si aucune structure)
+     */
+    public int getStructureId(int x, int y, int z) {
+        if (x < 0 || x >= SIZE || y < 0 || y >= SIZE || z < 0 || z >= SIZE) {
+            return 0; // Aucune structure pour les coordonnées hors limites
+        }
+        return structureIds[getIndex(x, y, z)];
+    }
+    
+    /**
+     * Modifie l'ID de la structure propriétaire d'un bloc.
+     * 
+     * @param x Coordonnée X dans le chunk (0-31)
+     * @param y Coordonnée Y dans le chunk (0-31)
+     * @param z Coordonnée Z dans le chunk (0-31)
+     * @param structureId ID de la structure (0 si aucune structure)
+     */
+    public void setStructureId(int x, int y, int z, int structureId) {
+        if (x >= 0 && x < SIZE && y >= 0 && y < SIZE && z >= 0 && z < SIZE) {
+            structureIds[getIndex(x, y, z)] = structureId;
         }
     }
 

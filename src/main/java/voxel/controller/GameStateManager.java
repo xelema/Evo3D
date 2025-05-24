@@ -50,6 +50,9 @@ public class GameStateManager {
     /** Vitesse actuelle du temps dans le jeu */
     private float timeSpeed = 1.0f;
     
+    /** Vitesse spécialisée pour le soleil et la croissance des arbres */
+    private float environmentTimeSpeed = 1.0f;
+    
     /** État actuel du jeu */
     private GameState currentState;
     
@@ -349,6 +352,8 @@ public class GameStateManager {
         
         // Vue - Gère l'affichage
         worldRenderer = new WorldRenderer(worldModel, app.getAssetManager());
+        // Définir la référence au GameStateManager pour la vitesse du temps de l'environnement
+        worldRenderer.setGameStateManager(this);
         app.getRootNode().attachChild(worldRenderer.getSkyNode());
         app.getRootNode().attachChild(worldRenderer.getNode());
         
@@ -357,6 +362,8 @@ public class GameStateManager {
         
         // Contrôleurs - Gèrent les interactions et la logique
         worldController = new WorldController(worldModel, worldRenderer);
+        // Définir la référence au GameStateManager pour la vitesse du temps de l'environnement
+        worldController.setGameStateManager(this);
         entityController = new EntityController(worldModel, worldRenderer, app.getCamera());
         inputController = new InputController(app.getInputManager(), worldController, entityController, app.getCamera());
         
@@ -380,10 +387,18 @@ public class GameStateManager {
      */
     public void setTimeSpeed(float speed) {
         this.timeSpeed = speed;
-        // Appliquer la vitesse au contrôleur du jeu si disponible
-        if (gameController != null) {
-            // Implémenter la logique pour appliquer la vitesse aux mises à jour
-        }
+        // La vitesse du temps général n'affecte plus que l'environnement (soleil + arbres)
+        this.environmentTimeSpeed = speed;
+        // Ne plus appliquer au gameController pour éviter d'affecter la vitesse du joueur
+    }
+    
+    /**
+     * Récupère la vitesse du temps pour l'environnement (soleil et arbres)
+     * 
+     * @return La vitesse du temps pour l'environnement
+     */
+    public float getEnvironmentTimeSpeed() {
+        return environmentTimeSpeed;
     }
     
     /**
@@ -447,15 +462,15 @@ public class GameStateManager {
     public void update(float tpf) {
         // Mettre à jour le jeu selon l'état actuel
         if (currentState == GameState.IN_GAME && gameController != null) {
-            // Appliquer la vitesse du temps
-            gameController.update(tpf * timeSpeed, app.getViewPort());
+            // Utiliser le temps normal (non modifié) pour éviter d'affecter la vitesse du joueur
+            gameController.update(tpf, app.getViewPort());
         }
         
         // Gestion spéciale pour l'état WORLD_SELECTION
         if (currentState == GameState.WORLD_SELECTION) {
-            // Mettre à jour le monde en arrière-plan
+            // Mettre à jour le monde en arrière-plan avec le temps normal aussi
             if (gameController != null) {
-                gameController.update(tpf * timeSpeed, app.getViewPort());
+                gameController.update(tpf, app.getViewPort());
             }
             
             // Gérer l'affichage du message après 5 secondes
