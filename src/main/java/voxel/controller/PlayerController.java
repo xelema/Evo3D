@@ -283,6 +283,10 @@ public class PlayerController {
     }
     
     // Méthodes de contrôle du mouvement
+
+    public Player getPlayer() {
+        return currentPlayer;
+    }
     
     public void setMovingForward(boolean moving) {
         this.movingForward = moving;

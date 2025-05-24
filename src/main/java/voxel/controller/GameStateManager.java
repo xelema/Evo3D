@@ -164,7 +164,7 @@ public class GameStateManager {
     private void setupWorldSelection() {
         // Créer un monde avec le biome FLOATING_ISLAND
         if (worldRenderer == null) {
-            WorldModel worldModel = new WorldModel(BiomeType.FLOATING_ISLAND, 4);
+            WorldModel worldModel = new WorldModel(BiomeType.FLOATING_ISLAND, 4, 3);
             setupMVC(worldModel);
         }
         
@@ -255,7 +255,11 @@ public class GameStateManager {
     public void changeWorldWithParameters(BiomeType biome, int temperature, int humidity, int reliefComplexity) {
         // Mémoriser l'état précédent pour y revenir après le chargement
         GameState previousState = this.currentState;
-        
+
+        // Désactive les coordonnées
+        inputController.setActionToggleCoordinates(false);
+        worldController.toggleCoordinatesDisplay(false);
+
         // Afficher l'écran de chargement
         changeState(GameState.LOADING);
 
@@ -270,11 +274,11 @@ public class GameStateManager {
                         loadingScreen.setProgress(progress);
                         return null;
                     });
-                    Thread.sleep(20); // Petite pause pour simuler le chargement
+                    Thread.sleep(30); // Petite pause pour simuler le chargement
                 }
                 
                 // Créer le nouveau monde avec les paramètres environnementaux
-                WorldModel newWorld = new WorldModel(biome, WorldModel.DEFAULT_WORLD_SIZE, temperature, humidity, reliefComplexity);
+                WorldModel newWorld = new WorldModel(biome, WorldModel.DEFAULT_WORLD_SIZE,8, temperature, humidity, reliefComplexity);
 
                 // Initialiser le rendu et les contrôleurs pour ce monde
                 app.enqueue(() -> {
@@ -478,7 +482,7 @@ public class GameStateManager {
             System.out.println("- Relief: " + reliefComplexity);
             
             // Créer le nouveau monde avec les paramètres personnalisés
-            changeWorldWithParameters(BiomeType.SAVANNA, temperature, humidity, reliefComplexity);
+            changeWorldWithParameters(null, temperature, humidity, reliefComplexity);
         }
     }
     

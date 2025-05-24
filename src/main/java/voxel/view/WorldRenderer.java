@@ -16,9 +16,13 @@ import com.jme3.scene.shape.Sphere;
 import com.jme3.material.Material;
 import com.jme3.renderer.ViewPort;
 
+import voxel.controller.GameController;
+import voxel.controller.PlayerController;
 import voxel.model.WorldModel;
 import voxel.model.ChunkModel;
 import voxel.view.entity.EntityRendererManager;
+import voxel.model.BiomeType;
+import voxel.model.BlockType;
 
 /**
  * Classe responsable du rendu du monde entier.
@@ -315,11 +319,78 @@ public class WorldRenderer {
             int cy = Math.floorDiv(globalY, ChunkModel.SIZE);
             int cz = Math.floorDiv(globalZ, ChunkModel.SIZE);
 
-            // Formater le texte avec les coordonnées du joueur et du chunk
+            // Récupération des informations du biome
+            BiomeType activeBiome = worldModel.getActiveBiome();
+            
+            // Récupération du bloc sous les pieds du joueur
+            int blockUnderFeet = worldModel.getBlockAt(globalX, globalY - 1, globalZ);
+            BlockType blockTypeUnderFeet = BlockType.fromId(blockUnderFeet);
+            
+            // Récupération du bloc au niveau des pieds (position actuelle)
+            int blockAtFeet = worldModel.getBlockAt(globalX, globalY, globalZ);
+            BlockType blockTypeAtFeet = BlockType.fromId(blockAtFeet);
+            
+            // Récupération de la hauteur du sol
+            int groundHeight = worldModel.getGroundHeightAt(globalX, globalZ);
+            
+            // Calcul de l'altitude relative par rapport au sol
+            int altitudeAboveGround = globalY - groundHeight;
+
+            // Paramètres environnementaux du monde
+            int temperature = worldModel.getTemperature();
+            int humidity = worldModel.getHumidity();
+            int reliefComplexity = worldModel.getReliefComplexity();
+
+            // Noms des paramètres
+            String[] tempNames = {"Glacial", "Froid", "Tempéré", "Chaud", "Torride"};
+            String[] humidityNames = {"Aride", "Sec", "Modéré", "Humide", "Saturé"};
+            String[] reliefNames = {"Plat", "Doux", "Vallonné", "Accidenté", "Montagneux"};
+
+            // Composition du biome
+            String surfaceBlock = activeBiome.getSurfaceBlock().name();
+            String subSurfaceBlock = activeBiome.getSubSurfaceBlock().name();
+            String deepBlock = activeBiome.getDeepBlock().name();
+            String waterBlock = activeBiome.getWaterBlock().name();
+
+            // Formater le texte avec toutes les informations
             String text = String.format(
-                "Seed : %d\nPosition: %.2f, %.2f, %.2f\nChunk: %d, %d, %d",
-                worldModel.getWorldSeed(), location.x, location.y, location.z,
-                cx, cy, cz
+                "=== INFORMATIONS DU MONDE ===\n" +
+                "Seed : %d\n" +
+                "Taille : %dx%dx%d chunks\n" +
+                "\n=== POSITION JOUEUR ===\n" +
+                "Position: %.1f, %.1f, %.1f\n" +
+                "Chunk: %d, %d, %d\n" +
+                "Bloc local: %d, %d, %d\n" +
+                "Altitude: %d\n" +
+                "\n=== BIOME ACTUEL ===\n" +
+                "Nom: %s\n" +
+                "Temperature: %s (%d/4)\n" +
+                "Humidite: %s (%d/4)\n" +
+                "Relief: %s (%d/4)\n" +
+                "\n=== COMPOSITION BIOME ===\n" +
+                "Surface: %s\n" +
+                "Sous-surface: %s\n" +
+                "Profondeur: %s\n" +
+                "Eau: %s",
+                
+                // Informations du monde
+                worldModel.getWorldSeed(),
+                worldModel.getWorldSizeX(), worldModel.getWorldSizeY(), worldModel.getWorldSizeZ(),
+                
+                // Position du joueur
+                location.x, location.y, location.z,
+                cx, cy, cz,
+                globalX % ChunkModel.SIZE, globalY % ChunkModel.SIZE, globalZ % ChunkModel.SIZE,
+                (int) (location.y - 3 - worldModel.getWaterLevel()),
+                
+                // Biome actuel
+                activeBiome.getName(),
+                tempNames[temperature], temperature,
+                humidityNames[humidity], humidity,
+                reliefNames[reliefComplexity], reliefComplexity,
+                
+                // Composition du biome
+                surfaceBlock, subSurfaceBlock, deepBlock, waterBlock
             );
 
             coordinatesText.setText(text);

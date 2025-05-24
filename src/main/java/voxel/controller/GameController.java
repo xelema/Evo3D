@@ -112,28 +112,19 @@ public class GameController {
      */
     public void initialize() {
 
-        // Créer automatiquement un joueur à une position de spawn
-        Vector3f spawnPosition = new Vector3f(0f, 155f, 0f);
+        // Définir les coordonnées de spawn X et Z
+        int spawnX = 8;
+        int spawnZ = -2;
+        
+        // Trouver la hauteur du sol à ces coordonnées
+        int groundHeight = worldModel.getGroundHeightAt(spawnX, spawnZ);
+        
+        // Si aucun sol n'est trouvé, utiliser une hauteur par défaut
+        float spawnY = (groundHeight != -1) ? groundHeight + 2f : 155f; // +2 pour que le joueur soit légèrement au-dessus du sol
+        
+        // Créer automatiquement un joueur à la position de spawn calculée
+        Vector3f spawnPosition = new Vector3f(spawnX, spawnY, spawnZ);
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
-
-        // Fait spawn des animaux aléatoirement (10 de chaque espèces)
-        // Note : ne sera pas comme ça dans la version finale
-        float worldSize = (float) (WorldModel.DEFAULT_WORLD_SIZE * ChunkModel.SIZE);
-        float worldHalfSize = worldSize / 2.0f;
-
-        List<Class<? extends Entity>> animalTypes = Arrays.asList(
-            Cow.class, Dromedary.class, Eagle.class, Fox.class, Lizard.class,
-            Owl.class, Scorpion.class, Sheep.class, Wolf.class
-        );
-
-        for (int i = 0; i < 10; i++) {
-            for (Class<? extends Entity> animalType : animalTypes) {
-                float randomX = (float) (Math.random() * worldSize) - worldHalfSize;
-                float randomZ = (float) (Math.random() * worldSize) - worldHalfSize;
-                Vector3f randomPosition = new Vector3f(randomX, 60, randomZ);
-                entityController.createEntity(animalType, randomPosition);
-            }
-        }
 
         // Définir ce joueur comme le joueur actuel et activer le mode joueur
         playerController.setCurrentPlayer(player);
@@ -162,19 +153,5 @@ public class GameController {
 
         entityController.update(tpf);
         timeElapsed += tpf;
-
-        // Permet de faire spawn les 3 arbres
-        // Note : ne sera pas comme ça dans la version finale
-        if (timeElapsed - lastTimeElapsed > 0.5) {
-            if(state < treeSize.length) {
-                worldController.generateTree(52, 36, -61, treeSize[state][0], treeSize[state][1]);
-                worldController.generateTree(-134, 28, -116, treeSize[state][0], treeSize[state][1]);
-                worldController.generateTree(-139, 40, 177, treeSize[state][0], treeSize[state][1]);
-
-                state++;
-                lastTimeElapsed = timeElapsed;
-            }
-
-        }
     }
 } 

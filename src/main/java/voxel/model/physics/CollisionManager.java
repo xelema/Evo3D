@@ -14,17 +14,8 @@ import java.util.List;
 public class CollisionManager {
     private WorldModel world;
     
-    // Liste de types de blocs non solides à travers lesquels les entités peuvent passer
-    private final List<Integer> nonSolidBlockTypes;
-    
     public CollisionManager(WorldModel world) {
         this.world = world;
-        this.nonSolidBlockTypes = new ArrayList<>();
-        
-        // Initialiser la liste des blocs non solides (traversables)
-        nonSolidBlockTypes.add(BlockType.AIR.getId());
-        nonSolidBlockTypes.add(BlockType.WATER.getId());
-        nonSolidBlockTypes.add(BlockType.CLOUD.getId());
     }
     
     /**
@@ -69,7 +60,7 @@ public class CollisionManager {
                         
                         if (entityBox.intersects(blockBox)) {
 
-                            boolean isAirAbove1 = (world.getBlockAt(x, y+1, z) == BlockType.AIR.getId()) || (world.getBlockAt(x, y+1, z) == BlockType.WATER.getId());
+                            boolean isAirAbove1 = isTraversableBlock(world.getBlockAt(x, y+1, z));
 
                             collisionDetected = true;
                             
@@ -178,31 +169,56 @@ public class CollisionManager {
     
     /**
      * Vérifie si un type de bloc est considéré comme solide.
+     * Utilise les propriétés définies dans BlockType pour déterminer la solidité.
      * 
      * @param blockType L'identifiant du type de bloc
      * @return true si le bloc est solide, false sinon
      */
     public boolean isSolidBlock(int blockType) {
-        return !nonSolidBlockTypes.contains(blockType);
+        BlockType type = BlockType.fromId(blockType);
+        return type.isSolid();
     }
     
     /**
-     * Ajoute un type de bloc à la liste des blocs non solides.
+     * Vérifie si un type de bloc est traversable (non-solide).
+     * Inclut l'air, tous les types d'eau, les nuages, les sables mouvants, etc.
      * 
-     * @param blockType L'identifiant du type de bloc à ajouter
+     * @param blockType L'identifiant du type de bloc
+     * @return true si le bloc est traversable, false sinon
      */
-    public void addNonSolidBlockType(int blockType) {
-        if (!nonSolidBlockTypes.contains(blockType)) {
-            nonSolidBlockTypes.add(blockType);
-        }
+    public boolean isTraversableBlock(int blockType) {
+        BlockType type = BlockType.fromId(blockType);
+        
+        // Un bloc est traversable s'il n'est pas solide
+        // Cela inclut automatiquement :
+        // - AIR, VOID, INVISIBLE
+        // - Tous les types d'eau (WATER, COLD_WATER, WARM_WATER, JUNGLE_WATER, DESERT_WATER, SWAMP_WATER, MINERAL_WATER)
+        // - CLOUD
+        // - QUICKSAND (défini comme non-solide dans BlockType)
+        return !type.isSolid();
     }
     
     /**
-     * Retire un type de bloc de la liste des blocs non solides.
+     * Vérifie si un bloc est de l'eau (tous types confondus).
      * 
-     * @param blockType L'identifiant du type de bloc à retirer
+     * @param blockType L'identifiant du type de bloc
+     * @return true si c'est un type d'eau, false sinon
      */
-    public void removeNonSolidBlockType(int blockType) {
-        nonSolidBlockTypes.remove(Integer.valueOf(blockType));
+    public boolean isWaterBlock(int blockType) {
+        BlockType type = BlockType.fromId(blockType);
+        return type.isWater();
+    }
+    
+    /**
+     * Vérifie si un bloc ralentit le mouvement (comme les sables mouvants ou l'eau dense).
+     * 
+     * @param blockType L'identifiant du type de bloc
+     * @return true si le bloc ralentit le mouvement, false sinon
+     */
+    public boolean isSlowingBlock(int blockType) {
+        BlockType type = BlockType.fromId(blockType);
+        
+        // Les liquides et les sables mouvants ralentissent le mouvement
+        return type.isWater() || type == BlockType.QUICKSAND || type == BlockType.MUD;
     }
 } 

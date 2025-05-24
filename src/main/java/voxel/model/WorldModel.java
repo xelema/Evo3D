@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille par défaut du monde en nombre de chunks sur les axes X et Z */
-    public static final int DEFAULT_WORLD_SIZE = 32;
+    public static final int DEFAULT_WORLD_SIZE = 8;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -40,23 +40,12 @@ public class WorldModel {
     /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
     private final int worldSeed = 424242;
     private final int generation_height = 6; // Hauteur max de la génération avec Perlin
-    private final float min_mountain = 0.001f;
-    private final float max_mountain = 0.03f;
-    private final float min_detail = 0.02f;
-    private final float max_detail = 0.06f;
 
     /** Bruit de Perlin pour le monde entier */
     private PerlinNoise worldPerlinNoise;
-
-    /** Échelles pour la génération du terrain */
-    private float mountainScale;
-    private float detailScale;
-
-    /** Hauteur maximale en pourcentage de la hauteur totale du monde */
-    private final float maxHeightPercent = 0.75f;
-
-    /** Décalage vertical de base pour tout le terrain */
-    private final int baseOffset = 10;
+    private PerlinNoise detailPerlinNoise;
+    private PerlinNoise ridgePerlinNoise;
+    private PerlinNoise zonePerlinNoise; // Nouvelle couche pour les zones
 
     /** Biome actif */
     private BiomeType activeBiome;
@@ -70,6 +59,20 @@ public class WorldModel {
     
     // Complexité du relief : 0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum
     private int reliefComplexity = 2; // Valeur par défaut : Modéré
+
+    /** Hauteurs fixes pour les différents niveaux de relief (en blocs) */
+    private static final int[] RELIEF_HEIGHTS = {
+        60,   // Relief 0 : Variations importantes (0-60 blocs) - JAMAIS plat
+        90,   // Relief 1 : Reliefs moyens (0-90 blocs) 
+        140,  // Relief 2 : Reliefs importants (0-140 blocs) 
+        200,  // Relief 3 : Reliefs marqués (0-220 blocs)
+        320   // Relief 4 : Très hautes montagnes (0-320 blocs)
+    };
+
+    private int waterLevel;
+
+    /** Niveau de base du terrain */
+    private static final int BASE_TERRAIN_LEVEL = 40;
 
     /**
      * Crée un nouveau monde de voxels avec la taille par défaut.
@@ -85,7 +88,11 @@ public class WorldModel {
      * @param worldSize La taille du monde en nombre de chunks (axes X et Z)
      */
     public WorldModel(BiomeType biome, int worldSize) {
-        this(biome, worldSize, 2, 2, 2); // Valeurs par défaut pour les paramètres environnementaux
+        this(biome, worldSize, 8, 2, 2, 2); // Valeurs par défaut pour les paramètres environnementaux
+    }
+
+    public WorldModel(BiomeType biome, int worldSize, int worldSizeY) {
+        this(biome, worldSize, worldSizeY, 2, 2, 2); // Valeurs par défaut pour les paramètres environnementaux
     }
 
     /**
@@ -97,10 +104,9 @@ public class WorldModel {
      * @param humidity Niveau d'humidité (0-4)
      * @param reliefComplexity Niveau de complexité du relief (0-4)
      */
-    public WorldModel(BiomeType biome, int worldSize, int temperature, int humidity, int reliefComplexity) {
-        this.activeBiome = biome;
+    public WorldModel(BiomeType biome, int worldSize, int worldSizeY, int temperature, int humidity, int reliefComplexity) {
         this.worldSizeX = worldSize;
-        this.worldSizeY = 8; // Hauteur fixe pour l'instant
+        this.worldSizeY = worldSizeY;
         this.worldSizeZ = worldSize;
         
         // Définir les paramètres environnementaux
@@ -108,24 +114,26 @@ public class WorldModel {
         this.humidity = Math.max(0, Math.min(4, humidity));
         this.reliefComplexity = Math.max(0, Math.min(4, reliefComplexity));
 
+        // Créer le biome basé sur les paramètres (sauf pour île flottante)
+        if (biome != null && biome.isFloatingIsland()) {
+            this.activeBiome = biome;
+        } else {
+            this.activeBiome = BiomeType.createBiome(this.temperature, this.humidity, this.reliefComplexity);
+        }
+
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
 
-        // Initialisation du bruit de Perlin pour tout le monde
-        worldPerlinNoise = new PerlinNoise(worldSeed); // Seed fixe pour reproductibilité
-
-        // Initialisation des échelles (on pourrait les randomiser aussi)
-        java.util.Random rand = new java.util.Random(worldSeed);
-        mountainScale = min_mountain + rand.nextFloat() * (max_mountain - min_mountain) * 0.5f;
-        detailScale = min_detail + rand.nextFloat() * (max_detail - min_detail) * 0.8f;
+        // Initialisation des bruits de Perlin pour tout le monde
+        worldPerlinNoise = new PerlinNoise(worldSeed); // Bruit principal
+        detailPerlinNoise = new PerlinNoise(worldSeed + 1000); // Bruit de détail
+        ridgePerlinNoise = new PerlinNoise(worldSeed + 2000); // Bruit pour les crêtes
+        zonePerlinNoise = new PerlinNoise(worldSeed + 3000); // Nouvelle couche pour les zones
 
         generateWorld(false);
         entityManager = new EntityManager(this);
 
-        System.out.println("Création du monde de taille " + worldSizeX + "x" + worldSizeY + "x" + worldSizeZ + " avec le biome " + activeBiome);
-        System.out.println("Paramètres du monde :");
-        System.out.println("  - Température : " + this.temperature + " (" + getTemperatureLabel(this.temperature) + ")");
-        System.out.println("  - Humidité : " + this.humidity + " (" + getHumidityLabel(this.humidity) + ")");
-        System.out.println("  - Complexité du relief : " + this.reliefComplexity + " (" + getReliefLabel(this.reliefComplexity) + ")");
+        System.out.println("Création du monde de taille " + worldSizeX + "x" + worldSizeY + "x" + worldSizeZ);
+        System.out.println("Biome : " + activeBiome.toString());
     }
 
     /**
@@ -145,19 +153,356 @@ public class WorldModel {
         // Génération du terrain uniquement sur le plan X-Z
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cz = 0; cz < worldSizeZ; cz++) {
-                if (activeBiome == BiomeType.FLOATING_ISLAND) {
+                if (activeBiome.isFloatingIsland()) {
                     // Créer une île flottante au centre du monde
                     createFloatingIsland();
                 } else if(flat){
                     generateTerrainFlat(cx,cz);
                 } else {
-                    generateTerrainPerlin(cx, cz, 1);
+                    generateTerrainWithBiome(cx, cz);
                 }
             }
         }
 
         // Ajout des nuages aléatoires dans le ciel
         addClouds();
+    }
+
+    /**
+     * Génère un terrain basé sur le biome et les paramètres environnementaux.
+     * @param chunkX coordonnée X du chunk
+     * @param chunkZ coordonnée Z du chunk
+     */
+    private void generateTerrainWithBiome(int chunkX, int chunkZ) {
+        // Coordonnées globales du chunk
+        float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX * ChunkModel.SIZE) / 2;
+        float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ * ChunkModel.SIZE) / 2;
+
+        // Hauteur totale disponible
+        int totalHeight = generation_height * ChunkModel.SIZE;
+        
+        // Hauteur max de terrain basée sur le relief (hauteur fixe)
+        int maxReliefVariation = RELIEF_HEIGHTS[reliefComplexity];
+        
+        // Niveau d'eau basé sur la température et l'humidité
+        waterLevel = calculateWaterLevel();
+
+        // Générer chaque colonne de blocs
+        for (int x = 0; x < ChunkModel.SIZE; x++) {
+            for (int z = 0; z < ChunkModel.SIZE; z++) {
+                // Coordonnées globales pour ce bloc spécifique
+                float worldX = worldXStart + x;
+                float worldZ = worldZStart + z;
+
+                // Calcul de la hauteur du terrain
+                int terrainHeight = calculateTerrainHeight(worldX, worldZ, maxReliefVariation);
+                
+                // Limiter la hauteur pour éviter de dépasser le monde
+                terrainHeight = Math.min(terrainHeight, totalHeight - 10);
+                terrainHeight = Math.max(terrainHeight, waterLevel - 5);
+
+                // Générer les blocs pour chaque hauteur
+                for (int y = 0; y < totalHeight; y++) {
+                    BlockType blockType = determineBlockType(y, terrainHeight, waterLevel);
+                    setBlockAt((int) worldX, y, (int) worldZ, blockType.getId());
+                }
+            }
+        }
+    }
+
+    /**
+     * Calcule la hauteur du terrain en fonction des bruits de Perlin et du relief.
+     */
+    private int calculateTerrainHeight(float worldX, float worldZ, int maxReliefVariation) {
+        // Couche de zonage à échelle intermédiaire pour créer des zones variées
+        // Augmentation de la fréquence pour avoir plus de zones dans un monde 32x32
+        float zoneScale = 0.004f; // Échelle augmentée pour plus de variété
+        float zoneNoise = zonePerlinNoise.Noise2D(worldX * zoneScale, worldZ * zoneScale);
+        
+        // Déterminer le facteur de zone avec des transitions fluides
+        float zoneFactor = calculateZoneFactor(zoneNoise);
+
+        // Échelles différentes selon le relief
+        float primaryScale = getPrimaryScale();
+        float detailScale = getDetailScale();
+        float ridgeScale = getRidgeScale();
+
+        // Bruit principal (grandes structures)
+        float primaryNoise = worldPerlinNoise.Noise2D(worldX * primaryScale, worldZ * primaryScale);
+        
+        // Bruit de détail (petites variations)
+        float detailNoise = detailPerlinNoise.Noise2D(worldX * detailScale, worldZ * detailScale);
+        
+        // Bruit pour les crêtes (relief accidenté)
+        float ridgeNoise = 0;
+        if (reliefComplexity >= 3) {
+            ridgeNoise = ridgePerlinNoise.Noise2D(worldX * ridgeScale, worldZ * ridgeScale);
+            // Transformer en crêtes (valeurs proches de 0.5 donnent des pics)
+            ridgeNoise = 1.0f - 2.0f * Math.abs(ridgeNoise - 0.5f);
+        }
+
+        // Combiner les bruits selon le type de relief
+        float baseHeightFactor = combineNoise(primaryNoise, detailNoise, ridgeNoise);
+        
+        // Appliquer le facteur de zone avec une transition fluide
+        float heightFactor = baseHeightFactor * zoneFactor;
+        
+        // Appliquer des courbes selon la température (volcans, glaciers, etc.)
+        heightFactor = applyTemperatureModification(heightFactor, worldX, worldZ);
+        
+        // Calculer la hauteur finale
+        int heightVariation = (int) (heightFactor * maxReliefVariation);
+        return BASE_TERRAIN_LEVEL + heightVariation;
+    }
+
+    /**
+     * Calcule le facteur de zone basé sur le bruit de zonage avec des transitions fluides.
+     * Retourne une valeur entre 0 (zone plate) et 1 (zone montagneuse).
+     * Utilise des fonctions de lissage au lieu de seuils durs pour éviter les "murs".
+     * Tous les niveaux de relief ont maintenant des zones, mais à différentes intensités.
+     */
+    private float calculateZoneFactor(float zoneNoise) {
+        switch (reliefComplexity) {
+            case 0:
+                // Relief minimal : FORCE un minimum élevé pour JAMAIS être plat
+                // Garantit toujours entre 40% et 90% du relief maximum
+                float factor0 = smoothStep(0.2f, 0.8f, zoneNoise);
+                return 0.4f + factor0 * 0.5f; // Entre 40% et 90% de relief - JAMAIS plat
+
+            case 1:
+                // Relief doux : bon contraste avec minimum élevé
+                float factor1 = smoothStep(0.2f, 0.75f, zoneNoise);
+                return 0.3f + factor1 * 0.6f; // Entre 30% et 90% de relief
+
+            case 2:
+                // Relief modéré : contrastes nets entre vallées et montagnes moyennes
+                float factor2 = smoothStep(0.25f, 0.75f, zoneNoise);
+                return 0.2f + factor2 * 0.7f; // Entre 20% et 90% de relief
+
+            case 3:
+                // Relief accidenté : alternance marquée entre plaines et hautes collines
+                float factor3 = smoothStep(0.2f, 0.8f, zoneNoise);
+                return 0.25f + factor3 * 0.65f; // Entre 25% et 90% de relief
+
+            case 4:
+                // Utilise plusieurs courbes de lissage superposées au lieu de seuils nets
+                
+                // Facteur pour les vallées plates (zones très basses)
+                float valleyFactor = 1.0f - smoothStep(0.0f, 0.3f, zoneNoise);
+                
+                // Facteur pour les hautes montagnes (zones très hautes) 
+                float mountainFactor = smoothStep(0.7f, 1.0f, zoneNoise);
+                
+                // Facteur pour les collines intermédiaires
+                float hillFactor = smoothStep(0.25f, 0.75f, zoneNoise) * (1.0f - valleyFactor) * (1.0f - mountainFactor);
+                
+                // Combinaison fluide des trois zones
+                float baseLevel = 0.05f;  // Niveau minimal pour vallées
+                float hillLevel = 0.4f;   // Niveau moyen pour collines
+                float mountainLevel = 0.9f; // Niveau élevé pour montagnes
+                
+                return baseLevel * valleyFactor + 
+                       hillLevel * hillFactor + 
+                       mountainLevel * mountainFactor +
+                       0.1f * (1.0f - valleyFactor - hillFactor - mountainFactor); // Niveau de base pour zones non définies
+
+            default:
+                return 0.5f;
+        }
+    }
+
+    /**
+     * Fonction de lissage (smoothstep) pour créer des transitions fluides.
+     * Équivalent à la fonction smoothstep de GLSL.
+     * 
+     * @param edge0 Début de la transition
+     * @param edge1 Fin de la transition  
+     * @param x Valeur d'entrée
+     * @return Valeur lissée entre 0 et 1
+     */
+    private float smoothStep(float edge0, float edge1, float x) {
+        // Clamper x entre edge0 et edge1
+        float t = Math.max(0.0f, Math.min(1.0f, (x - edge0) / (edge1 - edge0)));
+        // Appliquer la courbe de lissage : 3t² - 2t³
+        return t * t * (3.0f - 2.0f * t);
+    }
+
+    /**
+     * Combine les différents bruits selon le relief.
+     */
+    private float combineNoise(float primaryNoise, float detailNoise, float ridgeNoise) {
+        switch (reliefComplexity) {
+            case 0: // Relief minimal : force un minimum plus élevé pour toujours avoir du relief
+                float baseNoise0 = primaryNoise * 0.8f + detailNoise * 0.3f;
+                return Math.max(0.2f, baseNoise0); // Force un minimum de 20% du bruit
+            case 1: // Doux : seulement le bruit principal atténué
+                return Math.max(0.1f, primaryNoise * 0.7f + detailNoise * 0.2f);
+            case 2: // Modéré : bruit principal + un peu de détail
+                return primaryNoise * 0.7f + detailNoise * 0.3f;
+            case 3: // Accidenté : bruit principal + détail + début de crêtes
+                return primaryNoise * 0.5f + detailNoise * 0.3f + ridgeNoise * 0.2f;
+            case 4: // Montagneux : tous les bruits avec emphase sur les crêtes
+                return primaryNoise * 0.4f + detailNoise * 0.2f + ridgeNoise * 0.4f;
+            default:
+                return primaryNoise;
+        }
+    }
+
+    /**
+     * Applique des modifications basées sur la température.
+     */
+    private float applyTemperatureModification(float heightFactor, float worldX, float worldZ) {
+        if (temperature >= 4) {
+            // Température torride : créer des volcans occasionnels
+            float volcanoNoise = worldPerlinNoise.Noise2D(worldX * 0.005f, worldZ * 0.005f);
+            if (volcanoNoise > 0.85f) {
+                heightFactor += (volcanoNoise - 0.85f) * 6.0f; // Pics volcaniques
+            }
+        } else if (temperature <= 1) {
+            // Température froide : adoucir les reliefs (érosion glaciaire)
+            heightFactor *= 0.8f;
+        }
+        
+        return Math.max(0, Math.min(1, heightFactor));
+    }
+
+    /**
+     * Détermine le type de bloc à placer selon la position et les paramètres du biome.
+     */
+    private BlockType determineBlockType(int y, int terrainHeight, int waterLevel) {
+        // Au-dessus du terrain : air ou eau
+        if (y >= terrainHeight) {
+            if (y <= waterLevel) {
+                return activeBiome.getWaterBlock();
+            } else {
+                return BlockType.AIR;
+            }
+        }
+
+        // Dans le terrain
+        if (y == terrainHeight - 1) {
+            // Surface
+            if (y <= waterLevel) {
+                // Sous l'eau : utiliser le bon bloc selon le biome
+                return getUnderwaterSurfaceBlock();
+            } else {
+                return activeBiome.getSurfaceBlock();
+            }
+        } else if (y >= terrainHeight - 4) {
+            // Sous-surface (3 blocs sous la surface)
+            return activeBiome.getSubSurfaceBlock();
+        } else {
+            // Profondeur
+            return activeBiome.getDeepBlock();
+        }
+    }
+    
+    /**
+     * Détermine le type de bloc de surface à utiliser sous l'eau selon le biome.
+     */
+    private BlockType getUnderwaterSurfaceBlock() {
+        // Marécage : toujours de la boue sous l'eau
+        if (activeBiome.isSwamp()) {
+            return BlockType.MUD;
+        }
+        
+        // Jungle : sol riche sous l'eau
+        if (activeBiome.isJungle()) {
+            return BlockType.RICH_SOIL;
+        }
+        
+        // Désert brûlant : sable rouge
+        if (activeBiome.isHotDesert()) {
+            return BlockType.RED_SAND;
+        }
+        
+        // Volcanique : cendres ou sol volcanique
+        if (activeBiome.isVolcanic()) {
+            return BlockType.ASH;
+        }
+        
+        // Arctique : neige sous l'eau gelée
+        if (activeBiome.isArctic()) {
+            return BlockType.SNOW;
+        }
+        
+        // Toundra : permafrost
+        if (activeBiome.isTundra()) {
+            return BlockType.PERMAFROST;
+        }
+        
+        // Autres zones très froides : permafrost
+        if (temperature <= 0) {
+            return BlockType.PERMAFROST;
+        }
+        
+        // Oasis et zones tropicales : sable corallien ou sable normal
+        if (temperature >= 3 && humidity >= 3) {
+            return BlockType.CORAL_SAND;
+        }
+        
+        // Logique par défaut selon la température
+        if (temperature >= 4) {
+            return BlockType.RED_SAND; // Déserts chauds
+        } else if (temperature >= 3) {
+            return BlockType.SAND; // Zones chaudes normales
+        } else if (temperature <= 1) {
+            return BlockType.CLAY; // Zones froides
+        } else {
+            return BlockType.SAND; // Défaut tempéré
+        }
+    }
+
+    /**
+     * Calcule le niveau d'eau selon la température et l'humidité.
+     */
+    private int calculateWaterLevel() {
+        // Niveau de base plus élevé pour avoir vraiment de l'eau
+        int baseWaterLevel = BASE_TERRAIN_LEVEL + 5;
+
+        // Ajustements majeurs selon l'humidité
+        if (humidity >= 4) baseWaterLevel += 20;      // Très humide : beaucoup d'eau
+        else if (humidity >= 3) baseWaterLevel += 10; // Humide : pas mal d'eau
+        else if (humidity >= 2) baseWaterLevel += 5;  // Modéré : un peu d'eau
+        else if (humidity <= 1) baseWaterLevel -= 20; // Très sec : peu d'eau
+        else baseWaterLevel -= 10; // Sec : moins d'eau
+
+        // Ajustements selon la température
+        if (temperature <= 1) baseWaterLevel += 0;   // Froid : eau gelée mais même niveau
+        else if (temperature >= 4) baseWaterLevel -= 5; // Chaud : évaporation légère
+
+        return Math.max(BASE_TERRAIN_LEVEL - 30, baseWaterLevel);
+    }
+
+    public int getWaterLevel() {
+        return waterLevel;
+    }
+
+    /**
+     * Obtient l'échelle primaire selon le relief.
+     */
+    private float getPrimaryScale() {
+        switch (reliefComplexity) {
+            case 0: case 1: return 0.002f;  // Très grandes structures
+            case 2: return 0.005f;          // Grandes structures
+            case 3: return 0.008f;          // Structures moyennes
+            case 4: return 0.012f;          // Structures plus petites mais plus marquées
+            default: return 0.005f;
+        }
+    }
+
+    /**
+     * Obtient l'échelle de détail selon le relief.
+     */
+    private float getDetailScale() {
+        return getPrimaryScale() * 4.0f; // Toujours 4x plus fin que le primaire
+    }
+
+    /**
+     * Obtient l'échelle des crêtes selon le relief.
+     */
+    private float getRidgeScale() {
+        return getPrimaryScale() * 2.0f; // 2x plus fin que le primaire
     }
 
     /**
@@ -210,218 +555,6 @@ public class WorldModel {
                             setBlockAt((int) worldX, y, (int) worldZ, BlockType.STONE.getId());
                         }
                     }
-                }
-            }
-        }
-    }
-
-    /**
-     * Génère un terrain avec un bruit de Perlin pour une colonne de chunks
-     * @param chunkX coordonnée X du chunk
-     * @param chunkZ coordonnée Z du chunk
-     */
-    private void generateTerrainPerlin(int chunkX, int chunkZ, int type) {
-        // Niveau de l'eau
-        int waterLevel = 50;
-
-        // Coordonnées globales du chunk
-        float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX *
-                ChunkModel.SIZE) / 2;
-        float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ *
-                ChunkModel.SIZE) / 2;
-
-        // Hauteur totale disponible
-        int totalHeight = generation_height * ChunkModel.SIZE;
-        // Hauteur maximale pour le terrain (avec marge pour éviter les coupures)
-        int maxTerrainHeight = (int)(totalHeight * maxHeightPercent);
-
-        // Générer chaque colonne de blocs
-        for (int x = 0; x < ChunkModel.SIZE; x++) {
-            for (int z = 0; z < ChunkModel.SIZE; z++) {
-                // Coordonnées globales pour ce bloc spécifique
-                float worldX = worldXStart + x;
-                float worldZ = worldZStart + z;
-
-                float heightFactor = 0.0f;
-
-                // Type 0 : méthode 1 (complexe à 3 niveaux de bruit)
-                if (type == 0) {
-                    float largeScale = 0.01f;
-                    float mediumScale = 0.05f;
-                    float smallScale = 0.1f;
-
-                    // Appliquer trois niveaux de bruit Perlin
-                    float largeNoise = worldPerlinNoise.Noise2D(worldX * largeScale, worldZ * largeScale);
-                    float mediumNoise = worldPerlinNoise.Noise2D(worldX * mediumScale, worldZ * mediumScale);
-                    float smallNoise = worldPerlinNoise.Noise2D(worldX * smallScale, worldZ * smallScale);
-
-                    // Combiner les différents bruits pour obtenir une hauteur réaliste
-                    heightFactor = largeNoise * 0.6f + mediumNoise * 0.3f + smallNoise * 0.1f;
-
-                    // Appliquer un facteur d'atténuation si le bruit large est faible
-                    if (largeNoise < 0.1f)
-                        heightFactor *= 0.3f;
-
-                    // Appliquer des réglages spécifiques selon le biome actif
-                    switch (this.activeBiome) {
-                        case MOUNTAINS:
-                            heightFactor = largeNoise * 3.8f + mediumNoise * 1.8f;
-                            waterLevel = 0;
-                            break;
-                        case PLAINS:
-                            heightFactor = largeNoise * 0.2f + mediumNoise * 0.4f;
-                            waterLevel = 25;
-                            break;
-                        case DESERT:
-                            heightFactor = largeNoise * 0.1f + mediumNoise * 0.3f;
-                            waterLevel = 0;
-                            break;
-                        case JUNGLE:
-                            heightFactor = largeNoise * 0.6f + mediumNoise * 0.9f;
-                            waterLevel = 14;
-                            break;
-                        case SNOWY:
-                            heightFactor = largeNoise * 1.2f + mediumNoise * 0.8f;
-                            waterLevel = 8;
-                            break;
-                        case SAVANNA:
-                            heightFactor = largeNoise * 0.5f + mediumNoise * 0.3f;
-                            waterLevel = 26;
-                            break;
-                    }
-
-                    // Type 1 : méthode 2 (plus simple à 2 niveaux de bruit)
-                } else if (type == 1) {
-                    // Appliquer deux niveaux de bruit Perlin
-                    float mountainNoise = worldPerlinNoise.Noise2D(worldX * mountainScale, worldZ * mountainScale);
-                    float detailNoise = worldPerlinNoise.Noise2D(worldX * detailScale, worldZ * detailScale);
-
-                    // Combiner les bruits pour une hauteur réaliste
-                    heightFactor = mountainNoise * 0.7f + detailNoise * 0.3f;
-
-                    // Appliquer des ajustements spécifiques pour chaque biome
-                    switch (this.activeBiome) {
-                        case MOUNTAINS:
-                            heightFactor *= 1.5f;
-                            waterLevel = 50;
-                            break;
-                        case PLAINS:
-                            heightFactor *= 0.4f;
-                            waterLevel = 17;
-                            break;
-                        case DESERT:
-                            heightFactor *= 0.4f;
-                            waterLevel = 10;
-                            break;
-                        case JUNGLE:
-                            heightFactor *= 0.7f;
-                            waterLevel = 20;
-                            break;
-                        case SNOWY:
-                            heightFactor *= 1.0f;
-                            waterLevel = 30;
-                            break;
-                        case SAVANNA:
-                            heightFactor *= 0.5f;
-                            waterLevel = 26;
-                            break;
-                    }
-                }
-
-                // Appliquer une courbe d'élévation pour accentuer les différences de hauteur
-                heightFactor = (float) Math.pow(heightFactor, 1.2);
-
-                // Calculer la hauteur du terrain en fonction de la hauteur de base
-                int baseTerrainHeight = baseOffset + (int) (heightFactor * (maxTerrainHeight - baseOffset));
-
-                // Limiter la hauteur du terrain et l'aligner avec le niveau de l'eau
-                int terrainHeight = Math.max(waterLevel - 5, baseTerrainHeight);
-                terrainHeight = Math.min(maxTerrainHeight, terrainHeight);
-
-                // Générer les blocs pour chaque hauteur de terrain
-                for (int y = 0; y < totalHeight; y++) {
-                    int blockType;
-
-                    // Si le bloc est sous le niveau de l'eau
-                    if (y <= waterLevel) {
-                        if (y < terrainHeight) {
-                            // Appliquer le type de bloc en fonction du biome
-                            switch (this.activeBiome) {
-                                case DESERT:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
-                                            : BlockType.SAND.getId();
-                                    break;
-                                case SAVANNA:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
-                                            : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1)
-                                        blockType = BlockType.SAVANNA_GRASS.getId();
-                                    break;
-                                case JUNGLE:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
-                                            : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1)
-                                        blockType = BlockType.JUNGLE_GRASS.getId();
-                                    break;
-                                case SNOWY:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
-                                            : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1)
-                                        blockType = BlockType.SNOW.getId();
-                                    break;
-                                default:
-                                    blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId()
-                                            : BlockType.DIRT.getId();
-                                    if (y == terrainHeight - 1)
-                                        blockType = BlockType.GRASS.getId();
-                                    break;
-                            }
-
-                            // Sable près de la surface sous l'eau
-                            if (y > terrainHeight - 4 && y == terrainHeight - 1) {
-                                blockType = BlockType.SAND.getId();
-                            }
-                        } else {
-                            // Bloc d'eau
-                            blockType = BlockType.WATER.getId();
-                            if (y == terrainHeight)
-                                blockType = BlockType.SAND.getId(); // Sable au fond de l'eau
-                        }
-                    } else if (y < terrainHeight) {
-                        // Si le bloc est au-dessus du niveau d'eau mais sous la surface
-                        switch (this.activeBiome) {
-                            case DESERT:
-                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.SAND.getId();
-                                break;
-                            case SAVANNA:
-                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1)
-                                    blockType = BlockType.SAVANNA_GRASS.getId();
-                                break;
-                            case JUNGLE:
-                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1)
-                                    blockType = BlockType.JUNGLE_GRASS.getId();
-                                break;
-                            case SNOWY:
-                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1)
-                                    blockType = BlockType.SNOW.getId();
-                                break;
-                            default:
-                                blockType = (y < terrainHeight - 3) ? BlockType.STONE.getId() : BlockType.DIRT.getId();
-                                if (y == terrainHeight - 1)
-                                    blockType = BlockType.GRASS.getId();
-                                break;
-                        }
-                    } else {
-                        // Bloc d'air au-dessus du terrain
-                        blockType = BlockType.AIR.getId();
-                    }
-
-                    // Placer le bloc au bon endroit
-                    setBlockAt((int) worldX, y, (int) worldZ, blockType);
-                    // setBlockAt(chunkX * ChunkModel.SIZE + x, y, chunkZ * ChunkModel.SIZE + z, blockType);
                 }
             }
         }
@@ -499,7 +632,7 @@ public class WorldModel {
     private void createFloatingIsland() {
 
         int centerX = 0;
-        int centerY = 150;
+        int centerY = 30;
         int centerZ = 0;
 
         // Rayon de l'île
@@ -1001,5 +1134,40 @@ public class WorldModel {
     private String getReliefLabel(int relief) {
         String[] labels = {"Minimal", "Faible", "Modéré", "Élevé", "Maximum"};
         return labels[Math.max(0, Math.min(4, relief))];
+    }
+
+    /**
+     * Trouve la hauteur du sol à une position donnée (X, Z).
+     * Recherche depuis le haut du monde jusqu'à trouver le premier bloc solide (non-AIR).
+     * 
+     * @param globalX Coordonnée globale X
+     * @param globalZ Coordonnée globale Z
+     * @return La hauteur Y du sol, ou -1 si aucun bloc solide n'est trouvé
+     */
+    public int getGroundHeightAt(int globalX, int globalZ) {
+        // Calculer la hauteur maximale du monde en voxels
+        int maxWorldHeight = worldSizeY * ChunkModel.SIZE;
+        
+        // Rechercher depuis le haut du monde vers le bas
+        for (int y = maxWorldHeight - 1; y >= 0; y--) {
+            int blockType = getBlockAt(globalX, y, globalZ);
+            
+            // Si ce n'est pas de l'air, c'est le sol
+            // > à AIR pour inclure VOID et INVISIBLE
+            if (blockType > BlockType.AIR.getId() && blockType != BlockType.CLOUD.getId()) {
+                return y + 1; // Retourner la position juste au-dessus du bloc solide
+            }
+        }
+        
+        // Si aucun bloc solide n'est trouvé, retourner -1
+        return -1;
+    }
+
+    /**
+     * Récupère le biome actif du monde.
+     * @return Le biome actuellement configuré pour ce monde
+     */
+    public BiomeType getActiveBiome() {
+        return activeBiome;
     }
 }

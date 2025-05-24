@@ -125,6 +125,7 @@ public class ChunkRenderer {
         // Gestion du rendu alpha des blocs
         transparentMaterial.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         transparentMaterial.getAdditionalRenderState().setDepthWrite(false);
+        transparentMaterial.setTransparent(true);
         transparentGeometry.setQueueBucket(RenderQueue.Bucket.Transparent);
         
         transparentMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
@@ -251,14 +252,35 @@ public class ChunkRenderer {
      * @param x Coordonnée X du bloc voisin
      * @param y Coordonnée Y du bloc voisin
      * @param z Coordonnée Z du bloc voisin
+     * @param blockId L'identifiant du bloc actuel
      * @return True si une face doit être générée, false sinon
      */
     private boolean shouldGenerateFace(int x, int y, int z, int blockId) {
         int neighborId = getBlockNeighbor(x, y, z);
-        return neighborId == BlockType.AIR.getId()
+        
+        // Toujours générer une face contre l'air, le vide ou l'invisible
+        if (neighborId == BlockType.AIR.getId() 
                 || neighborId == BlockType.INVISIBLE.getId()
-                || neighborId == BlockType.VOID.getId()
-                || (neighborId == BlockType.WATER.getId() && blockId != BlockType.WATER.getId());
+                || neighborId == BlockType.VOID.getId()) {
+            return true;
+        }
+        
+        // Générer une face si le bloc voisin est de l'eau et le bloc actuel n'est pas de l'eau
+        if (BlockType.isWaterBlock(neighborId) && !BlockType.isWaterBlock(blockId)) {
+            return true;
+        }
+        
+        // Générer une face si le bloc voisin est transparent et le bloc actuel est opaque
+        if (BlockType.isTransparentBlock(neighborId) && !BlockType.isTransparentBlock(blockId)) {
+            return true;
+        }
+        
+        // Générer une face si le bloc actuel est transparent et le voisin est différent
+        if (BlockType.isTransparentBlock(blockId) && neighborId != blockId) {
+            return true;
+        }
+        
+        return false;
     }
 
     /**

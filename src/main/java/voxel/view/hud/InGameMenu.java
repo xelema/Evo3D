@@ -343,56 +343,74 @@ public class InGameMenu extends AbstractGameMenu {
                         height("75%");
                         width("90%");
                         
-                        control(new ButtonBuilder("savannaButton", "Savane") {{
+                        control(new ButtonBuilder("jungleButton", "Jungle Tropicale") {{
                             alignCenter();
-                            height("12%");
-                            width("80%");
-                            interactOnClick("changeBiome(SAVANNA)");
-                            marginBottom("2%");
-                            focusable(false);
-                        }});
-                        
-                        control(new ButtonBuilder("desertButton", "Désert") {{
-                            alignCenter();
-                            height("12%");
-                            width("80%");
-                            interactOnClick("changeBiome(DESERT)");
-                            marginBottom("2%");
-                            focusable(false);
-                        }});
-                        
-                        control(new ButtonBuilder("mountainsButton", "Montagnes") {{
-                            alignCenter();
-                            height("12%");
-                            width("80%");
-                            interactOnClick("changeBiome(MOUNTAINS)");
-                            marginBottom("2%");
-                            focusable(false);
-                        }});
-                        
-                        control(new ButtonBuilder("plainsButton", "Plaines") {{
-                            alignCenter();
-                            height("12%");
-                            width("80%");
-                            interactOnClick("changeBiome(PLAINS)");
-                            marginBottom("2%");
-                            focusable(false);
-                        }});
-                        
-                        control(new ButtonBuilder("jungleButton", "Jungle") {{
-                            alignCenter();
-                            height("12%");
+                            height("11%");
                             width("80%");
                             interactOnClick("changeBiome(JUNGLE)");
-                            marginBottom("2%");
+                            marginBottom("1%");
                             focusable(false);
                         }});
                         
-                        control(new ButtonBuilder("snowyButton", "Neige") {{
+                        control(new ButtonBuilder("swampButton", "Marécage") {{
                             alignCenter();
-                            height("12%");
+                            height("11%");
                             width("80%");
-                            interactOnClick("changeBiome(SNOWY)");
+                            interactOnClick("changeBiome(SWAMP)");
+                            marginBottom("1%");
+                            focusable(false);
+                        }});
+                        
+                        control(new ButtonBuilder("hotDesertButton", "Désert Brûlant") {{
+                            alignCenter();
+                            height("11%");
+                            width("80%");
+                            interactOnClick("changeBiome(HOT_DESERT)");
+                            marginBottom("1%");
+                            focusable(false);
+                        }});
+                        
+                        control(new ButtonBuilder("volcanicButton", "Région Volcanique") {{
+                            alignCenter();
+                            height("11%");
+                            width("80%");
+                            interactOnClick("changeBiome(VOLCANIC)");
+                            marginBottom("1%");
+                            focusable(false);
+                        }});
+                        
+                        control(new ButtonBuilder("tundraButton", "Toundra") {{
+                            alignCenter();
+                            height("11%");
+                            width("80%");
+                            interactOnClick("changeBiome(TUNDRA)");
+                            marginBottom("1%");
+                            focusable(false);
+                        }});
+                        
+                        control(new ButtonBuilder("arcticButton", "Arctique") {{
+                            alignCenter();
+                            height("11%");
+                            width("80%");
+                            interactOnClick("changeBiome(ARCTIC)");
+                            marginBottom("1%");
+                            focusable(false);
+                        }});
+                        
+                        control(new ButtonBuilder("oasisButton", "Oasis") {{
+                            alignCenter();
+                            height("11%");
+                            width("80%");
+                            interactOnClick("changeBiome(OASIS)");
+                            marginBottom("1%");
+                            focusable(false);
+                        }});
+                        
+                        control(new ButtonBuilder("mountainsButton", "Montagnes Froides") {{
+                            alignCenter();
+                            height("11%");
+                            width("80%");
+                            interactOnClick("changeBiome(MOUNTAINS)");
                             focusable(false);
                         }});
                     }});
@@ -445,8 +463,9 @@ public class InGameMenu extends AbstractGameMenu {
         // Liste des boutons standards qui ne doivent jamais être sélectionnés
         String[] standardButtons = {
             "worldSelectionButton", "controlsButton", "resumeButton", "quitButton",
-            "backButton", "backToMenuButton", "savannaButton", "desertButton",
-            "mountainsButton", "plainsButton", "jungleButton", "snowyButton"
+            "backButton", "backToMenuButton", "jungleButton", "swampButton",
+            "hotDesertButton", "volcanicButton", "tundraButton", "arcticButton",
+            "oasisButton", "mountainsButton"
         };
         
         for (String buttonId : standardButtons) {
@@ -599,13 +618,53 @@ public class InGameMenu extends AbstractGameMenu {
      */
     public void changeBiome(String biomeType) {
         try {
-            BiomeType biome = BiomeType.valueOf(biomeType);
             if (stateManager != null) {
                 hideMenu();
-                stateManager.changeWorld(biome);
+                // Utiliser des paramètres précis pour chaque biome spécial
+                switch (biomeType) {
+                    case "JUNGLE":
+                        // Jungle Tropicale : température ≥ 3 + humidité ≥ 4
+                        stateManager.changeWorldWithParameters(null, 3, 4, 2); // Chaud, Saturé, Relief vallonné
+                        break;
+                    case "SWAMP":
+                        // Marécage : température 2-3 + humidité ≥ 4 + relief plat/doux
+                        stateManager.changeWorldWithParameters(null, 2, 4, 1); // Tempéré, Saturé, Relief doux
+                        break;
+                    case "HOT_DESERT":
+                        // Désert Brûlant : température ≥ 4 + humidité ≤ 1
+                        stateManager.changeWorldWithParameters(null, 4, 0, 2); // Torride, Aride, Relief modéré
+                        break;
+                    case "VOLCANIC":
+                        // Région Volcanique : température ≥ 4 + relief accidenté/montagneux
+                        stateManager.changeWorldWithParameters(null, 4, 1, 4); // Torride, Sec, Relief montagneux
+                        break;
+                    case "TUNDRA":
+                        // Toundra : température ≤ 1 + humidité modérée + relief doux
+                        stateManager.changeWorldWithParameters(null, 1, 2, 1); // Froid, Modéré, Relief doux
+                        break;
+                    case "ARCTIC":
+                        // Arctique : température glaciale + humidité faible + relief plat
+                        stateManager.changeWorldWithParameters(null, 0, 1, 0); // Glacial, Faible, Relief plat
+                        break;
+                    case "OASIS":
+                        // Oasis : température chaude + humidité élevée + relief plat
+                        stateManager.changeWorldWithParameters(null, 3, 3, 0); // Chaud, Humide, Relief plat
+                        break;
+                    case "MOUNTAINS":
+                        // Montagnes Froides : température froide + relief montagneux
+                        stateManager.changeWorldWithParameters(null, 1, 2, 4); // Froid, Modéré, Relief montagneux
+                        break;
+                    case "FLOATING_ISLAND":
+                        stateManager.changeWorldWithParameters(BiomeType.FLOATING_ISLAND, 2, 2, 2); // Île flottante spéciale
+                        break;
+                    default:
+                        System.err.println("Type de biome inconnu: " + biomeType);
+                        stateManager.changeWorldWithParameters(null, 2, 2, 2); // Biome par défaut
+                        break;
+                }
             }
-        } catch (IllegalArgumentException e) {
-            System.err.println("Type de biome invalide: " + biomeType);
+        } catch (Exception e) {
+            System.err.println("Erreur lors du changement de biome: " + e.getMessage());
         }
     }
     

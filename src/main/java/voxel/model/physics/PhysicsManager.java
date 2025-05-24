@@ -53,7 +53,7 @@ public class PhysicsManager {
      * @param tpf Temps écoulé depuis la dernière frame
      */
     private void applyGravity(Entity entity, float tpf) {
-        entity.addVelocity(0, 1.5*GRAVITY * tpf, 0);
+        entity.addVelocity(0, 1.8 * GRAVITY * tpf, 0);
     }
     
     /**

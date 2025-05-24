@@ -341,6 +341,10 @@ public class InputController implements ActionListener {
         }
     }
 
+    public void setActionToggleCoordinates(boolean isPressed) {
+        displayCoordinates = isPressed;
+    }
+
     /**
      * Met à jour la position de la caméra en fonction des touches enfoncées.
      * Doit être appelé depuis la méthode simpleUpdate.

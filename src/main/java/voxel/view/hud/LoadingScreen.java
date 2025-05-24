@@ -119,7 +119,7 @@ public class LoadingScreen extends AbstractGameMenu {
                         text(new TextBuilder(PROGRESS_TEXT_ID) {{
                             text("Chargement: 0%");
                             font("Interface/Fonts/Default.fnt");
-                            height("20px");
+                            height("40px");
                             width("100%");
                             alignCenter();
                             valignCenter();
