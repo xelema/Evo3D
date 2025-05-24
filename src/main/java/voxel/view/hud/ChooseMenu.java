@@ -38,6 +38,10 @@ public class ChooseMenu extends AbstractGameMenu {
     private String[] nomsParametres = {"Température", "Humidité", "Relief"};
     private String[] optionsNiveaux = {"Minimal", "Faible", "Modéré", "Élevé", "Maximum"};
     
+    // Variables temporaires pour la configuration en cours (non sauvegardées tant qu'on ne valide pas)
+    private int[] selectionsTemporaires = new int[NOMBREPARAMETRES];
+    private boolean[][] cocheTemporaire = new boolean[NOMBREPARAMETRES][NOMBRECASESMAX];
+    
     // Flag pour éviter les listeners multiples
     private boolean listenersAjoutes = false;
 
@@ -55,6 +59,10 @@ public class ChooseMenu extends AbstractGameMenu {
         // Initialiser les sélections
         for (int i = 0; i < NOMBREPARAMETRES; i++) {
             selectionsParametres[i] = -1; // Aucune sélection par défaut
+            selectionsTemporaires[i] = -1; // Aucune sélection temporaire par défaut
+            for (int j = 0; j < NOMBRECASESMAX; j++) {
+                cocheTemporaire[i][j] = false;
+            }
         }
     }
     
@@ -615,7 +623,11 @@ public class ChooseMenu extends AbstractGameMenu {
             textes[parametre][i] = choix;
             carres[parametre][i] = geometry;
             croix[parametre][i] = null;
-                coche[parametre][i] = false;
+                
+                // Cocher la case si elle était déjà sélectionnée (selon les sélections temporaires)
+                if (cocheTemporaire[parametre][i]) {
+                    cocherCase(i, x, y, parametre);
+                }
             }
         }
         
@@ -661,16 +673,16 @@ public class ChooseMenu extends AbstractGameMenu {
     private void selectionnerCase(int parametre, int caseIndex, float x, float y) {
         // Décocher toutes les autres cases de ce paramètre
         for (int i = 0; i < NOMBRECASESMAX; i++) {
-            if (i != caseIndex && coche[parametre][i]) {
+            if (i != caseIndex && cocheTemporaire[parametre][i]) {
                 decocherCase(parametre, i);
             }
         }
         
         // Cocher la case sélectionnée
-        if (!coche[parametre][caseIndex]) {
+        if (!cocheTemporaire[parametre][caseIndex]) {
             cocherCase(caseIndex, x, y, parametre);
-            coche[parametre][caseIndex] = true;
-            selectionsParametres[parametre] = caseIndex;
+            cocheTemporaire[parametre][caseIndex] = true;
+            selectionsTemporaires[parametre] = caseIndex;
         }
     }
 
@@ -705,7 +717,7 @@ public class ChooseMenu extends AbstractGameMenu {
             app.getGuiNode().detachChild(croix[parametre][colonne]);
             croix[parametre][colonne] = null;
         }
-        coche[parametre][colonne] = false;
+        cocheTemporaire[parametre][colonne] = false;
     }
 
     private void cocherCase(int index, float x, float y, int parametre) {
@@ -752,6 +764,22 @@ public class ChooseMenu extends AbstractGameMenu {
         System.out.println("Lancement du jeu...");
         System.out.println("Bouton démarrer cliqué !");
         
+        // Vérifier si des paramètres ont été configurés
+        if (!hasConfiguredParameters()) {
+            // Aucun paramètre configuré, afficher l'avertissement
+            creerEcranAvertissement();
+            nifty.gotoScreen("avertissementParametres");
+            return;
+        }
+        
+        // Continuer avec le lancement normal du jeu
+        lancerJeuAvecParametres();
+    }
+    
+    /**
+     * Lance effectivement le jeu avec les paramètres configurés
+     */
+    private void lancerJeuAvecParametres() {
         // Afficher les paramètres qui seront utilisés
         int[] parametres = getParametresEnvironnementaux();
         System.out.println("Paramètres qui seront utilisés pour créer le monde:");
@@ -781,6 +809,8 @@ public class ChooseMenu extends AbstractGameMenu {
 
     public void retour() {
         System.out.println("Retour...");
+        // Restaurer les sélections temporaires (annuler les changements non validés)
+        restaurerSelectionsTemporaires();
         nettoyerCases(); // Nettoyer les cases avant de retourner
         nifty.gotoScreen("start");
     }
@@ -792,10 +822,36 @@ public class ChooseMenu extends AbstractGameMenu {
 
     public void reglageFaune() {
         System.out.println("Modification des paramètres de la faune...");
+        // Initialiser les sélections temporaires avec les valeurs actuellement sauvegardées
+        initialiserSelectionsTemporaires();
         modifierFaune();
         nifty.gotoScreen("faune");
         // Créer les cases colorées après avoir affiché l'écran
         creerCasesColorees();
+    }
+
+    /**
+     * Initialise les sélections temporaires avec les valeurs actuellement sauvegardées
+     */
+    private void initialiserSelectionsTemporaires() {
+        for (int i = 0; i < NOMBREPARAMETRES; i++) {
+            selectionsTemporaires[i] = selectionsParametres[i];
+            for (int j = 0; j < NOMBRECASESMAX; j++) {
+                cocheTemporaire[i][j] = (selectionsParametres[i] == j);
+            }
+        }
+    }
+    
+    /**
+     * Restaure les sélections temporaires avec les valeurs sauvegardées (annule les changements non validés)
+     */
+    private void restaurerSelectionsTemporaires() {
+        for (int i = 0; i < NOMBREPARAMETRES; i++) {
+            selectionsTemporaires[i] = selectionsParametres[i];
+            for (int j = 0; j < NOMBRECASESMAX; j++) {
+                cocheTemporaire[i][j] = (selectionsParametres[i] == j);
+            }
+        }
     }
 
     /**
@@ -827,6 +883,11 @@ public class ChooseMenu extends AbstractGameMenu {
     public void validerConfiguration() {
         System.out.println("Configuration validée !");
         
+        // Sauvegarder les sélections temporaires dans les variables définitives
+        for (int i = 0; i < NOMBREPARAMETRES; i++) {
+            selectionsParametres[i] = selectionsTemporaires[i];
+        }
+        
         // Afficher les sélections actuelles
         for (int i = 0; i < NOMBREPARAMETRES; i++) {
             if (selectionsParametres[i] >= 0) {
@@ -839,5 +900,122 @@ public class ChooseMenu extends AbstractGameMenu {
         retour();
     }
 
+    /**
+     * Crée l'écran d'avertissement pour les paramètres par défaut
+     */
+    private void creerEcranAvertissement() {
+        nifty.addScreen("avertissementParametres", new ScreenBuilder("avertissementParametres") {{
+            controller(ChooseMenu.this);
+            
+            // Arrière-plan sombre
+            layer(new LayerBuilder("backgroundLayer") {{
+                backgroundColor("#000000cc");
+                childLayoutAbsolute();
+            }});
+            
+            layer(new LayerBuilder("avertissementLayer") {{
+                childLayoutCenter();
+                
+                panel(new PanelBuilder("avertissementPanel") {{
+                    childLayoutVertical();
+                    alignCenter();
+                    valignCenter();
+                    width("60%");
+                    height("50%");
+                    backgroundColor("#1a1a1aee");
+                    style("nifty-panel");
+                    paddingTop("3%");
+                    paddingBottom("3%");
+                    paddingLeft("3%");
+                    paddingRight("3%");
+                    
+                    // Titre d'avertissement
+                    text(new TextBuilder() {{
+                        text("AVERTISSEMENT");
+                        font("Interface/Fonts/Default.fnt");
+                        height("20%");
+                        width("100%");
+                        alignCenter();
+                        color("#ffaa00");
+                    }});
+                    
+                    // Espacement
+                    panel(new PanelBuilder() {{
+                        height("5%");
+                    }});
+                    
+                    // Message d'avertissement
+                    text(new TextBuilder() {{
+                        text("Aucun paramètre environnemental n'a été configuré.\n\n" +
+                             "Le monde sera créé avec les paramètres par défaut :\n" +
+                             "• Température : Modérée\n" +
+                             "• Humidité : Modérée\n" +
+                             "• Relief : Modéré\n\n" +
+                             "Souhaitez-vous continuer ?");
+                        font("Interface/Fonts/Default.fnt");
+                        height("50%");
+                        width("100%");
+                        alignCenter();
+                        valignCenter();
+                        color("#ffffff");
+                        wrap(true);
+                    }});
+                    
+                    // Espacement
+                    panel(new PanelBuilder() {{
+                        height("5%");
+                    }});
+                    
+                    // Panneau des boutons
+                    panel(new PanelBuilder("boutonsPanel") {{
+                        childLayoutHorizontal();
+                        alignCenter();
+                        height("20%");
+                        width("100%");
+                        
+                        control(new ButtonBuilder("continuerButton", "CONTINUER") {{
+                            alignLeft();
+                            valignCenter();
+                            height("100%");
+                            width("40%");
+                            interactOnClick("continuerAvecParametresDefaut()");
+                            style("nifty-button");
+                        }});
+                        
+                        // Espacement entre boutons
+                        panel(new PanelBuilder() {{
+                            width("20%");
+                        }});
+                        
+                        control(new ButtonBuilder("annulerButton", "CONFIGURER") {{
+                            alignRight();
+                            valignCenter();
+                            height("100%");
+                            width("40%");
+                            interactOnClick("retournerConfiguration()");
+                            style("nifty-button");
+                        }});
+                    }});
+                }});
+            }});
+        }}.build(nifty));
+    }
+
     // Les méthodes ScreenController sont héritées de AbstractGameMenu
+    
+    /**
+     * Continue le lancement du jeu avec les paramètres par défaut
+     */
+    public void continuerAvecParametresDefaut() {
+        System.out.println("Lancement du jeu avec paramètres par défaut...");
+        lancerJeuAvecParametres();
+    }
+    
+    /**
+     * Retourne à la configuration pour permettre à l'utilisateur de configurer les paramètres
+     */
+    public void retournerConfiguration() {
+        System.out.println("Retour à la configuration des paramètres...");
+        openOptions();
+    }
 }
