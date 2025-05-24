@@ -113,7 +113,7 @@ public class GameController {
     public void initialize() {
 
         // Créer automatiquement un joueur à une position de spawn
-        Vector3f spawnPosition = new Vector3f(-19f, 46f, 70f);
+        Vector3f spawnPosition = new Vector3f(0f, 155f, 0f);
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
 
         // Fait spawn des animaux aléatoirement (10 de chaque espèces)

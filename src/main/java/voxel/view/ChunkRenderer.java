@@ -255,7 +255,10 @@ public class ChunkRenderer {
      */
     private boolean shouldGenerateFace(int x, int y, int z, int blockId) {
         int neighborId = getBlockNeighbor(x, y, z);
-        return neighborId == BlockType.AIR.getId() || (neighborId == BlockType.WATER.getId() && blockId != BlockType.WATER.getId());
+        return neighborId == BlockType.AIR.getId()
+                || neighborId == BlockType.INVISIBLE.getId()
+                || neighborId == BlockType.VOID.getId()
+                || (neighborId == BlockType.WATER.getId() && blockId != BlockType.WATER.getId());
     }
 
     /**

@@ -1,7 +1,6 @@
 package voxel.view.hud;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.font.BitmapText;
 import com.jme3.math.ColorRGBA;
 import com.jme3.niftygui.NiftyJmeDisplay;
 
@@ -12,17 +11,22 @@ import de.lessvoid.nifty.builder.TextBuilder;
 import de.lessvoid.nifty.controls.label.builder.LabelBuilder;
 import de.lessvoid.nifty.elements.Element;
 import de.lessvoid.nifty.elements.render.TextRenderer;
+import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.tools.SizeValue;
 
 /**
  * Écran de chargement affiché lors de la génération d'un nouveau monde.
  */
 public class LoadingScreen extends AbstractGameMenu {
     
-    /** Texte pour afficher la progression du chargement */
-    private BitmapText loadingText;
-    
     /** Progression actuelle (de 0 à 100) */
     private float progress = 0;
+    
+    /** ID du panneau de progression */
+    private static final String PROGRESS_FILL_ID = "progressFill";
+    
+    /** ID du texte de progression */
+    private static final String PROGRESS_TEXT_ID = "progressText";
     
     /**
      * Constructeur de l'écran de chargement
@@ -48,18 +52,6 @@ public class LoadingScreen extends AbstractGameMenu {
         nifty.loadControlFile("nifty-default-controls.xml");
         
         createLoadingScreen();
-        
-        // Initialiser le texte de chargement pour l'interface JME standard
-        loadingText = new BitmapText(app.getAssetManager().loadFont("Interface/Fonts/Default.fnt"));
-        loadingText.setSize(32);
-        loadingText.setColor(ColorRGBA.White);
-        loadingText.setText("Chargement en cours...");
-        
-        // Centrer le texte
-        float textWidth = loadingText.getLineWidth();
-        float screenWidth = app.getContext().getSettings().getWidth();
-        float screenHeight = app.getContext().getSettings().getHeight();
-        loadingText.setLocalTranslation((screenWidth - textWidth) / 2, screenHeight / 2, 0);
         
         // Initialiser le menu mais ne pas l'afficher immédiatement
         nifty.gotoScreen("loading");
@@ -94,18 +86,44 @@ public class LoadingScreen extends AbstractGameMenu {
                         color("#fff");
                     }});
                     
-                    panel(new PanelBuilder("progressPanel") {{
+                    // Conteneur pour la barre de progression
+                    panel(new PanelBuilder("progressContainer") {{
                         childLayoutVertical();
                         alignCenter();
                         width("80%");
                         height("40%");
-                        backgroundColor("#000a");
+                        backgroundColor("#222a");
                         
-                        control(new LabelBuilder("progressLabel", "Veuillez patienter...") {{
+                        // Panneau pour afficher le fond de la barre de progression
+                        panel(new PanelBuilder("progressBackground") {{
+                            childLayoutHorizontal();
                             alignCenter();
                             valignCenter();
                             width("100%");
-                            height("100%");
+                            height("30px");
+                            backgroundColor("#000a");
+                            paddingLeft("2px");
+                            paddingRight("2px");
+                            paddingTop("2px");
+                            paddingBottom("2px");
+                            
+                            // Panneau de remplissage de la barre de progression
+                            panel(new PanelBuilder(PROGRESS_FILL_ID) {{
+                                childLayoutHorizontal();
+                                width("0%"); // Commencer à 0%
+                                height("100%");
+                                backgroundColor("#1E90FFaa"); // Bleu avec transparence
+                            }});
+                        }});
+                        
+                        // Texte pour afficher le pourcentage
+                        text(new TextBuilder(PROGRESS_TEXT_ID) {{
+                            text("Chargement: 0%");
+                            font("Interface/Fonts/Default.fnt");
+                            height("20px");
+                            width("100%");
+                            alignCenter();
+                            valignCenter();
                             color("#fff");
                         }});
                     }});
@@ -129,10 +147,8 @@ public class LoadingScreen extends AbstractGameMenu {
     @Override
     public void showMenu() {
         super.showMenu();
-        
-        // Ajoutez le texte de chargement à l'interface JME standard
-        app.getGuiNode().attachChild(loadingText);
         progress = 0;
+        updateProgressDisplay();
     }
     
     /**
@@ -141,9 +157,6 @@ public class LoadingScreen extends AbstractGameMenu {
     @Override
     public void hideMenu() {
         super.hideMenu();
-        
-        // Retirez le texte de chargement de l'interface JME standard
-        app.getGuiNode().detachChild(loadingText);
     }
     
     /**
@@ -153,20 +166,32 @@ public class LoadingScreen extends AbstractGameMenu {
      */
     public void setProgress(float progress) {
         this.progress = progress;
-        loadingText.setText("Chargement : " + (int)progress + "%");
         
         // Mettre à jour l'interface Nifty si elle est visible
         if (menuVisible) {
-            try {
-                // Trouver l'élément du label et mettre à jour son texte
-                Element progressLabel = nifty.getCurrentScreen().findElementById("progressLabel");
-                if (progressLabel != null) {
-                    progressLabel.getRenderer(TextRenderer.class)
-                        .setText("Chargement : " + (int)progress + "%");
-                }
-            } catch (Exception e) {
-                System.out.println("Erreur lors de la mise à jour du texte: " + e.getMessage());
+            updateProgressDisplay();
+        }
+    }
+    
+    /**
+     * Met à jour l'affichage de la progression
+     */
+    private void updateProgressDisplay() {
+        try {
+            // Mettre à jour la barre de progression visuelle
+            Element progressFill = nifty.getCurrentScreen().findElementById(PROGRESS_FILL_ID);
+            if (progressFill != null) {
+                progressFill.setConstraintWidth(new SizeValue(progress + "%"));
+                progressFill.getParent().layoutElements();
             }
+            
+            // Mettre à jour le texte de progression
+            Element progressText = nifty.getCurrentScreen().findElementById(PROGRESS_TEXT_ID);
+            if (progressText != null) {
+                progressText.getRenderer(TextRenderer.class).setText("Chargement: " + (int)progress + "%");
+            }
+        } catch (Exception e) {
+            System.out.println("Erreur lors de la mise à jour de la progression: " + e.getMessage());
         }
     }
 } 

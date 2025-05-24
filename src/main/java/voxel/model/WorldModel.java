@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille du monde en nombre de chunks sur les axes X et Z */
-    public static final int WORLD_SIZE = 16;
+    public static final int WORLD_SIZE = 8;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;
@@ -98,7 +98,10 @@ public class WorldModel {
         // Génération du terrain uniquement sur le plan X-Z
         for (int cx = 0; cx < worldSizeX; cx++) {
             for (int cz = 0; cz < worldSizeZ; cz++) {
-                if(flat){
+                if (activeBiome == BiomeType.FLOATING_ISLAND) {
+                    // Créer une île flottante au centre du monde
+                    createFloatingIsland();
+                } else if(flat){
                     generateTerrainFlat(cx,cz);
                 } else {
                     generateTerrainPerlin(cx, cz, 1);
@@ -464,6 +467,10 @@ public class WorldModel {
                                       + Math.pow((z - centerZ) / (radiusXZ * 0.8), 2);
 
                 // Si dans le rayon de l'île
+                if (distanceSquared >= 1.0 + 10e-6 && distanceSquared <= 1.1) {
+                    addInvisiblePillar(x, centerY, z);
+                }
+
                 if (distanceSquared <= 1.0) {
                     // Déterminer la hauteur à cette position
                     double heightFactor = 1 - Math.sqrt(distanceSquared);
@@ -488,12 +495,32 @@ public class WorldModel {
             }
         }
 
+
+
         // Ajouter quelques arbres
         addTrees(centerX, centerY, centerZ, radiusXZ);
 
         // Ajouter des nuages dans le ciel
         addClouds(centerX, centerY + 30, centerZ);
     }
+
+
+    /**
+     * Ajoute un pilier invisible à la position spécifiée pour empêcher le joueur de tomber.
+     *
+     * @param x Coordonnée X du pilier
+     * @param y Coordonnée Y de référence (surface de l'île)
+     * @param z Coordonnée Z du pilier
+     */
+    private void addInvisiblePillar(int x, int y, int z) {
+        int pillarHeight = 30; // Hauteur du pilier vers le bas
+
+        // Créer le pilier invisible du niveau de l'île vers le bas
+        for (int dy = -10; dy <= pillarHeight; dy++) {
+            setBlockAt(x,y + dy, z, BlockType.INVISIBLE.getId());
+        }
+    }
+
 
     /**
      * Ajoute des nuages dans le ciel du monde.
@@ -574,19 +601,20 @@ public class WorldModel {
 
         // Positions fixes des arbres (angles en degrés, distance en pourcentage du radius)
         int[][] treePositions = {
-            {45, 40},
-            {225, 45},
-            {315, 55},
-            {0, 0},
-            {90, 35},
-            {180, 55},
-            {270, 45}
+            {45, 40, 4},
+            {225, 45, 6},
+            {315, 55, 5},
+            {0, 0, 5},
+            {90, 58, 7},
+            {180, 55, 8},
+            {270, 47, 8}
         };
 
         // Créer les arbres aux positions fixes
         for (int[] position : treePositions) {
             int angleDegrees = position[0];
             int distancePercent = position[1];
+            int height = position[2];
 
             // Convertir l'angle en radians
             double angleRadians = Math.toRadians(angleDegrees);
@@ -597,17 +625,15 @@ public class WorldModel {
 
             // Vérifier que l'emplacement est de l'herbe (utilise maintenant les coordonnées de grille)
             if (getBlockAt(treeX, centerY, treeZ) == BlockType.GRASS.getId()) {
-                createTree(treeX, centerY + 1, treeZ);
+                createTree(treeX, centerY + 1, treeZ, height);
             }
         }
     }
 
-    /**
+     /**
      * Crée un arbre à la position spécifiée.
      */
-    private void createTree(int x, int y, int z) {
-
-        int height = 4 + random.nextInt(6); // Hauteur du tronc entre 4 et 10
+    private void createTree(int x, int y, int z, int height) {
 
         // Créer le tronc
         for (int i = 0; i < height; i++) {
@@ -615,22 +641,24 @@ public class WorldModel {
             setBlockAt(x, y + i, z, BlockType.LOG.getId());
         }
 
-        // Créer le feuillage
+        // Créer le feuillage - centré au sommet du tronc
         int leavesRadius = 3;
+        int foliageCenter = y + height; // Position du centre du feuillage
+        
         for (int dx = -leavesRadius; dx <= leavesRadius; dx++) {
-            for (int dy = -leavesRadius; dy <= leavesRadius + 1; dy++) {
+            for (int dy = -leavesRadius; dy <= leavesRadius; dy++) { // Symétrique maintenant
                 for (int dz = -leavesRadius; dz <= leavesRadius; dz++) {
                     // Distance au centre du feuillage
                     double distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
-                    // Si dans le rayon des feuilles et pas trop près du sol
-                    if (distance <= leavesRadius + 0.5 && y + height + dy > y) {
+                    // Si dans le rayon des feuilles
+                    if (distance <= leavesRadius + 0.5) {
                         int blockX = x + dx;
-                        int blockY = y + height + dy;
+                        int blockY = foliageCenter + dy;
                         int blockZ = z + dz;
 
-                        // Ne pas remplacer le tronc
-                        if (!(dx == 0 && dz == 0 && dy < 0)) {
+                        // Ne pas remplacer le tronc (partie qui dépasse dans le feuillage)
+                        if (!(dx == 0 && dz == 0 && blockY <= foliageCenter)) {
                             if (distance < leavesRadius || random.nextDouble() < 0.6) {
                                 setBlockAt(blockX, blockY, blockZ, BlockType.LEAVES.getId());
                             }

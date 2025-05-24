@@ -72,7 +72,7 @@ public class GameStateManager {
      */
     public GameStateManager(SimpleApplication app) {
         this.app = app;
-        this.currentState = GameState.WORLD_SELECTION;
+        this.currentState = GameState.IN_GAME;
         
         // Initialisation des menus
         this.worldSelectionMenu = new ChooseMenu(app);
@@ -167,7 +167,7 @@ public class GameStateManager {
                 inputController.setCameraControlsEnabled(true);
             }
         } else {
-            WorldModel worldModel = new WorldModel(BiomeType.SAVANNA);
+            WorldModel worldModel = new WorldModel(BiomeType.FLOATING_ISLAND);
             setupMVC(worldModel);
         }
     }

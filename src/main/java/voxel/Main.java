@@ -69,9 +69,9 @@ public class Main extends SimpleApplication {
         
         // Initialiser le gestionnaire d'états du jeu
         gameStateManager = new GameStateManager(this);
-        
-        // Démarrer avec le menu de sélection du monde
-        gameStateManager.changeState(GameStateManager.GameState.WORLD_SELECTION);
+
+        // Démarrer avec l'île volante
+        gameStateManager.changeState(GameStateManager.GameState.IN_GAME);
     }
 
     /**
