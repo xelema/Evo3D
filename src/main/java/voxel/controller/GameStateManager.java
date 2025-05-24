@@ -93,6 +93,9 @@ public class GameStateManager {
         this.inGameMenu = new InGameMenu(app, this);
         this.loadingScreen = new LoadingScreen(app);
         
+        // Configurer la référence au GameStateManager dans le ChooseMenu
+        worldSelectionMenu.setGameStateManager(this);
+        
         // Initialiser les menus
         worldSelectionMenu.initialize();
         inGameMenu.initialize();
@@ -238,6 +241,18 @@ public class GameStateManager {
      * @param biome Le biome du nouveau monde
      */
     public void changeWorld(BiomeType biome) {
+        changeWorldWithParameters(biome, 2, 2, 2); // Valeurs par défaut
+    }
+    
+    /**
+     * Change le monde actuel pour un nouveau monde avec le biome et les paramètres environnementaux spécifiés
+     * 
+     * @param biome Le biome du nouveau monde
+     * @param temperature Niveau de température (0-4)
+     * @param humidity Niveau d'humidité (0-4)  
+     * @param reliefComplexity Niveau de complexité du relief (0-4)
+     */
+    public void changeWorldWithParameters(BiomeType biome, int temperature, int humidity, int reliefComplexity) {
         // Mémoriser l'état précédent pour y revenir après le chargement
         GameState previousState = this.currentState;
         
@@ -258,8 +273,8 @@ public class GameStateManager {
                     Thread.sleep(20); // Petite pause pour simuler le chargement
                 }
                 
-                // Créer le nouveau monde
-                WorldModel newWorld = new WorldModel(biome);
+                // Créer le nouveau monde avec les paramètres environnementaux
+                WorldModel newWorld = new WorldModel(biome, WorldModel.DEFAULT_WORLD_SIZE, temperature, humidity, reliefComplexity);
 
                 // Initialiser le rendu et les contrôleurs pour ce monde
                 app.enqueue(() -> {
@@ -450,7 +465,20 @@ public class GameStateManager {
         // Si le joueur a cliqué sur "Démarrer le jeu" dans le menu principal
         if (worldSelectionMenu.hasGameStarted()){
             worldSelectionMenu.setGameStarted(false);
-            changeWorld(BiomeType.SAVANNA);
+            
+            // Récupérer les paramètres environnementaux du ChooseMenu
+            int[] parametres = worldSelectionMenu.getParametresEnvironnementaux();
+            int temperature = parametres[0];
+            int humidity = parametres[1];
+            int reliefComplexity = parametres[2];
+            
+            System.out.println("Création du monde avec les paramètres:");
+            System.out.println("- Température: " + temperature);
+            System.out.println("- Humidité: " + humidity);
+            System.out.println("- Relief: " + reliefComplexity);
+            
+            // Créer le nouveau monde avec les paramètres personnalisés
+            changeWorldWithParameters(BiomeType.SAVANNA, temperature, humidity, reliefComplexity);
         }
     }
     

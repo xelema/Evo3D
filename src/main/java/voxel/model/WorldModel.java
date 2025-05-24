@@ -61,6 +61,16 @@ public class WorldModel {
     /** Biome actif */
     private BiomeType activeBiome;
 
+    /** Paramètres de configuration du monde */
+    // Température : 0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum
+    private int temperature = 2; // Valeur par défaut : Modéré
+    
+    // Humidité : 0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum  
+    private int humidity = 2; // Valeur par défaut : Modéré
+    
+    // Complexité du relief : 0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum
+    private int reliefComplexity = 2; // Valeur par défaut : Modéré
+
     /**
      * Crée un nouveau monde de voxels avec la taille par défaut.
      */
@@ -75,10 +85,28 @@ public class WorldModel {
      * @param worldSize La taille du monde en nombre de chunks (axes X et Z)
      */
     public WorldModel(BiomeType biome, int worldSize) {
+        this(biome, worldSize, 2, 2, 2); // Valeurs par défaut pour les paramètres environnementaux
+    }
+
+    /**
+     * Crée un nouveau monde de voxels avec une taille et des paramètres environnementaux spécifiés.
+     * 
+     * @param biome Le type de biome du monde
+     * @param worldSize La taille du monde en nombre de chunks (axes X et Z)
+     * @param temperature Niveau de température (0-4)
+     * @param humidity Niveau d'humidité (0-4)
+     * @param reliefComplexity Niveau de complexité du relief (0-4)
+     */
+    public WorldModel(BiomeType biome, int worldSize, int temperature, int humidity, int reliefComplexity) {
         this.activeBiome = biome;
         this.worldSizeX = worldSize;
         this.worldSizeY = 8; // Hauteur fixe pour l'instant
         this.worldSizeZ = worldSize;
+        
+        // Définir les paramètres environnementaux
+        this.temperature = Math.max(0, Math.min(4, temperature));
+        this.humidity = Math.max(0, Math.min(4, humidity));
+        this.reliefComplexity = Math.max(0, Math.min(4, reliefComplexity));
 
         chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
 
@@ -92,6 +120,12 @@ public class WorldModel {
 
         generateWorld(false);
         entityManager = new EntityManager(this);
+
+        System.out.println("Création du monde de taille " + worldSizeX + "x" + worldSizeY + "x" + worldSizeZ + " avec le biome " + activeBiome);
+        System.out.println("Paramètres du monde :");
+        System.out.println("  - Température : " + this.temperature + " (" + getTemperatureLabel(this.temperature) + ")");
+        System.out.println("  - Humidité : " + this.humidity + " (" + getHumidityLabel(this.humidity) + ")");
+        System.out.println("  - Complexité du relief : " + this.reliefComplexity + " (" + getReliefLabel(this.reliefComplexity) + ")");
     }
 
     /**
@@ -878,10 +912,94 @@ public class WorldModel {
         this.worldSizeZ = worldSizeZ;
     }
 
+    /**
+     * Récupère le niveau de température du monde.
+     * @return La température (0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum)
+     */
+    public int getTemperature() {
+        return temperature;
+    }
+
+    /**
+     * Définit le niveau de température du monde.
+     * @param temperature La température (0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum)
+     */
+    public void setTemperature(int temperature) {
+        this.temperature = Math.max(0, Math.min(4, temperature)); // Clamp entre 0 et 4
+    }
+
+    /**
+     * Récupère le niveau d'humidité du monde.
+     * @return L'humidité (0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum)
+     */
+    public int getHumidity() {
+        return humidity;
+    }
+
+    /**
+     * Définit le niveau d'humidité du monde.
+     * @param humidity L'humidité (0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum)
+     */
+    public void setHumidity(int humidity) {
+        this.humidity = Math.max(0, Math.min(4, humidity)); // Clamp entre 0 et 4
+    }
+
+    /**
+     * Récupère le niveau de complexité du relief du monde.
+     * @return La complexité du relief (0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum)
+     */
+    public int getReliefComplexity() {
+        return reliefComplexity;
+    }
+
+    /**
+     * Définit le niveau de complexité du relief du monde.
+     * @param reliefComplexity La complexité du relief (0 = Minimal, 1 = Faible, 2 = Modéré, 3 = Élevé, 4 = Maximum)
+     */
+    public void setReliefComplexity(int reliefComplexity) {
+        this.reliefComplexity = Math.max(0, Math.min(4, reliefComplexity)); // Clamp entre 0 et 4
+    }
+
+    /**
+     * Configure tous les paramètres environnementaux en une seule fois.
+     * @param temperature Niveau de température (0-4)
+     * @param humidity Niveau d'humidité (0-4)
+     * @param reliefComplexity Niveau de complexité du relief (0-4)
+     */
+    public void setEnvironmentalParameters(int temperature, int humidity, int reliefComplexity) {
+        this.setTemperature(temperature);
+        this.setHumidity(humidity);
+        this.setReliefComplexity(reliefComplexity);
+    }
+
     public void update(float tpf) {
         // Mettre à jour toutes les entités
         if (entityManager != null) {
             entityManager.updateAll(tpf);
         }
+    }
+
+    /**
+     * Retourne le label correspondant au niveau de température
+     */
+    private String getTemperatureLabel(int temperature) {
+        String[] labels = {"Minimal", "Faible", "Modéré", "Élevé", "Maximum"};
+        return labels[Math.max(0, Math.min(4, temperature))];
+    }
+    
+    /**
+     * Retourne le label correspondant au niveau d'humidité
+     */
+    private String getHumidityLabel(int humidity) {
+        String[] labels = {"Minimal", "Faible", "Modéré", "Élevé", "Maximum"};
+        return labels[Math.max(0, Math.min(4, humidity))];
+    }
+    
+    /**
+     * Retourne le label correspondant au niveau de relief
+     */
+    private String getReliefLabel(int relief) {
+        String[] labels = {"Minimal", "Faible", "Modéré", "Élevé", "Maximum"};
+        return labels[Math.max(0, Math.min(4, relief))];
     }
 }
