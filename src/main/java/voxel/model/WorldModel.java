@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public class WorldModel {
     /** Taille par défaut du monde en nombre de chunks sur les axes X et Z */
-    public static final int DEFAULT_WORLD_SIZE = 24;
+    public static final int DEFAULT_WORLD_SIZE = 8;
     
     /** Tableau 3D contenant tous les chunks du monde */
     private ChunkModel[][][] chunks;

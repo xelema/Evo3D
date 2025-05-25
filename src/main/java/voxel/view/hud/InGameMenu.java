@@ -178,7 +178,7 @@ public class InGameMenu extends AbstractGameMenu {
                             height("45%");
                             width("100%");
                             
-                            control(new ButtonBuilder("lightningButton", "Éclairage") {{
+                            control(new ButtonBuilder("lightningButton", "Occlusion ambiante") {{
                                 alignCenter();
                                 valignCenter();
                                 height("100%");

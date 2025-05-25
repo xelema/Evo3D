@@ -94,7 +94,7 @@ public class Main extends SimpleApplication {
     private void setupCamera() {
         cam.setLocation(new Vector3f(0, 40f, 0));
 
-        // Fond bleu cield
+        // Fond bleu ciel
         viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
         
         // Configuration de la caméra volante (de base avec JME3)

@@ -165,7 +165,7 @@ public class ChunkRenderer {
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
                                 if (shouldGenerateFace(nx, ny, nz, blockId)) {
-                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
+                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode(), worldModel, chunkX, chunkY, chunkZ);
                                     builder.addFace(face);
                                 }
                             }
@@ -209,7 +209,7 @@ public class ChunkRenderer {
 
                                 // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
                                 if (shouldGenerateFace(nx, ny, nz, blockId)) {
-                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode());
+                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode(), worldModel, chunkX, chunkY, chunkZ);
                                     builder.addFace(face);
                                     hasTransparentFaces = true;
                                 }
