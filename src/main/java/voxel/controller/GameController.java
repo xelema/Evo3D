@@ -58,6 +58,15 @@ public class GameController {
     /** Intervalle de base pour la disparition d'animaux (en secondes) */
     private static final float BASE_DESPAWN_INTERVAL = 30f;
 
+    /** Nombre d'animaux par chunk (surface) - ratio de base */
+    private static final float ANIMALS_PER_CHUNK_AREA = 1.8f; // 1.8 animaux par chunk en moyenne
+    
+    /** Nombre minimum d'animaux autorisés dans un monde */
+    private static final int MIN_ANIMALS = 3;
+    
+    /** Nombre maximum calculé d'animaux pour ce monde */
+    private final int maxAnimals;
+
     /** Permet d'initialiser le monde après un certain temps */
     boolean readyToInit = true;
 
@@ -86,6 +95,13 @@ public class GameController {
         this.entityController = entityController;
         this.playerController = inputController.getPlayerController();
         this.camera = camera;
+
+        // Calculer le nombre maximum d'animaux pour ce monde
+        // On calcule basé sur le nombre de chunks, pas de voxels
+        int worldSizeX = worldModel.getWorldSizeX();
+        int worldSizeZ = worldModel.getWorldSizeZ();
+        int chunkArea = worldSizeX * worldSizeZ;
+        this.maxAnimals = Math.max(MIN_ANIMALS, (int)(chunkArea * ANIMALS_PER_CHUNK_AREA));
     }
 
     /**
@@ -202,10 +218,29 @@ public class GameController {
     }
 
     /**
+     * Compte le nombre d'animaux actuellement présents dans le monde (excluant le joueur)
+     * 
+     * @return Le nombre d'animaux présents
+     */
+    private int getCurrentAnimalCount() {
+        List<Entity> entities = worldModel.getEntityManager().getEntities();
+        return (int) entities.stream()
+            .filter(entity -> !(entity instanceof Player))
+            .count();
+    }
+
+    /**
      * Fait apparaître un animal aléatoire à une position aléatoire
      */
     private void spawnRandomAnimal() {
         try {
+            // Vérifier d'abord si on n'a pas déjà atteint le maximum d'animaux
+            int currentAnimalCount = getCurrentAnimalCount();
+            if (currentAnimalCount >= maxAnimals) {
+                // System.out.println("Nombre maximum d'animaux atteint (" + maxAnimals + "). Pas de nouveau spawn.");
+                return;
+            }
+            
             // Choisir une classe d'animal aléatoire
             Class<? extends Entity> animalClass = AnimalRegistry.getRandomAnimalClass();
             
@@ -217,7 +252,8 @@ public class GameController {
                 Entity animal = entityController.createEntity(animalClass, spawnPosition);
                 
                 if (animal != null) {
-                    System.out.println("Animal " + animalClass.getSimpleName() + " apparu à la position " + spawnPosition);
+                    System.out.println("Animal " + animalClass.getSimpleName() + " apparu à la position " + spawnPosition + 
+                                     " (" + (currentAnimalCount + 1) + "/" + maxAnimals + " animaux)");
                 }
             }
         } catch (Exception e) {
@@ -288,5 +324,23 @@ public class GameController {
         
         // Aucune position valide trouvée après maxAttempts
         return null;
+    }
+
+    /**
+     * Récupère le nombre maximum d'animaux autorisés dans ce monde
+     * 
+     * @return Le nombre maximum d'animaux
+     */
+    public int getMaxAnimals() {
+        return maxAnimals;
+    }
+
+    /**
+     * Récupère le nombre actuel d'animaux dans le monde
+     * 
+     * @return Le nombre actuel d'animaux (excluant le joueur)
+     */
+    public int getAnimalCount() {
+        return getCurrentAnimalCount();
     }
 } 

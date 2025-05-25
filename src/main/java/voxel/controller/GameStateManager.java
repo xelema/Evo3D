@@ -244,7 +244,7 @@ public class GameStateManager {
      * @param biome Le biome du nouveau monde
      */
     public void changeWorld(BiomeType biome) {
-        changeWorldWithParameters(biome, 2, 2, 2); // Valeurs par défaut
+        changeWorldWithParameters(biome, 2, 2, 2, 1); // Valeurs par défaut (taille MOYEN = index 1)
     }
     
     /**
@@ -254,8 +254,9 @@ public class GameStateManager {
      * @param temperature Niveau de température (0-4)
      * @param humidity Niveau d'humidité (0-4)  
      * @param reliefComplexity Niveau de complexité du relief (0-4)
+     * @param worldSizeIndex Index de la taille du monde (0=PETIT, 1=MOYEN, 2=GRAND)
      */
-    public void changeWorldWithParameters(BiomeType biome, int temperature, int humidity, int reliefComplexity) {
+    public void changeWorldWithParameters(BiomeType biome, int temperature, int humidity, int reliefComplexity, int worldSizeIndex) {
         // Mémoriser l'état précédent pour y revenir après le chargement
         GameState previousState = this.currentState;
 
@@ -277,11 +278,29 @@ public class GameStateManager {
                         loadingScreen.setProgress(progress);
                         return null;
                     });
-                    Thread.sleep(30); // Petite pause pour simuler le chargement
+                    // Petite pause pour simuler le chargement (proportionnelle à la taille du monde)
+                    Thread.sleep(20 + 15L * worldSelectionMenu.getTailleMondeSelectionnee());
                 }
                 
-                // Créer le nouveau monde avec les paramètres environnementaux
-                WorldModel newWorld = new WorldModel(biome, WorldModel.DEFAULT_WORLD_SIZE,8, temperature, humidity, reliefComplexity);
+                // Convertir l'index de taille en valeur réelle
+                int worldSize;
+                switch (worldSizeIndex) {
+                    case 0: // PETIT
+                        worldSize = 8;
+                        break;
+                    case 1: // MOYEN
+                        worldSize = WorldModel.DEFAULT_WORLD_SIZE; // Utiliser la taille par défaut
+                        break;
+                    case 2: // GRAND
+                        worldSize = 32;
+                        break;
+                    default:
+                        worldSize = WorldModel.DEFAULT_WORLD_SIZE; // Sécurité
+                        break;
+                }
+                
+                // Créer le nouveau monde avec les paramètres environnementaux et la taille sélectionnée
+                WorldModel newWorld = new WorldModel(biome, worldSize, 8, temperature, humidity, reliefComplexity);
 
                 // Initialiser le rendu et les contrôleurs pour ce monde
                 app.enqueue(() -> {
@@ -384,6 +403,9 @@ public class GameStateManager {
         
         // Définir la référence au GameStateManager dans le GameController pour la vitesse du temps de l'environnement
         gameController.setGameStateManager(this);
+        
+        // Définir la référence au GameController dans le WorldRenderer pour afficher les infos sur les animaux
+        worldRenderer.setGameController(gameController);
     }
     
     /**
@@ -497,13 +519,18 @@ public class GameStateManager {
             int humidity = parametres[1];
             int reliefComplexity = parametres[2];
             
+            // Récupérer la taille du monde sélectionnée
+            int tailleIndex = worldSelectionMenu.getTailleMondeSelectionnee();
+            String nomTaille = worldSelectionMenu.getNomTailleMondeSelectionnee();
+            
             System.out.println("Création du monde avec les paramètres:");
             System.out.println("- Température: " + temperature);
             System.out.println("- Humidité: " + humidity);
             System.out.println("- Relief: " + reliefComplexity);
+            System.out.println("- Taille du monde: " + nomTaille + " (index: " + tailleIndex + ")");
             
             // Créer le nouveau monde avec les paramètres personnalisés
-            changeWorldWithParameters(null, temperature, humidity, reliefComplexity);
+            changeWorldWithParameters(null, temperature, humidity, reliefComplexity, tailleIndex);
         }
     }
     

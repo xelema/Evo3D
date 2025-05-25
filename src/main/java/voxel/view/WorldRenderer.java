@@ -41,6 +41,9 @@ public class WorldRenderer {
     /** Référence au gestionnaire d'états pour la vitesse du temps */
     private GameStateManager gameStateManager;
     
+    /** Référence au contrôleur de jeu pour accéder aux informations sur les animaux */
+    private GameController gameController;
+    
     /** Nœud racine contenant tous les chunks du monde */
     private Node worldNode;
     
@@ -367,11 +370,26 @@ public class WorldRenderer {
             String deepBlock = activeBiome.getDeepBlock().name();
             String waterBlock = activeBiome.getWaterBlock().name();
 
+            // Informations sur les animaux (si le gameController est disponible)
+            String animalInfo = "";
+            if (gameController != null) {
+                int currentAnimals = gameController.getAnimalCount();
+                int maxAnimals = gameController.getMaxAnimals();
+                animalInfo = String.format(
+                    "\n=== ÉCOSYSTEME ===\n" +
+                    "Animaux: %d/%d\n" +
+                    "Densité: %.2f animaux/chunk²\n",
+                    currentAnimals, maxAnimals,
+                    (float)currentAnimals / (worldModel.getWorldSizeX() * worldModel.getWorldSizeZ())
+                );
+            }
+
             // Formater le texte avec toutes les informations
             String text = String.format(
                 "=== INFORMATIONS DU MONDE ===\n" +
                 "Seed : %d\n" +
                 "Taille : %dx%dx%d chunks\n" +
+                "%s" +
                 "\n=== POSITION JOUEUR ===\n" +
                 "Position: %.1f, %.1f, %.1f\n" +
                 "Chunk: %d, %d, %d\n" +
@@ -391,6 +409,9 @@ public class WorldRenderer {
                 // Informations du monde
                 worldModel.getWorldSeed(),
                 worldModel.getWorldSizeX(), worldModel.getWorldSizeY(), worldModel.getWorldSizeZ(),
+                
+                // Informations sur les animaux
+                animalInfo,
                 
                 // Position du joueur
                 location.x, location.y, location.z,
@@ -419,6 +440,15 @@ public class WorldRenderer {
      */
     public void setGameStateManager(GameStateManager gameStateManager) {
         this.gameStateManager = gameStateManager;
+    }
+
+    /**
+     * Définit le contrôleur de jeu pour accéder aux informations sur les animaux
+     * 
+     * @param gameController Le contrôleur de jeu
+     */
+    public void setGameController(GameController gameController) {
+        this.gameController = gameController;
     }
 
     /**

@@ -18,7 +18,6 @@ import de.lessvoid.nifty.builder.PanelBuilder;
 import de.lessvoid.nifty.builder.ScreenBuilder;
 import de.lessvoid.nifty.builder.TextBuilder;
 import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
-import de.lessvoid.nifty.builder.ElementBuilder;
 
 import voxel.controller.GameStateManager;
 
@@ -33,6 +32,10 @@ public class ChooseMenu extends AbstractGameMenu {
     private boolean[][] coche = new boolean[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[][] textes = new BitmapText[NOMBREPARAMETRES][NOMBRECASESMAX];
     private BitmapText[] titres = new BitmapText[NOMBREPARAMETRES];
+    
+    // Variables pour les boutons de taille du monde
+    private int tailleMondeSelectionnee = -1; // -1 = aucune sélection
+    private String[] optionsTailleMonde = {"PETIT", "MOYEN", "GRAND"};
     
     // Variables pour stocker les sélections
     private int[] selectionsParametres = new int[NOMBREPARAMETRES]; // -1 = non sélectionné
@@ -315,40 +318,6 @@ public class ChooseMenu extends AbstractGameMenu {
                         height("2%");
                     }});
 
-                    // Section Terrain
-                    panel(new PanelBuilder("terrainSection") {{
-                        childLayoutVertical();
-                        alignCenter();
-                        width("90%");
-                        height("20%");
-                        backgroundColor("#2a2a2aaa");
-                        paddingTop("2%");
-                        paddingBottom("2%");
-
-                        text(new TextBuilder() {{
-                            text("GÉNÉRATION DU TERRAIN");
-                            font("Interface/Fonts/Default.fnt");
-                            height("30%");
-                            width("100%");
-                            alignCenter();
-                            color("#ffaa66");
-                        }});
-
-                        control(new ButtonBuilder("flore", "Paramètres Géologiques") {{
-                            alignCenter();
-                            height("50%");
-                            width("80%");
-                            interactOnClick("reglageFlore");
-                            style("nifty-button");
-                            focusable(false);
-                        }});
-                    }});
-
-                    // Espacement (réduit)
-                    panel(new PanelBuilder() {{
-                        height("2%");
-                    }});
-
                     // Section Climat
                     panel(new PanelBuilder("climatSection") {{
                         childLayoutVertical();
@@ -375,6 +344,94 @@ public class ChooseMenu extends AbstractGameMenu {
                             interactOnClick("reglageEnvironnement()");
                             style("nifty-button");
                             focusable(false);
+                        }});
+                    }});
+
+                    // Espacement (réduit)
+                    panel(new PanelBuilder() {{
+                        height("2%");
+                    }});
+
+                    // Section Taille du Monde
+                    panel(new PanelBuilder("tailleMondSection") {{
+                        childLayoutVertical();
+                        alignCenter();
+                        width("90%");
+                        height("20%");
+                        backgroundColor("#2a2a2aaa");
+                        paddingTop("2%");
+                        paddingBottom("2%");
+
+                        text(new TextBuilder() {{
+                            text("TAILLE DU MONDE");
+                            font("Interface/Fonts/Default.fnt");
+                            height("30%");
+                            width("100%");
+                            alignCenter();
+                            color("#ffaa66");
+                        }});
+
+                        // Panneau horizontal pour les boutons de taille
+                        panel(new PanelBuilder("panelBoutonsTaille") {{
+                            childLayoutHorizontal();
+                            alignCenter();
+                            valignCenter();
+                            height("70%");
+                            width("100%");
+
+                            // Panneau gauche pour centrage
+                            panel(new PanelBuilder() {{
+                                width("7.5%");
+                                height("100%");
+                            }});
+
+                            control(new ButtonBuilder("boutonPetit", "PETIT") {{
+                                alignLeft();
+                                valignCenter();
+                                height("80%");
+                                width("25%");
+                                interactOnClick("selectionnerTaillePetit()");
+                                style("nifty-button");
+                                focusable(tailleMondeSelectionnee == 0);
+                            }});
+
+                            // Espacement réduit
+                            panel(new PanelBuilder() {{
+                                width("5%");
+                                height("100%");
+                            }});
+
+                            control(new ButtonBuilder("boutonMoyen", "MOYEN") {{
+                                alignCenter();
+                                valignCenter();
+                                height("80%");
+                                width("25%");
+                                interactOnClick("selectionnerTailleMoyen()");
+                                style("nifty-button");
+                                focusable(tailleMondeSelectionnee == 1);
+                            }});
+
+                            // Espacement réduit
+                            panel(new PanelBuilder() {{
+                                width("5%");
+                                height("100%");
+                            }});
+
+                            control(new ButtonBuilder("boutonGrand", "GRAND") {{
+                                alignRight();
+                                valignCenter();
+                                height("80%");
+                                width("25%");
+                                interactOnClick("selectionnerTailleGrand()");
+                                style("nifty-button");
+                                focusable(tailleMondeSelectionnee == 2);
+                            }});
+
+                            // Panneau droit pour centrage
+                            panel(new PanelBuilder() {{
+                                width("7.5%");
+                                height("100%");
+                            }});
                         }});
                     }});
 
@@ -564,6 +621,8 @@ public class ChooseMenu extends AbstractGameMenu {
         }}.build(nifty));
     }
 
+
+
     public void creerCasesColorees() {
         int largeurEcran = app.getContext().getSettings().getWidth();
         int hauteurEcran = app.getContext().getSettings().getHeight();
@@ -648,6 +707,10 @@ public class ChooseMenu extends AbstractGameMenu {
         }
     }
 
+
+
+
+
     private void ajouterListenerClics() {
         app.getInputManager().addMapping("ClickCases", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         app.getInputManager().addListener(new ActionListener() {
@@ -720,6 +783,7 @@ public class ChooseMenu extends AbstractGameMenu {
                 titres[parametre] = null;
             }
         }
+        
     }
 
     private void decocherCase(int parametre, int colonne) {
@@ -840,6 +904,8 @@ public class ChooseMenu extends AbstractGameMenu {
         creerCasesColorees();
     }
 
+
+
     /**
      * Initialise les sélections temporaires avec les valeurs actuellement sauvegardées
      */
@@ -895,10 +961,15 @@ public class ChooseMenu extends AbstractGameMenu {
      * @return true si tous les paramètres ont été sélectionnés
      */
     public boolean hasAllParametersConfigured() {
+        // Vérifier les paramètres d'environnement
         for (int i = 0; i < NOMBREPARAMETRES; i++) {
             if (selectionsParametres[i] < 0) {
                 return false;
             }
+        }
+        // Vérifier la taille du monde
+        if (tailleMondeSelectionnee < 0) {
+            return false;
         }
         return true;
     }
@@ -909,6 +980,7 @@ public class ChooseMenu extends AbstractGameMenu {
      */
     public String getMissingParameters() {
         StringBuilder missing = new StringBuilder();
+        // Vérifier les paramètres d'environnement
         for (int i = 0; i < NOMBREPARAMETRES; i++) {
             if (selectionsParametres[i] < 0) {
                 if (missing.length() > 0) {
@@ -916,6 +988,13 @@ public class ChooseMenu extends AbstractGameMenu {
                 }
                 missing.append(nomsParametres[i]);
             }
+        }
+        // Vérifier la taille du monde
+        if (tailleMondeSelectionnee < 0) {
+            if (missing.length() > 0) {
+                missing.append(", ");
+            }
+            missing.append("Taille du monde");
         }
         return missing.toString();
     }
@@ -937,11 +1016,159 @@ public class ChooseMenu extends AbstractGameMenu {
             }
         }
         
+        // Vérifier si la taille du monde a été sélectionnée
+        if (tailleMondeSelectionnee < 0) {
+            // Nettoyer les éléments JME GUI avant d'afficher le pop-up
+            nettoyerCases();
+            // Afficher le pop-up de sélection de taille du monde
+            System.out.println("Taille du monde non sélectionnée, affichage du pop-up...");
+            creerPopupTailleMonde();
+            nifty.gotoScreen("popupTailleMonde");
+        } else {
+            // Taille déjà sélectionnée, continuer normalement
+            terminerValidationConfiguration();
+        }
+    }
+    
+    /**
+     * Termine la validation de la configuration (appelée après sélection de taille si nécessaire)
+     */
+    private void terminerValidationConfiguration() {
         // Recréer le menu principal pour mettre à jour le focus
         int tailleEcran = app.getContext().getSettings().getHeight();
         createMenu(tailleEcran);
         
         retour();
+    }
+
+    /**
+     * Crée le pop-up de sélection de taille du monde
+     */
+    private void creerPopupTailleMonde() {
+        nifty.addScreen("popupTailleMonde", new ScreenBuilder("popupTailleMonde") {{
+            controller(ChooseMenu.this);
+            
+            // Arrière-plan sombre semi-transparent
+            layer(new LayerBuilder("backgroundLayer") {{
+                backgroundColor("#000000cc");
+                childLayoutAbsolute();
+            }});
+            
+            layer(new LayerBuilder("popupLayer") {{
+                childLayoutCenter();
+                
+                panel(new PanelBuilder("popupPanel") {{
+                    childLayoutVertical();
+                    alignCenter();
+                    valignCenter();
+                    width("50%");
+                    height("40%");
+                    backgroundColor("#1a1a1aee");
+                    style("nifty-panel");
+                    paddingTop("3%");
+                    paddingBottom("3%");
+                    paddingLeft("3%");
+                    paddingRight("3%");
+                    
+                    // Titre du pop-up
+                    text(new TextBuilder() {{
+                        text("SÉLECTION REQUISE");
+                        font("Interface/Fonts/Default.fnt");
+                        height("20%");
+                        width("100%");
+                        alignCenter();
+                        color("#ffaa66");
+                    }});
+                    
+                    // Espacement
+                    panel(new PanelBuilder() {{
+                        height("5%");
+                    }});
+                    
+                    // Message explicatif
+                    text(new TextBuilder() {{
+                        text("Veuillez sélectionner la taille du monde :");
+                        font("Interface/Fonts/Default.fnt");
+                        height("15%");
+                        width("100%");
+                        alignCenter();
+                        color("#ffffff");
+                    }});
+                    
+                    // Espacement
+                    panel(new PanelBuilder() {{
+                        height("5%");
+                    }});
+                    
+                    // Panneau horizontal pour les boutons de taille
+                    panel(new PanelBuilder("panelBoutonsPopup") {{
+                        childLayoutHorizontal();
+                        alignCenter();
+                        valignCenter();
+                        height("30%");
+                        width("100%");
+
+                        control(new ButtonBuilder("popupBoutonPetit", "PETIT") {{
+                            alignLeft();
+                            valignCenter();
+                            height("80%");
+                            width("30%");
+                            interactOnClick("selectionnerTaillePetitPopup()");
+                            style("nifty-button");
+                            focusable(false);
+                        }});
+
+                        // Espacement
+                        panel(new PanelBuilder() {{
+                            width("5%");
+                            height("100%");
+                        }});
+
+                        control(new ButtonBuilder("popupBoutonMoyen", "MOYEN") {{
+                            alignCenter();
+                            valignCenter();
+                            height("80%");
+                            width("30%");
+                            interactOnClick("selectionnerTailleMoyenPopup()");
+                            style("nifty-button");
+                            focusable(false);
+                        }});
+
+                        // Espacement
+                        panel(new PanelBuilder() {{
+                            width("5%");
+                            height("100%");
+                        }});
+
+                        control(new ButtonBuilder("popupBoutonGrand", "GRAND") {{
+                            alignRight();
+                            valignCenter();
+                            height("80%");
+                            width("30%");
+                            interactOnClick("selectionnerTailleGrandPopup()");
+                            style("nifty-button");
+                            focusable(false);
+                        }});
+                    }});
+                    
+                    // Espacement
+                    panel(new PanelBuilder() {{
+                        height("15%");
+                    }});
+                    
+                    // Bouton annuler
+                    control(new ButtonBuilder("annulerPopup", "ANNULER") {{
+                        alignCenter();
+                        valignCenter();
+                        height("10%");
+                        width("40%");
+                        interactOnClick("annulerPopupTaille()");
+                        style("nifty-button");
+                        focusable(true);
+                    }});
+                }});
+            }});
+        }}.build(nifty));
     }
 
     /**
@@ -994,7 +1221,7 @@ public class ChooseMenu extends AbstractGameMenu {
                         String messageConfigures = "";
                         String messageParDefaut = "";
                         
-                        // Construire le message pour les paramètres configurés
+                        // Construire le message pour les paramètres d'environnement configurés
                         for (int i = 0; i < NOMBREPARAMETRES; i++) {
                             if (selectionsParametres[i] >= 0) {
                                 if (messageConfigures.length() > 0) {
@@ -1004,7 +1231,15 @@ public class ChooseMenu extends AbstractGameMenu {
                             }
                         }
                         
-                        // Construire le message pour les paramètres par défaut
+                        // Ajouter la taille du monde si configurée
+                        if (tailleMondeSelectionnee >= 0) {
+                            if (messageConfigures.length() > 0) {
+                                messageConfigures += "\n";
+                            }
+                            messageConfigures += "• Taille du monde : " + optionsTailleMonde[tailleMondeSelectionnee];
+                        }
+                        
+                        // Construire le message pour les paramètres d'environnement par défaut
                         for (int i = 0; i < NOMBREPARAMETRES; i++) {
                             if (selectionsParametres[i] < 0) {
                                 if (messageParDefaut.length() > 0) {
@@ -1012,6 +1247,14 @@ public class ChooseMenu extends AbstractGameMenu {
                                 }
                                 messageParDefaut += "• " + nomsParametres[i] + " : Modéré (par défaut)";
                             }
+                        }
+                        
+                        // Ajouter la taille du monde par défaut si non configurée
+                        if (tailleMondeSelectionnee < 0) {
+                            if (messageParDefaut.length() > 0) {
+                                messageParDefaut += "\n";
+                            }
+                            messageParDefaut += "• Taille du monde : MOYEN (par défaut)";
                         }
                         
                         String messageComplet = "Paramètres manquants : " + parametresManquants + "\n\n";
@@ -1092,5 +1335,98 @@ public class ChooseMenu extends AbstractGameMenu {
     public void retournerConfiguration() {
         System.out.println("Retour à la configuration des paramètres...");
         openOptions();
+    }
+    
+    /**
+     * Sélectionne la taille PETIT pour le monde
+     */
+    public void selectionnerTaillePetit() {
+        System.out.println("Sélection taille PETIT");
+        tailleMondeSelectionnee = 0;
+        // Recréer l'écran pour mettre à jour le focus
+        fenetreReglage();
+        nifty.gotoScreen("reglage");
+    }
+    
+    /**
+     * Sélectionne la taille MOYEN pour le monde
+     */
+    public void selectionnerTailleMoyen() {
+        System.out.println("Sélection taille MOYEN");
+        tailleMondeSelectionnee = 1;
+        // Recréer l'écran pour mettre à jour le focus
+        fenetreReglage();
+        nifty.gotoScreen("reglage");
+    }
+    
+    /**
+     * Sélectionne la taille GRAND pour le monde
+     */
+    public void selectionnerTailleGrand() {
+        System.out.println("Sélection taille GRAND");
+        tailleMondeSelectionnee = 2;
+        // Recréer l'écran pour mettre à jour le focus
+        fenetreReglage();
+        nifty.gotoScreen("reglage");
+    }
+    
+    /**
+     * Sélectionne la taille PETIT depuis le pop-up
+     */
+    public void selectionnerTaillePetitPopup() {
+        System.out.println("Sélection taille PETIT depuis le pop-up");
+        tailleMondeSelectionnee = 0;
+        // Terminer la validation de la configuration
+        terminerValidationConfiguration();
+    }
+    
+    /**
+     * Sélectionne la taille MOYEN depuis le pop-up
+     */
+    public void selectionnerTailleMoyenPopup() {
+        System.out.println("Sélection taille MOYEN depuis le pop-up");
+        tailleMondeSelectionnee = 1;
+        // Terminer la validation de la configuration
+        terminerValidationConfiguration();
+    }
+    
+    /**
+     * Sélectionne la taille GRAND depuis le pop-up
+     */
+    public void selectionnerTailleGrandPopup() {
+        System.out.println("Sélection taille GRAND depuis le pop-up");
+        tailleMondeSelectionnee = 2;
+        // Terminer la validation de la configuration
+        terminerValidationConfiguration();
+    }
+    
+    /**
+     * Annule le pop-up de sélection de taille et retourne à l'écran précédent
+     */
+    public void annulerPopupTaille() {
+        System.out.println("Annulation du pop-up de taille");
+        // Retourner à l'écran de configuration de la faune
+        nifty.gotoScreen("faune");
+        // Recréer les cases colorées
+        creerCasesColorees();
+    }
+
+
+
+    /**
+     * Récupère la taille du monde sélectionnée
+     * @return L'index de la taille sélectionnée (0=PETIT, 1=MOYEN, 2=GRAND), ou 1 par défaut
+     */
+    public int getTailleMondeSelectionnee() {
+        return tailleMondeSelectionnee >= 0 ? tailleMondeSelectionnee : 1; // Taille MOYEN par défaut
+    }
+    
+    /**
+     * Récupère le nom de la taille du monde sélectionnée
+     * @return Le nom de la taille sélectionnée
+     */
+    public String getNomTailleMondeSelectionnee() {
+        int taille = getTailleMondeSelectionnee();
+        return optionsTailleMonde[taille];
     }
 }

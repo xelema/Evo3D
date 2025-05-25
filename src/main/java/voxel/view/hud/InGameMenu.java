@@ -624,42 +624,42 @@ public class InGameMenu extends AbstractGameMenu {
                 switch (biomeType) {
                     case "JUNGLE":
                         // Jungle Tropicale : température ≥ 3 + humidité ≥ 4
-                        stateManager.changeWorldWithParameters(null, 3, 4, 2); // Chaud, Saturé, Relief vallonné
+                        stateManager.changeWorldWithParameters(null, 3, 4, 2, 1); // Chaud, Saturé, Relief vallonné, Taille MOYEN
                         break;
                     case "SWAMP":
                         // Marécage : température 2-3 + humidité ≥ 4 + relief plat/doux
-                        stateManager.changeWorldWithParameters(null, 2, 4, 1); // Tempéré, Saturé, Relief doux
+                        stateManager.changeWorldWithParameters(null, 2, 4, 1, 1); // Tempéré, Saturé, Relief doux, Taille MOYEN
                         break;
                     case "HOT_DESERT":
                         // Désert Brûlant : température ≥ 4 + humidité ≤ 1
-                        stateManager.changeWorldWithParameters(null, 4, 0, 2); // Torride, Aride, Relief modéré
+                        stateManager.changeWorldWithParameters(null, 4, 0, 2, 1); // Torride, Aride, Relief modéré, Taille MOYEN
                         break;
                     case "VOLCANIC":
                         // Région Volcanique : température ≥ 4 + relief accidenté/montagneux
-                        stateManager.changeWorldWithParameters(null, 4, 1, 4); // Torride, Sec, Relief montagneux
+                        stateManager.changeWorldWithParameters(null, 4, 1, 4, 1); // Torride, Sec, Relief montagneux, Taille MOYEN
                         break;
                     case "TUNDRA":
                         // Toundra : température ≤ 1 + humidité modérée + relief doux
-                        stateManager.changeWorldWithParameters(null, 1, 2, 1); // Froid, Modéré, Relief doux
+                        stateManager.changeWorldWithParameters(null, 1, 2, 1, 1); // Froid, Modéré, Relief doux, Taille MOYEN
                         break;
                     case "ARCTIC":
                         // Arctique : température glaciale + humidité faible + relief plat
-                        stateManager.changeWorldWithParameters(null, 0, 1, 0); // Glacial, Faible, Relief plat
+                        stateManager.changeWorldWithParameters(null, 0, 1, 0, 1); // Glacial, Faible, Relief plat, Taille MOYEN
                         break;
                     case "OASIS":
                         // Oasis : température chaude + humidité élevée + relief plat
-                        stateManager.changeWorldWithParameters(null, 3, 3, 0); // Chaud, Humide, Relief plat
+                        stateManager.changeWorldWithParameters(null, 3, 3, 0, 1); // Chaud, Humide, Relief plat, Taille MOYEN
                         break;
                     case "MOUNTAINS":
                         // Montagnes Froides : température froide + relief montagneux
-                        stateManager.changeWorldWithParameters(null, 1, 2, 4); // Froid, Modéré, Relief montagneux
+                        stateManager.changeWorldWithParameters(null, 1, 2, 4, 1); // Froid, Modéré, Relief montagneux, Taille MOYEN
                         break;
                     case "FLOATING_ISLAND":
-                        stateManager.changeWorldWithParameters(BiomeType.FLOATING_ISLAND, 2, 2, 2); // Île flottante spéciale
+                        stateManager.changeWorldWithParameters(BiomeType.FLOATING_ISLAND, 2, 2, 2, 1); // Île flottante spéciale, Taille MOYEN
                         break;
                     default:
                         System.err.println("Type de biome inconnu: " + biomeType);
-                        stateManager.changeWorldWithParameters(null, 2, 2, 2); // Biome par défaut
+                        stateManager.changeWorldWithParameters(null, 2, 2, 2, 1); // Biome par défaut, Taille MOYEN
                         break;
                 }
             }
