@@ -140,8 +140,8 @@ public class InGameMenu extends AbstractGameMenu {
                             height("50%");
                             initial(1.0f);
                             min(0.1f);
-                            max(5.0f);
-                            stepSize(0.1f);
+                            max(25.0f);
+                            stepSize(0.5f);
                             buttonStepSize(0.5f);
                             focusable(false);
                         }});

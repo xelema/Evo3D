@@ -7,14 +7,18 @@ import java.util.Random;
 public class BasicTree extends Structure {
     private Random random;
     
+    // Système de maturité et disparition
+    private float maturityTimer = -1f; // -1 signifie pas encore mature
+    private boolean hasMaturityTimer = false;
+    
     public BasicTree(int width, int height) {
         super(width, height, width);
         random = new Random();
         // Configurer les paramètres de croissance pour les arbres
-        this.growthInterval = 1f; // 1 seconde entre les tentatives
-        this.growthProbability = 0.2f; // 20% de chance de grandir
-        this.maxWidth = 60;
-        this.maxHeight = 45;
+        this.growthInterval = 3.0f; // 3.0 seconde entre les tentatives
+        this.growthProbability = 0.3f; // 30% de chance de grandir
+        this.maxWidth = 40;
+        this.maxHeight = 35;
         createBasicTree();
     }
 
@@ -344,5 +348,25 @@ public class BasicTree extends Structure {
                 }
             }
         }
+    }
+    
+    // Méthodes pour la gestion de la maturité et disparition
+    public boolean hasMaturityTimer() {
+        return hasMaturityTimer;
+    }
+    
+    public void setMaturityTimer(float timer) {
+        this.maturityTimer = timer;
+        this.hasMaturityTimer = true;
+    }
+    
+    public void updateMaturityTimer(float tpf) {
+        if (hasMaturityTimer) {
+            maturityTimer -= tpf;
+        }
+    }
+    
+    public boolean isReadyToDisappear() {
+        return hasMaturityTimer && maturityTimer <= 0f;
     }
 } 
