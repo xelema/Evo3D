@@ -93,6 +93,7 @@ public class WorldRenderer {
         initSkyColors();
         initSun(assetManager);
         this.startTime = System.currentTimeMillis() - 30_000; // Décale de 30 secondes en arrière
+        this.virtualTime = (48f * 60f) / 64f; // démarrage à 48 steps
 
         this.entityRendererManager = new EntityRendererManager(this.worldModel.getEntityManager(), assetManager);
         worldNode.attachChild(entityRendererManager.getNode());
@@ -475,7 +476,7 @@ public class WorldRenderer {
         virtualTime += tpf * environmentSpeed;
 
         // Calculer l'étape du cycle basée sur le temps virtuel accumulé
-        int step = (int)((virtualTime * 64 / 60) + 45 % 192); // 192 étapes sur le cycle
+        int step = (int)((virtualTime * 64 / 60) % 192); // 192 étapes sur le cycle
         ColorRGBA skyColor = skyColors[step];
         mainViewport.setBackgroundColor(skyColor);
 
