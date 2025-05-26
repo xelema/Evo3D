@@ -75,8 +75,8 @@ public class WorldController {
     private void handleStructureGrowth(Structure structure) {
         if (structure instanceof BasicTree) {
             BasicTree tree = (BasicTree) structure;
-            System.out.println("Régénération de l'arbre grandi à la position (" + 
-                             tree.getWorldX() + ", " + tree.getWorldY() + ", " + tree.getWorldZ() + ")");
+//            System.out.println("Régénération de l'arbre grandi à la position (" +
+//                             tree.getWorldX() + ", " + tree.getWorldY() + ", " + tree.getWorldZ() + ")");
             
             // Régénérer le nouvel arbre plus grand
             generateTree(tree, tree.getWorldX(), tree.getWorldY(), tree.getWorldZ());
@@ -92,7 +92,7 @@ public class WorldController {
         int worldY = matureTree.getWorldY();
         int worldZ = matureTree.getWorldZ();
         
-        System.out.println("Arbre mature disparaît à la position (" + worldX + ", " + worldY + ", " + worldZ + ")");
+//        System.out.println("Arbre mature disparaît à la position (" + worldX + ", " + worldY + ", " + worldZ + ")");
         
         // Effacer l'arbre du monde
         clearTreeFromWorld(matureTree);
@@ -102,7 +102,7 @@ public class WorldController {
         
         // Planter 1 à 4 nouveaux arbres proches (favoriser la propagation)
         int numberOfNewTrees = 1 + random.nextInt(4); // 1 à 4
-        System.out.println("Plantation de " + numberOfNewTrees + " nouveaux arbres proches...");
+//        System.out.println("Plantation de " + numberOfNewTrees + " nouveaux arbres proches...");
         
         for (int i = 0; i < numberOfNewTrees; i++) {
             plantNearbyTree(worldX, worldY, worldZ);
@@ -214,7 +214,7 @@ public class WorldController {
             structureManager.addStructure(newTree);
             generateTree(newTree, worldX, groundHeight, worldZ);
             
-            System.out.println("Nouvel arbre planté à la position (" + worldX + ", " + groundHeight + ", " + worldZ + ")");
+//            System.out.println("Nouvel arbre planté à la position (" + worldX + ", " + groundHeight + ", " + worldZ + ")");
             return;
         }
         
@@ -294,7 +294,7 @@ public class WorldController {
             generateTree(tree, worldX, groundHeight, worldZ);
             
             treesGenerated++;
-            System.out.println("Arbre " + treesGenerated + " généré à la position (" + worldX + ", " + groundHeight + ", " + worldZ + ") - Taille: " + treeWidth + "x" + treeHeight);
+//            System.out.println("Arbre " + treesGenerated + " généré à la position (" + worldX + ", " + groundHeight + ", " + worldZ + ") - Taille: " + treeWidth + "x" + treeHeight);
         }
         
         if (treesGenerated < numberOfTrees) {

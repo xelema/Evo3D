@@ -657,7 +657,7 @@ public class InGameMenu extends AbstractGameMenu {
                         break;
                     case "MOUNTAINS":
                         // Montagnes Froides : température froide + relief montagneux
-                        stateManager.changeWorldWithParameters(null, 1, 2, 4, 1); // Froid, Modéré, Relief montagneux, Taille MOYEN
+                        stateManager.changeWorldWithParameters(null, 0, 4, 4, 1); // Froid, Modéré, Relief montagneux, Taille MOYEN
                         break;
                     case "FLOATING_ISLAND":
                         stateManager.changeWorldWithParameters(BiomeType.FLOATING_ISLAND, 2, 2, 2, 1); // Île flottante spéciale, Taille MOYEN

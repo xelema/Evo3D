@@ -332,7 +332,7 @@ public class BasicTree extends Structure {
         // Régénérer l'arbre avec les nouvelles dimensions
         createBasicTree();
         
-        System.out.println("Arbre grandi de " + oldWidth + "x" + oldHeight + " à " + width + "x" + height + " à la position (" + worldX + ", " + worldY + ", " + worldZ + ")");
+//        System.out.println("Arbre grandi de " + oldWidth + "x" + oldHeight + " à " + width + "x" + height + " à la position (" + worldX + ", " + worldY + ", " + worldZ + ")");
         
         return true;
     }
