@@ -23,8 +23,7 @@ public class MiniMap {
         // Position initiale
         Vector3f startPos = new Vector3f(0, HEIGHT, 0);
         miniMapCam.setLocation(startPos);
-        miniMapCam.lookAtDirection(Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z); // Vue parfaitement verticale
-
+        miniMapCam.lookAtDirection(Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z); // Vue verticale
         miniMapCam.setViewPort(0.75f, 1f, 0.75f, 1f); // Haut à droite
         miniMapView = renderManager.createMainView("MiniMapView", miniMapCam);
         miniMapView.setClearFlags(true, true, true);
@@ -38,7 +37,7 @@ public class MiniMap {
         Vector3f camPos = new Vector3f(playerPosition.x, HEIGHT, playerPosition.z);
         miniMapCam.setLocation(camPos);
 
-        // Caméra regarde VERS LE BAS (top-down) sans se décaler
+        // Caméra regarde vers le bas 
         miniMapCam.lookAtDirection(Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z);
 
 
