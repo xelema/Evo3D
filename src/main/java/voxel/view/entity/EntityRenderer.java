@@ -40,7 +40,7 @@ public class EntityRenderer {
 
 
 
-    private float scaleFactor = 1f;
+    private float scaleFactor = 1.0f;
 
     public EntityRenderer(AssetManager assetManager, Entity entity) {
         this.assetManager = assetManager;
@@ -94,8 +94,8 @@ public class EntityRenderer {
     protected void createEntityGeometry() {
         try {
             switch (entity) {
-                case Player player ->
-                        loadModel(Player.MODEL_PATH, scaleFactor);
+//                case Player player ->
+//                        loadModel(Player.MODEL_PATH, scaleFactor);
                 case Cow cow ->
                         loadModel(Cow.MODEL_PATH, scaleFactor);
                 case Dromedary dromedary ->

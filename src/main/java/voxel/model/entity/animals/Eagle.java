@@ -14,7 +14,7 @@ public class Eagle extends Entity {
 
     public Eagle(double x, double y, double z) {
         super(x, y + 80, z); // Commence en altitude
-        setSize(2.5f, 1.0f, 3.0f); // Envergure
+        setSize(2.5f, 10.0f, 3.0f); // Envergure
         // Mémoriser le centre du cercle de vol
         this.centerX = x;
         this.centerZ = z;
