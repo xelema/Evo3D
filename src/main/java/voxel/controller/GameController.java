@@ -6,6 +6,7 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 
+import voxel.model.MiniMap;
 import voxel.model.BiomeType;
 import voxel.model.WorldModel;
 import voxel.model.entity.Entity;
@@ -44,6 +45,8 @@ public class GameController {
 
     /** Référence au gestionnaire d'états du jeu pour accéder à environmentTimeSpeed */
     private GameStateManager gameStateManager;
+
+    private MiniMap miniMap;
 
     /** Générateur de nombres aléatoires */
     private final Random random = new Random();
@@ -89,7 +92,7 @@ public class GameController {
      */
     public GameController(WorldModel worldModel, WorldRenderer worldRenderer, 
                          InputController inputController, WorldController worldController,
-                         EntityController entityController, Camera camera) {
+                         EntityController entityController, Camera camera, MiniMap minimap) {
         this.worldModel = worldModel;
         this.worldRenderer = worldRenderer;
         this.inputController = inputController;
@@ -97,6 +100,7 @@ public class GameController {
         this.entityController = entityController;
         this.playerController = inputController.getPlayerController();
         this.camera = camera;
+        this.miniMap = minimap;
 
         // Calculer le nombre maximum d'animaux pour ce monde
         // On calcule basé sur le nombre de chunks, pas de voxels
@@ -149,7 +153,14 @@ public class GameController {
     public void update(float tpf, ViewPort mainViewport) {
         // Mise à jour des mouvements de la caméra
         inputController.updateCameraMovement(tpf);
-        
+
+        Player player = playerController.getCurrentPlayer();
+
+        if (player != null && miniMap != null) {
+            miniMap.update(new Vector3f((float) player.getX(), (float) (player.getY() + player.getHeight()),
+                    (float) player.getZ()));
+        }
+
         // Mise à jour du monde voxel avec la position actuelle de la caméra
         worldController.update(tpf, mainViewport);
 

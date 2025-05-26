@@ -9,6 +9,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Quad;
 import voxel.Main;
 import voxel.model.BiomeType;
+import voxel.model.MiniMap;
 import voxel.model.WorldModel;
 import voxel.view.hud.ChooseMenu;
 import voxel.view.hud.InGameMenu;
@@ -41,6 +42,9 @@ public class GameStateManager {
     
     /** Le contrôleur principal du jeu */
     private GameController gameController;
+
+    /** La mini-carte */
+    private MiniMap miniMap;
     
     /** Les différents menus du jeu */
     private ChooseMenu worldSelectionMenu;
@@ -206,9 +210,14 @@ public class GameStateManager {
             if (inputController != null) {
                 inputController.setCameraControlsEnabled(true);
             }
+            
+            // Initialiser la minimap uniquement en mode IN_GAME
+            initializeMiniMap();
         } else {
             WorldModel worldModel = new WorldModel(BiomeType.FLOATING_ISLAND);
             setupMVC(worldModel);
+            // Initialiser la minimap après avoir créé le monde
+            initializeMiniMap();
         }
     }
     
@@ -358,6 +367,7 @@ public class GameStateManager {
             entityController = null;
             gameController = null;
             currentWorld = null;
+            miniMap = null;
         }
     }
     
@@ -396,16 +406,34 @@ public class GameStateManager {
         if (app instanceof voxel.Main) {
             inputController.setAppAndSettings((Main) app, app.getContext().getSettings());
         }
-        
-        // Contrôleur principal qui coordonne tout
+
+        // Contrôleur principal qui coordonne tout 
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController,
-                entityController, app.getCamera());
+                entityController, app.getCamera(), miniMap);
         
         // Définir la référence au GameStateManager dans le GameController pour la vitesse du temps de l'environnement
         gameController.setGameStateManager(this);
         
         // Définir la référence au GameController dans le WorldRenderer pour afficher les infos sur les animaux
         worldRenderer.setGameController(gameController);
+    }
+    
+    /**
+     * Initialise la minimap et recrée le GameController
+     */
+    private void initializeMiniMap() {
+        if (miniMap == null && currentWorld != null) {
+            // Créer la minimap
+            miniMap = new MiniMap(app.getCamera(), app.getRenderManager(), app.getAssetManager(), app.getRootNode());
+            
+            // Recréer le GameController avec la minimap
+            gameController = new GameController(currentWorld, worldRenderer, inputController, worldController,
+                    entityController, app.getCamera(), miniMap);
+            
+            // Réinitialiser les références
+            gameController.setGameStateManager(this);
+            worldRenderer.setGameController(gameController);
+        }
     }
     
     /**

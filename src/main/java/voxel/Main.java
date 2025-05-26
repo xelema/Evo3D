@@ -9,7 +9,6 @@ import com.jme3.system.AppSettings;
 import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
-import voxel.model.MiniMap;
 import voxel.controller.GameStateManager;
 import voxel.model.BiomeType;
 import voxel.model.WorldModel;
@@ -26,9 +25,6 @@ public class Main extends SimpleApplication {
 
     /** Référence au gestionnaire d'états du jeu */
     private GameStateManager gameStateManager;
-
-    //Mini map
-    private MiniMap miniMap;
 
     /**
      * Point d'entrée du programme.
@@ -65,7 +61,6 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleInitApp() {
-        miniMap = new MiniMap(cam, renderManager, assetManager, rootNode);
         // Permet de faire des screenshots
         ScreenshotAppState screenShotState = new ScreenshotAppState(".");
         this.stateManager.attach(screenShotState);
@@ -94,10 +89,6 @@ public class Main extends SimpleApplication {
         if (gameStateManager != null) {
             gameStateManager.update(tpf);
         }
-            // Mettre à jour la mini-map si le joueur existe
-        if (gameController.getPlayer() != null) {
-            miniMap.update(gameController.getPlayer().getWorldTranslation());
-        }
     }
 
     /**
@@ -114,27 +105,5 @@ public class Main extends SimpleApplication {
         flyCam.setMoveSpeed(0);
         flyCam.setRotationSpeed(1f);
         flyCam.setDragToRotate(false);
-    }
-
-    /**
-     * Configure l'architecture MVC (Modèle-Vue-Contrôleur).
-     */
-    private void setupMVC() {
-        // Création des composants selon l'architecture MVC
-        
-        // Modèle - Représente les données
-        WorldModel worldModel = new WorldModel();
-        
-        // Vue - Gère l'affichage
-        WorldRenderer worldRenderer = new WorldRenderer(worldModel, assetManager);
-        rootNode.attachChild(worldRenderer.getNode());
-        
-        // Contrôleurs - Gèrent les interactions et la logique
-        WorldController worldController = new WorldController(worldModel, worldRenderer);
-        InputController inputController = new InputController(inputManager, worldController, cam);
-        
-        // Contrôleur principal qui coordonne tout
-        gameController = new GameController(worldModel, worldRenderer, inputController, worldController, cam);
-        gameController.initialize();
     }
 } 

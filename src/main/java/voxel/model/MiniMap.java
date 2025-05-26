@@ -11,10 +11,9 @@ public class MiniMap {
 
     private Camera miniMapCam;
     private ViewPort miniMapView;
-    private static final float ZOOM = 40f;
+    private static final float ZOOM = 100f;
     private static final float HEIGHT = 10f;
     Vector3f direction = new Vector3f(0.10f, 0.80f, 0.10f);
-
 
     public MiniMap(Camera mainCam, RenderManager renderManager, AssetManager assetManager, Node rootNode) {
         miniMapCam = mainCam.clone();
@@ -25,10 +24,19 @@ public class MiniMap {
         Vector3f startPos = new Vector3f(0, HEIGHT, 0);
         miniMapCam.setLocation(startPos);
         miniMapCam.lookAtDirection(direction.negate(), Vector3f.UNIT_Z); // Vue verticale
-        miniMapCam.setViewPort(0.75f, 1f, 0.75f, 1f); // Haut à droite
+
+        float margin = 0.02f; // Marge de 5%
+        float size = 0.2f;     // Taille du carré (20% de l'écran)
+
+        float left = 1f - margin - size;
+        float right = 1f - margin;
+        float bottom = 1f - margin - size;
+        float top = 1f - margin;
+        miniMapCam.setViewPort(0.855f, 0.985f, 0.77f, 0.98f); // Haut à droite
+
         miniMapView = renderManager.createMainView("MiniMapView", miniMapCam);
         miniMapView.setClearFlags(true, true, true);
-        miniMapView.setBackgroundColor(ColorRGBA.Black);
+        miniMapView.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
         miniMapView.attachScene(rootNode);
     }
 
