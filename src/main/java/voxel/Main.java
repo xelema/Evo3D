@@ -9,7 +9,6 @@ import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
 import voxel.model.MiniMap;
-import voxel.model.MiniMap2D;
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
 

@@ -13,6 +13,7 @@ public class MiniMap {
     private ViewPort miniMapView;
     private static final float ZOOM = 40f;
     private static final float HEIGHT = 10f;
+    Vector3f direction = new Vector3f(0.10f, 0.80f, 0.10f);
 
 
     public MiniMap(Camera mainCam, RenderManager renderManager, AssetManager assetManager, Node rootNode) {
@@ -23,7 +24,7 @@ public class MiniMap {
         // Position initiale
         Vector3f startPos = new Vector3f(0, HEIGHT, 0);
         miniMapCam.setLocation(startPos);
-        miniMapCam.lookAtDirection(Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z); // Vue verticale
+        miniMapCam.lookAtDirection(direction.negate(), Vector3f.UNIT_Z); // Vue verticale
         miniMapCam.setViewPort(0.75f, 1f, 0.75f, 1f); // Haut à droite
         miniMapView = renderManager.createMainView("MiniMapView", miniMapCam);
         miniMapView.setClearFlags(true, true, true);
@@ -38,8 +39,8 @@ public class MiniMap {
         miniMapCam.setLocation(camPos);
 
         // Caméra regarde vers le bas 
-        miniMapCam.lookAtDirection(Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z);
-
+        miniMapCam.lookAtDirection(direction.negate(), Vector3f.UNIT_Z);
+        //Vector3f.UNIT_Y.negate()
 
     }
 }
