@@ -80,7 +80,9 @@ public class GameController {
     public void update(float tpf) {
         // Mise à jour des mouvements de la caméra
         inputController.updateCameraMovement(tpf);
-        
+        if (player != null){
+            player.setLocalTranslation(camera.getLocation());
+        }
         // Mise à jour du monde voxel avec la position actuelle de la caméra
         worldController.update(tpf);
     }
