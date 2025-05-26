@@ -8,6 +8,8 @@ import com.jme3.system.AppSettings;
 import voxel.controller.GameController;
 import voxel.controller.InputController;
 import voxel.controller.WorldController;
+import voxel.model.MiniMap;
+import voxel.model.MiniMap2D;
 import voxel.model.WorldModel;
 import voxel.view.WorldRenderer;
 
@@ -19,6 +21,9 @@ public class Main extends SimpleApplication {
 
     /** Référence au contrôleur principal du jeu */
     private GameController gameController;
+    
+    //Mini map
+    private MiniMap miniMap;
 
     /**
      * Point d'entrée du programme.
@@ -44,6 +49,7 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleInitApp() {
+        miniMap = new MiniMap(cam, renderManager, assetManager, rootNode);
         setupCamera();
         setupMVC();
     }
@@ -58,6 +64,10 @@ public class Main extends SimpleApplication {
     public void simpleUpdate(float tpf) {
         // Déléguer la mise à jour au contrôleur de jeu
         gameController.update(tpf);
+            // Mettre à jour la mini-map si le joueur existe
+        if (gameController.getPlayer() != null) {
+            miniMap.update(gameController.getPlayer().getWorldTranslation());
+        }
     }
 
     /**
@@ -65,7 +75,7 @@ public class Main extends SimpleApplication {
      */
     private void setupCamera() {
         // Positionnement initial de la caméra
-        cam.setLocation(new Vector3f(10f, 10f, 30f));
+        cam.setLocation(new Vector3f(16f, 16f, 16f));
         
         // Fond noir
         viewPort.setBackgroundColor(ColorRGBA.Black);
@@ -97,5 +107,6 @@ public class Main extends SimpleApplication {
         // Contrôleur principal qui coordonne tout
         gameController = new GameController(worldModel, worldRenderer, inputController, worldController, cam);
         gameController.initialize();
+
     }
 } 
