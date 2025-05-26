@@ -616,4 +616,4 @@ public class WorldRenderer {
             bloomFilter.setBloomIntensity(intensity);
         }
     }
-}
+} 

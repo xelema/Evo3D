@@ -1,6 +1,8 @@
 package voxel.controller;
 
 import com.jme3.math.Vector3f;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 
@@ -36,7 +38,7 @@ public class GameController {
 
     /** Référence au contrôleur du joueur */
     private final PlayerController playerController;
-    
+
     /** Caméra pour la position du joueur */
     private final Camera camera;
 
