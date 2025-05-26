@@ -143,7 +143,7 @@ public enum BlockType {
      * @return true si le bloc est solide, false sinon
      */
     public boolean isSolid() {
-        return this != AIR && this != VOID && !isWater() && this != QUICKSAND;
+        return this != AIR && this != CLOUD && this != VOID && !isWater() && this != QUICKSAND;
     }
 
     /**

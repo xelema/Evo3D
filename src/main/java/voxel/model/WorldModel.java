@@ -564,7 +564,7 @@ public class WorldModel {
      * Ajoute des nuages aléatoires dans le ciel du monde.
      */
     private void addClouds() {
-        int cloudY = 100; // Altitude moyenne des nuages
+        int cloudY = 250; // Altitude moyenne des nuages
         int numClouds = 80; // Nombre de nuages
         java.util.Random random = new java.util.Random();
 
