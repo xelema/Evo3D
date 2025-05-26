@@ -72,6 +72,9 @@ public class Main extends SimpleApplication {
         // Enmpêche la possibilité de quitter le jeu via 'ESC'
         inputManager.deleteMapping(INPUT_MAPPING_EXIT);
 
+        // Enmpêche la possibilité d'ouvrir les stats avec 'F5'
+        inputManager.deleteMapping(INPUT_MAPPING_HIDE_STATS);
+
         // Initialiser le gestionnaire d'états du jeu
         gameStateManager = new GameStateManager(this);
 

@@ -154,11 +154,15 @@ public class GameController {
         // Mise à jour des mouvements de la caméra
         inputController.updateCameraMovement(tpf);
 
-        Player player = playerController.getCurrentPlayer();
+//        Player player = playerController.getCurrentPlayer();
+//
+//        if (player != null && miniMap != null) {
+//            miniMap.update(new Vector3f((float) player.getX(), (float) (player.getY() + player.getHeight()),
+//                    (float) player.getZ()));
+//        }
 
-        if (player != null && miniMap != null) {
-            miniMap.update(new Vector3f((float) player.getX(), (float) (player.getY() + player.getHeight()),
-                    (float) player.getZ()));
+        if (miniMap != null) {
+            miniMap.update(camera.getLocation());
         }
 
         // Mise à jour du monde voxel avec la position actuelle de la caméra
