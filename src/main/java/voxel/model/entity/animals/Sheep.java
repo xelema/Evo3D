@@ -4,6 +4,8 @@ import voxel.model.entity.Entity;
 
 public class Sheep extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Colobus_Animations.glb";
+
     boolean isRotating = false;
     float targetRotation = 0.0f;
     float rotationSpeed = 1.0f;
@@ -12,43 +14,51 @@ public class Sheep extends Entity {
     float targetDistance = 0.0f;
     float movementSpeed = 4.0f;  // Un peu plus lent que la vache
     float maxDistance = 8.0f;    // Moins de distance que la vache
+    
+    // Nouveaux attributs pour le système de vélocité
+    float movingTime = 0.0f;
+    float targetMovingTime = 0.0f;
 
     boolean isGrazing = false;
 
     public Sheep(double x, double y, double z) {
         super(x, y, z);
-        setSize(2.0f, 2.0f, 3.0f);  // Taille légèrement plus petite que la vache
+        setSize(2.0f, 1.6f, 3.0f);  // Taille légèrement plus petite que la vache
     }
 
     @Override
     public void update(float tpf) {
         // Gestion de la rotation
-        if (!isRotating) {
+        if (!isRotating && !isGrazing) {
             // Démarrer une nouvelle rotation aléatoire entre -PI et PI
             targetRotation = (float) ((Math.random() * 2 * Math.PI) - Math.PI);
             isRotating = true;
-        } else {
+        } else if (isRotating) {
             // Continuer la rotation en cours
-            setRotation(targetRotation, tpf);
+            updateRotation(targetRotation, tpf);
         }
         
         // Gestion du mouvement
-        if (!isMoving) {
-            // Démarrer un nouveau mouvement avec une distance aléatoire
-            targetDistance = (float) (Math.random() * maxDistance);
-            isMoving = true;
-        } else {
+        if (!isMoving && !isGrazing) {
+            // Démarrer un nouveau mouvement
+            startMoving();
+        } else if (isMoving) {
             // Continuer le mouvement en cours
-            setMoving(targetDistance, tpf);
+            updateMovement(tpf);
         }
         
-        // Comportement de broutage (grazing) : Si le mouton est immobile, il peut commencer à brouter.
-        if (!isMoving && !isRotating) {
+        // Comportement de broutage : Si le mouton est immobile, il peut commencer à brouter.
+        if (!isMoving && !isRotating && !isGrazing) {
             startGrazing();
+        }
+        
+        // Si l'entité n'est pas en mouvement, arrêter la vélocité
+        if (!isMoving) {
+            stopHorizontalMovement();
         }
     }
 
-    public void setRotation(float targetRot, float tpf) {
+    public void updateRotation(float targetRot, float tpf) {
         // Calculer l'incrément de rotation pour cette frame
         float step = rotationSpeed * tpf;
         
@@ -68,6 +78,34 @@ public class Sheep extends Entity {
         }
     }
 
+    public void startMoving() {
+        // Calculer le temps nécessaire pour parcourir la distance cible
+        targetDistance = (float) (Math.random() * maxDistance);
+        targetMovingTime = targetDistance / movementSpeed;
+        movingTime = 0.0f;
+        isMoving = true;
+        
+        // Définir la vélocité en fonction de la direction actuelle
+        double vx = movementSpeed * Math.sin(rotation);
+        double vz = movementSpeed * Math.cos(rotation);
+        setVelocity(vx, getVy(), vz);
+    }
+
+    public void updateMovement(float tpf) {
+        movingTime += tpf;
+        
+        // Vérifier si le mouvement est terminé
+        if (movingTime >= targetMovingTime) {
+            isMoving = false;
+            stopHorizontalMovement();
+        } else {
+            // Maintenir la direction de mouvement (au cas où la rotation change)
+            double vx = movementSpeed * Math.sin(rotation);
+            double vz = movementSpeed * Math.cos(rotation);
+            setVelocity(vx, getVy(), vz);
+        }
+    }
+
     /**
      * Fait broutter l'entité si elle est immobile.
      */
@@ -75,6 +113,7 @@ public class Sheep extends Entity {
         if (!isGrazing) {
             // System.out.println("Le mouton commence à brouter !");
             isGrazing = true;
+            stopHorizontalMovement(); // Arrêter le mouvement pendant le broutage
             // Simuler un broutage avec une petite attente (par exemple, 5 secondes de broutage)
             // Après 5 secondes, le mouton reprend son activité normale.
             new Thread(() -> {
@@ -87,32 +126,6 @@ public class Sheep extends Entity {
                 // System.out.println("Le mouton a fini de brouter.");
             }).start();
         }
-    }
-
-    public void setMoving(float distance, float tpf) {
-        // Calculer l'incrément de mouvement pour cette frame
-        float step = movementSpeed * tpf;
-        
-        // Si on est presque à la destination, terminer le mouvement
-        if (distance <= step) {
-            // Avancer de la distance restante
-            moveForward(distance);
-            isMoving = false;  // Mouvement terminé
-        } else {
-            // Avancer d'un pas
-            moveForward(step);
-            targetDistance -= step;
-        }
-    }
-    
-    private void moveForward(float distance) {
-        // Calculer le déplacement en fonction de la rotation actuelle
-        double dx = distance * Math.sin(rotation);
-        double dz = distance * Math.cos(rotation);
-        
-        // Mettre à jour la position
-        setX(getX() + dx);
-        setZ(getZ() + dz);
     }
 
     @Override

@@ -4,6 +4,8 @@ import voxel.model.entity.Entity;
 
 public class Fox extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Muskrat_Animations.glb";
+
     boolean isRotating = false;
     float targetRotation = 0.0f;
     float rotationSpeed = 1.2f;
@@ -12,36 +14,46 @@ public class Fox extends Entity {
     float targetDistance = 0.0f;
     float movementSpeed = 6.0f;
     float maxDistance = 10.0f;
+    
+    // Nouveaux attributs pour le système de vélocité
+    float movingTime = 0.0f;
+    float targetMovingTime = 0.0f;
 
     boolean isHunting = false;
 
     public Fox(double x, double y, double z) {
         super(x, y, z);
-        setSize(2.0f, 2.0f, 3.0f); // Taille proche du mouton
+        setSize(0.8f, 1f, 2f); // Taille proche du mouton
     }
 
     @Override
     public void update(float tpf) {
+        // Gestion de la rotation
         if (!isRotating && !isHunting) {
             targetRotation = (float) ((Math.random() * 2 * Math.PI) - Math.PI);
             isRotating = true;
         } else if (isRotating) {
-            setRotation(targetRotation, tpf);
+            updateRotation(targetRotation, tpf);
         }
 
+        // Gestion du mouvement
         if (!isMoving && !isHunting) {
             if (Math.random() < 0.2) {
                 startHunting();
             } else {
-                targetDistance = (float) (Math.random() * maxDistance);
-                isMoving = true;
+                startMoving();
             }
         } else if (isMoving) {
-            setMoving(targetDistance, tpf);
+            updateMovement(tpf);
+        }
+        
+        // Si l'entité n'est pas en mouvement, arrêter la vélocité
+        if (!isMoving) {
+            stopHorizontalMovement();
         }
     }
 
-    public void setRotation(float targetRot, float tpf) {
+    public void updateRotation(float targetRot, float tpf) {
         float step = rotationSpeed * tpf;
         if (Math.abs(targetRot) <= step) {
             this.rotation += targetRot;
@@ -57,14 +69,31 @@ public class Fox extends Entity {
         }
     }
 
-    public void setMoving(float distance, float tpf) {
-        float step = movementSpeed * tpf;
-        if (distance <= step) {
-            moveForward(distance);
+    public void startMoving() {
+        // Calculer le temps nécessaire pour parcourir la distance cible
+        targetDistance = (float) (Math.random() * maxDistance);
+        targetMovingTime = targetDistance / movementSpeed;
+        movingTime = 0.0f;
+        isMoving = true;
+        
+        // Définir la vélocité en fonction de la direction actuelle
+        double vx = movementSpeed * Math.sin(rotation);
+        double vz = movementSpeed * Math.cos(rotation);
+        setVelocity(vx, getVy(), vz);
+    }
+
+    public void updateMovement(float tpf) {
+        movingTime += tpf;
+        
+        // Vérifier si le mouvement est terminé
+        if (movingTime >= targetMovingTime) {
             isMoving = false;
+            stopHorizontalMovement();
         } else {
-            moveForward(step);
-            targetDistance -= step;
+            // Maintenir la direction de mouvement (au cas où la rotation change)
+            double vx = movementSpeed * Math.sin(rotation);
+            double vz = movementSpeed * Math.cos(rotation);
+            setVelocity(vx, getVy(), vz);
         }
     }
 
@@ -72,6 +101,7 @@ public class Fox extends Entity {
         if (!isHunting) {
             // System.out.println("Le renard part à la chasse !");
             isHunting = true;
+            stopHorizontalMovement(); // Arrêter le mouvement pendant la chasse
             new Thread(() -> {
                 try {
                     Thread.sleep(3000); // Simuler une chasse rapide
@@ -82,13 +112,6 @@ public class Fox extends Entity {
                 // System.out.println("Le renard a terminé sa chasse.");
             }).start();
         }
-    }
-
-    private void moveForward(float distance) {
-        double dx = distance * Math.sin(rotation);
-        double dz = distance * Math.cos(rotation);
-        setX(getX() + dx);
-        setZ(getZ() + dz);
     }
 
     @Override

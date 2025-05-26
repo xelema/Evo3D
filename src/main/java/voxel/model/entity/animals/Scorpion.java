@@ -4,10 +4,16 @@ import voxel.model.entity.Entity;
 
 public class Scorpion extends Entity {
 
+    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Gecko_Animations.glb";
+
     private boolean isMoving = false;
     private float targetDistance = 0.0f;
     private final float movementSpeed = 5.0f; // Plus rapide que la moyenne
     private final float maxDistance = 6.0f;
+    
+    // Nouveaux attributs pour le système de vélocité
+    private float movingTime = 0.0f;
+    private float targetMovingTime = 0.0f;
 
     private boolean isHiding = false;
 
@@ -20,21 +26,54 @@ public class Scorpion extends Entity {
     public void update(float tpf) {
         if (!isMoving && !isHiding) {
             if (Math.random() < 0.7) {
-                targetDistance = (float) (Math.random() * maxDistance);
-                isMoving = true;
+                startMoving();
             } else {
                 hideUnderSand();
             }
         }
 
         if (isMoving) {
-            moveForward(tpf);
+            updateMovement(tpf);
+        }
+        
+        // Si l'entité n'est pas en mouvement, arrêter la vélocité
+        if (!isMoving) {
+            stopHorizontalMovement();
+        }
+    }
+
+    public void startMoving() {
+        // Calculer le temps nécessaire pour parcourir la distance cible
+        targetDistance = (float) (Math.random() * maxDistance);
+        targetMovingTime = targetDistance / movementSpeed;
+        movingTime = 0.0f;
+        isMoving = true;
+        
+        // Définir la vélocité en fonction de la direction actuelle
+        double vx = movementSpeed * Math.sin(rotation);
+        double vz = movementSpeed * Math.cos(rotation);
+        setVelocity(vx, getVy(), vz);
+    }
+
+    public void updateMovement(float tpf) {
+        movingTime += tpf;
+        
+        // Vérifier si le mouvement est terminé
+        if (movingTime >= targetMovingTime) {
+            isMoving = false;
+            stopHorizontalMovement();
+        } else {
+            // Maintenir la direction de mouvement
+            double vx = movementSpeed * Math.sin(rotation);
+            double vz = movementSpeed * Math.cos(rotation);
+            setVelocity(vx, getVy(), vz);
         }
     }
 
     private void hideUnderSand() {
         if (!isHiding) {
             isHiding = true;
+            stopHorizontalMovement(); // Arrêter le mouvement pendant la cachette
             // System.out.println("Le scorpion se cache sous le sable...");
             new Thread(() -> {
                 try {
@@ -46,24 +85,6 @@ public class Scorpion extends Entity {
                 // System.out.println("Le scorpion sort de sa cachette.");
             }).start();
         }
-    }
-
-    private void moveForward(float tpf) {
-        float step = movementSpeed * tpf;
-        if (targetDistance <= step) {
-            advance(targetDistance);
-            isMoving = false;
-        } else {
-            advance(step);
-            targetDistance -= step;
-        }
-    }
-
-    private void advance(float distance) {
-        double dx = distance * Math.sin(rotation);
-        double dz = distance * Math.cos(rotation);
-        setX(getX() + dx);
-        setZ(getZ() + dz);
     }
 
     @Override

@@ -60,10 +60,10 @@ public class GameController {
 
     /** Nombre d'animaux par chunk (surface) - ratio de base */
     private static final float ANIMALS_PER_CHUNK_AREA = 1.8f; // 1.8 animaux par chunk en moyenne
-    
+
     /** Nombre minimum d'animaux autorisés dans un monde */
     private static final int MIN_ANIMALS = 3;
-    
+
     /** Nombre maximum calculé d'animaux pour ce monde */
     private final int maxAnimals;
 
@@ -106,7 +106,7 @@ public class GameController {
 
     /**
      * Définit le gestionnaire d'états du jeu
-     * 
+     *
      * @param gameStateManager Le gestionnaire d'états du jeu
      */
     public void setGameStateManager(GameStateManager gameStateManager) {
@@ -121,13 +121,13 @@ public class GameController {
         // Définir les coordonnées de spawn X et Z
         int spawnX = 8;
         int spawnZ = -2;
-        
+
         // Trouver la hauteur du sol à ces coordonnées
         int groundHeight = worldModel.getGroundHeightAt(spawnX, spawnZ);
-        
+
         // Si aucun sol n'est trouvé, utiliser une hauteur par défaut
         float spawnY = (groundHeight != -1) ? groundHeight + 2f : 155f; // +2 pour que le joueur soit légèrement au-dessus du sol
-        
+
         // Créer automatiquement un joueur à la position de spawn calculée
         Vector3f spawnPosition = new Vector3f(spawnX, spawnY, spawnZ);
         Player player = (Player) entityController.createEntity(Player.class, spawnPosition);
@@ -159,37 +159,37 @@ public class GameController {
 
         // Obtenir la vitesse du temps de l'environnement
         float environmentSpeed = (gameStateManager != null) ? gameStateManager.getEnvironmentTimeSpeed() : 1.0f;
-        
+
         // Mettre à jour les entités avec la vitesse de l'environnement pour les animaux
         entityController.update(tpf, environmentSpeed);
-        
+
         // Gestion de l'apparition et disparition d'animaux avec environmentTimeSpeed
         if (worldModel.getActiveBiome() != BiomeType.FLOATING_ISLAND){
             updateAnimalSpawning(tpf, environmentSpeed);
             updateAnimalDespawning(tpf, environmentSpeed);
         }
 
-        
+
         timeElapsed += tpf;
     }
 
     /**
      * Gère l'apparition aléatoire d'animaux
-     * 
+     *
      * @param tpf Temps écoulé depuis la dernière frame
      * @param environmentSpeed Vitesse du temps de l'environnement
      */
     private void updateAnimalSpawning(float tpf, float environmentSpeed) {
         // Mise à jour du timer avec la vitesse de l'environnement
         animalSpawnTimer += tpf * environmentSpeed;
-        
+
         // Calculer l'intervalle actuel basé sur la vitesse
         float currentSpawnInterval = BASE_SPAWN_INTERVAL / environmentSpeed;
-        
+
         // Vérifier si il est temps de faire apparaître un animal
         if (animalSpawnTimer >= currentSpawnInterval) {
             spawnRandomAnimal();
-            
+
             // Réinitialiser le timer avec une variation aléatoire
             animalSpawnTimer = random.nextFloat() * currentSpawnInterval * 0.5f;
         }
@@ -197,21 +197,21 @@ public class GameController {
 
     /**
      * Gère la disparition aléatoire d'animaux (sauf le joueur)
-     * 
+     *
      * @param tpf Temps écoulé depuis la dernière frame
      * @param environmentSpeed Vitesse du temps de l'environnement
      */
     private void updateAnimalDespawning(float tpf, float environmentSpeed) {
         // Mise à jour du timer avec la vitesse de l'environnement
         animalDespawnTimer += tpf * environmentSpeed;
-        
+
         // Calculer l'intervalle actuel basé sur la vitesse
         float currentDespawnInterval = BASE_DESPAWN_INTERVAL / environmentSpeed;
-        
+
         // Vérifier si il est temps de faire disparaître un animal
         if (animalDespawnTimer >= currentDespawnInterval) {
             despawnRandomAnimal();
-            
+
             // Réinitialiser le timer avec une variation aléatoire
             animalDespawnTimer = random.nextFloat() * currentDespawnInterval * 0.5f;
         }
@@ -219,7 +219,7 @@ public class GameController {
 
     /**
      * Compte le nombre d'animaux actuellement présents dans le monde (excluant le joueur)
-     * 
+     *
      * @return Le nombre d'animaux présents
      */
     private int getCurrentAnimalCount() {
@@ -240,19 +240,19 @@ public class GameController {
                 // System.out.println("Nombre maximum d'animaux atteint (" + maxAnimals + "). Pas de nouveau spawn.");
                 return;
             }
-            
+
             // Choisir une classe d'animal aléatoire
             Class<? extends Entity> animalClass = AnimalRegistry.getRandomAnimalClass();
-            
+
             // Générer une position aléatoire dans le monde
             Vector3f spawnPosition = generateRandomSpawnPosition();
-            
+
             if (spawnPosition != null) {
                 // Créer l'animal
                 Entity animal = entityController.createEntity(animalClass, spawnPosition);
-                
+
                 if (animal != null) {
-                    System.out.println("Animal " + animalClass.getSimpleName() + " apparu à la position " + spawnPosition + 
+                    System.out.println("Animal " + animalClass.getSimpleName() + " apparu à la position " + spawnPosition +
                                      " (" + (currentAnimalCount + 1) + "/" + maxAnimals + " animaux)");
                 }
             }
@@ -267,19 +267,19 @@ public class GameController {
     private void despawnRandomAnimal() {
         try {
             List<Entity> entities = worldModel.getEntityManager().getEntities();
-            
+
             // Filtrer pour ne garder que les animaux (pas le joueur)
             List<Entity> animals = entities.stream()
                 .filter(entity -> !(entity instanceof Player))
                 .collect(java.util.stream.Collectors.toList());
-            
+
             if (!animals.isEmpty()) {
                 // Choisir un animal aléatoire à faire disparaître
                 Entity animalToRemove = animals.get(random.nextInt(animals.size()));
-                
+
                 // Supprimer l'animal
                 entityController.removeEntity(animalToRemove);
-                
+
                 System.out.println("Animal " + animalToRemove.getClass().getSimpleName() + " a disparu");
             }
         } catch (Exception e) {
@@ -289,46 +289,46 @@ public class GameController {
 
     /**
      * Génère une position aléatoire valide pour l'apparition d'un animal
-     * 
+     *
      * @return Position aléatoire ou null si aucune position valide n'est trouvée
      */
     private Vector3f generateRandomSpawnPosition() {
         int attempts = 0;
         int maxAttempts = 20;
-        
+
         while (attempts < maxAttempts) {
             // Calculer la taille totale du monde en voxels
             int worldSizeX = worldModel.getWorldSizeX() * ChunkModel.SIZE;
             int worldSizeZ = worldModel.getWorldSizeZ() * ChunkModel.SIZE;
-            
+
             // Calculer les décalages pour centrer le monde sur (0,0,0)
             int offsetX = worldSizeX / 2;
             int offsetZ = worldSizeZ / 2;
-            
+
             // Générer des coordonnées X et Z aléatoires dans la plage centrée
             // De -offsetX à +offsetX et de -offsetZ à +offsetZ
             float x = (random.nextFloat() * worldSizeX) - offsetX;
             float z = (random.nextFloat() * worldSizeZ) - offsetZ;
-            
+
             // getGroundHeightAt accepte directement les coordonnées centrées (peut être négatives)
             int groundHeight = worldModel.getGroundHeightAt((int)x, (int)z);
-            
+
             if (groundHeight != -1) {
                 // Position valide trouvée
                 float y = groundHeight + 2f; // Légèrement au-dessus du sol
                 return new Vector3f(x, y, z);
             }
-            
+
             attempts++;
         }
-        
+
         // Aucune position valide trouvée après maxAttempts
         return null;
     }
 
     /**
      * Récupère le nombre maximum d'animaux autorisés dans ce monde
-     * 
+     *
      * @return Le nombre maximum d'animaux
      */
     public int getMaxAnimals() {
@@ -337,10 +337,10 @@ public class GameController {
 
     /**
      * Récupère le nombre actuel d'animaux dans le monde
-     * 
+     *
      * @return Le nombre actuel d'animaux (excluant le joueur)
      */
     public int getAnimalCount() {
         return getCurrentAnimalCount();
     }
-} 
+}

@@ -14,6 +14,8 @@ public abstract class Entity {
     protected BoundingBox boundingBox; // Boîte de collision
     protected boolean markedForRemoval = false; // Indique si l'entité doit être supprimée
 
+    final private float IDLE_THRESHOLD = 0.1f; // Seuil pour considérer que l'entité est immobile
+
     public Entity(double x, double y, double z) {
         this.x = x;
         this.y = y;
@@ -222,10 +224,9 @@ public abstract class Entity {
         this.depth = depth;
         if (boundingBox != null) {
             // Recréer la boîte de collision avec la nouvelle taille
-            boundingBox = new BoundingBox(x, y, z, (width+depth)/2, height, (width+depth)/2);
+            boundingBox = new BoundingBox(x, y, z, width, height, depth);
         }
     }
-    
     /**
      * Récupère la boîte de collision de l'entité.
      * @return La boîte de collision
@@ -233,6 +234,7 @@ public abstract class Entity {
     public BoundingBox getBoundingBox() {
         return boundingBox;
     }
+
 
     /**
      * Vérifie si le joueur est au sol.
@@ -253,5 +255,29 @@ public abstract class Entity {
         if (onGround && this.getVy() < 0) {
             setVerticalVelocity(0);
         }
+    }
+
+    public boolean isMoving(){
+        return getSpeed() > IDLE_THRESHOLD;
+    }
+
+    public boolean isJumping(){
+        return vy > 0;
+    }
+
+    public float getSpeed(){
+        return (float) Math.sqrt(vx * vx + vy * vy + vz * vz);
+    }
+
+    public boolean isRunning(){
+        return getSpeed() > 8f;
+    }
+
+    public boolean isWalking(){
+        return getSpeed() > 0.5f && getSpeed() <= 8f;
+    }
+
+    public boolean isFalling(){
+        return vy < 0;
     }
 }
