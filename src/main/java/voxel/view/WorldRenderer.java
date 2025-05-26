@@ -40,10 +40,10 @@ public class WorldRenderer {
     
     /** Référence au gestionnaire d'états pour la vitesse du temps */
     private GameStateManager gameStateManager;
-    
+
     /** Référence au contrôleur de jeu pour accéder aux informations sur les animaux */
     private GameController gameController;
-    
+
     /** Nœud racine contenant tous les chunks du monde */
     private Node worldNode;
     
@@ -65,15 +65,16 @@ public class WorldRenderer {
     private boolean needsMeshUpdate = false;
 
     private ColorRGBA[] skyColors = new ColorRGBA[192];
+    private long startTime;
     private Geometry sunGeometry;
     private Node skyNode = new Node("sky");
-    
+
     /** Temps virtuel accumulé pour le cycle jour/nuit, affecté par la vitesse de l'environnement */
     private float virtualTime = 0.0f;
-    
+
     /** Processeur de filtres pour les effets post-traitement */
     private FilterPostProcessor fpp;
-    
+
     /** Filtre de bloom pour l'effet lumineux du soleil */
     private BloomFilter bloomFilter;
 
@@ -91,8 +92,7 @@ public class WorldRenderer {
         initializeChunkRenderers();
         initSkyColors();
         initSun(assetManager);
-        // Initialiser le temps virtuel pour démarrer au lever du soleil (étape 48 sur 192)
-        this.virtualTime = 48.0f * 60.0f / 64.0f; // Correspond à l'étape 48
+        this.startTime = System.currentTimeMillis() - 30_000; // Décale de 30 secondes en arrière
 
         this.entityRendererManager = new EntityRendererManager(this.worldModel.getEntityManager(), assetManager);
         worldNode.attachChild(entityRendererManager.getNode());
@@ -339,18 +339,18 @@ public class WorldRenderer {
 
             // Récupération des informations du biome
             BiomeType activeBiome = worldModel.getActiveBiome();
-            
+
             // Récupération du bloc sous les pieds du joueur
             int blockUnderFeet = worldModel.getBlockAt(globalX, globalY - 1, globalZ);
             BlockType blockTypeUnderFeet = BlockType.fromId(blockUnderFeet);
-            
+
             // Récupération du bloc au niveau des pieds (position actuelle)
             int blockAtFeet = worldModel.getBlockAt(globalX, globalY, globalZ);
             BlockType blockTypeAtFeet = BlockType.fromId(blockAtFeet);
-            
+
             // Récupération de la hauteur du sol
             int groundHeight = worldModel.getGroundHeightAt(globalX, globalZ);
-            
+
             // Calcul de l'altitude relative par rapport au sol
             int altitudeAboveGround = globalY - groundHeight;
 
@@ -405,26 +405,26 @@ public class WorldRenderer {
                 "Sous-surface: %s\n" +
                 "Profondeur: %s\n" +
                 "Eau: %s",
-                
+
                 // Informations du monde
                 worldModel.getWorldSeed(),
                 worldModel.getWorldSizeX(), worldModel.getWorldSizeY(), worldModel.getWorldSizeZ(),
-                
+
                 // Informations sur les animaux
                 animalInfo,
-                
+
                 // Position du joueur
                 location.x, location.y, location.z,
                 cx, cy, cz,
                 globalX % ChunkModel.SIZE, globalY % ChunkModel.SIZE, globalZ % ChunkModel.SIZE,
                 (int) (location.y - 3 - worldModel.getWaterLevel()),
-                
+
                 // Biome actuel
                 activeBiome.getName(),
                 tempNames[temperature], temperature,
                 humidityNames[humidity], humidity,
                 reliefNames[reliefComplexity], reliefComplexity,
-                
+
                 // Composition du biome
                 surfaceBlock, subSurfaceBlock, deepBlock, waterBlock
             );
@@ -435,7 +435,7 @@ public class WorldRenderer {
 
     /**
      * Définit le gestionnaire d'états du jeu pour accéder à la vitesse du temps de l'environnement
-     * 
+     *
      * @param gameStateManager Le gestionnaire d'états du jeu
      */
     public void setGameStateManager(GameStateManager gameStateManager) {
@@ -444,7 +444,7 @@ public class WorldRenderer {
 
     /**
      * Définit le contrôleur de jeu pour accéder aux informations sur les animaux
-     * 
+     *
      * @param gameController Le contrôleur de jeu
      */
     public void setGameController(GameController gameController) {
@@ -468,17 +468,19 @@ public class WorldRenderer {
 
         entityRendererManager.update();
 
+        // Gestion du cycle jour/nuit
+        long elapsed = (System.currentTimeMillis() - startTime) / 1000; // secondes écoulées
         // Gestion du cycle jour/nuit avec la vitesse de l'environnement
         float environmentSpeed = (gameStateManager != null) ? gameStateManager.getEnvironmentTimeSpeed() : 1.0f;
-        
+
         // Accumuler le temps virtuel progressivement en appliquant la vitesse de l'environnement
         virtualTime += tpf * environmentSpeed;
-        
+
         // Calculer l'étape du cycle basée sur le temps virtuel accumulé
-        int step = (int)((virtualTime * 64 / 60) % 192); // 192 étapes sur le cycle
+        int step = (int)((virtualTime * elapsed * 64 / 60) % 192); // 192 étapes sur le cycle
         ColorRGBA skyColor = skyColors[step];
         mainViewport.setBackgroundColor(skyColor);
-        
+
         // Mettre à jour l'intensité du bloom en fonction de l'heure du jour
         updateBloomIntensity(step);
 
@@ -560,41 +562,41 @@ public class WorldRenderer {
     public EntityRendererManager getEntityRendererManager() {
         return entityRendererManager;
     }
-    
+
     /**
      * Initialise l'effet de bloom pour le soleil.
      * Cette méthode doit être appelée après que le ViewPort soit disponible.
-     * 
+     *
      * @param viewPort Le ViewPort principal de l'application
      */
     public void initializeBloomEffect(ViewPort viewPort) {
         // Créer le FilterPostProcessor avec antialiasing
         fpp = new FilterPostProcessor(assetManager);
-        
+
         // Configurer l'antialiasing sur le FilterPostProcessor
         // Cela compense la perte d'antialiasing MSAA due au post-traitement
         fpp.setNumSamples(4); // Même valeur que dans Main.java
-        
+
         // Créer le BloomFilter avec le mode Objects pour utiliser les GlowColor
         bloomFilter = new BloomFilter(BloomFilter.GlowMode.Objects);
-        
+
         // Configurer les paramètres du bloom selon la documentation
         bloomFilter.setBlurScale(3.5f);        // Échelle du flou (défaut: 1.5f)
         bloomFilter.setExposurePower(7.0f);    // Puissance d'exposition (défaut: 5.0f)
         bloomFilter.setExposureCutOff(0.0f);   // Seuil d'exposition (défaut: 0.0f)
         bloomFilter.setBloomIntensity(2.5f);   // Intensité du bloom (défaut: 2.0f)
-        
+
         // Ajouter le filtre bloom au processeur
         fpp.addFilter(bloomFilter);
-        
+
         // Ajouter le processeur au ViewPort
         viewPort.addProcessor(fpp);
     }
-    
+
     /**
      * Met à jour l'intensité du bloom en fonction de l'heure du jour.
      * Le bloom est plus intense quand le soleil est visible.
-     * 
+     *
      * @param step L'étape actuelle du cycle jour/nuit (0-191)
      */
     public void updateBloomIntensity(int step) {
@@ -602,7 +604,7 @@ public class WorldRenderer {
             // Calculer l'intensité basée sur la position du soleil
             float angle = (float)(2 * Math.PI * (step / 192.0) - Math.PI / 2);
             float sunY = (float)(Math.sin(angle) * Math.cos(Math.PI / 4) * 400);
-            
+
             // Le bloom est plus intense quand le soleil est au-dessus de l'horizon
             float intensity;
             if (sunY > 0) {
@@ -612,8 +614,8 @@ public class WorldRenderer {
                 // Nuit : bloom très faible ou désactivé
                 intensity = 0.2f;
             }
-            
+
             bloomFilter.setBloomIntensity(intensity);
         }
     }
-} 
+}
