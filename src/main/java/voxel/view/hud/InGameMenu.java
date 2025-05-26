@@ -279,15 +279,20 @@ public class InGameMenu extends AbstractGameMenu {
                         
                         text(new TextBuilder() {{
                             text("Z, Q, S, D : Déplacement\n"
-                                + "Espace : Saut\n"
-                                + "E : Interaction\n"
-                                + "Souris : Orientation\n"
-                                + "Clic gauche : Détruire un bloc\n"
-                                + "Clic droit : Placer un bloc\n"
+                                + "Espace : Monter\n"
+                                + "Shift gauche : Descendre\n"
+                                + "Ctrl gauche : Vol rapide\n"
+                                + "Souris : Orientation de la caméra\n"
+                                + "P : Faire apparaître le joueur\n"
+                                + "V : Basculer mode caméra libre/joueur\n"
+                                + "F5 : Vue 1ère/3ème personne\n"
                                 + "ESC : Menu en jeu\n"
-                                + "F : Mode plein écran\n"
-                                + "L : Mode filaire\n"
-                                + "T : Mode d'éclairage");
+                                + "X : Menu de création\n"
+                                + "F11 : Mode plein écran\n"
+                                + "F3 : Afficher/masquer coordonnées\n"
+                                + "T : Mode filaire\n"
+                                + "L : Occlusion ambiante\n"
+                                + "F6 : Liste des entités (debug)");
                             font("Interface/Fonts/Default.fnt");
                             height("100%");
                             width("100%");

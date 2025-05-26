@@ -52,6 +52,8 @@ public class Main extends SimpleApplication {
         settings.setSamples(4); // Anti-aliasing
 
         app.setSettings(settings);
+        app.setDisplayFps(false);
+        app.setDisplayStatView(false);
         app.start();
     }
 
