@@ -19,7 +19,7 @@ public class Dromedary extends Entity {
 
     public Dromedary(double x, double y, double z) {
         super(x, y, z);
-        setSize(3.0f, 3f, 5.0f);  // Grande taille
+        setSize(3.0f, 9f, 5.0f);  // Grande taille
     }
 
     @Override

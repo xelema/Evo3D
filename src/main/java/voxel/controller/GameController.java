@@ -64,7 +64,7 @@ public class GameController {
     private static final float BASE_DESPAWN_INTERVAL = 30f;
 
     /** Nombre d'animaux par chunk (surface) - ratio de base */
-    private static final float ANIMALS_PER_CHUNK_AREA = 1.8f; // 1.8 animaux par chunk en moyenne
+    private static final float ANIMALS_PER_CHUNK_AREA = 1.5f; // 1.5 animaux par chunk en moyenne
 
     /** Nombre minimum d'animaux autorisés dans un monde */
     private static final int MIN_ANIMALS = 3;

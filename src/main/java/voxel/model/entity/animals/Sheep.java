@@ -23,7 +23,7 @@ public class Sheep extends Entity {
 
     public Sheep(double x, double y, double z) {
         super(x, y, z);
-        setSize(2.0f, 1.6f, 3.0f);  // Taille légèrement plus petite que la vache
+        setSize(2.0f, 3.6f, 3.0f);  // Taille légèrement plus petite que la vache
     }
 
     @Override

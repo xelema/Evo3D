@@ -19,7 +19,7 @@ public class Lizard extends Entity {
 
     public Lizard(double x, double y, double z) {
         super(x, y, z);
-        setSize(0.8f, 0.5f, 1.6f); // Petit corps plat
+        setSize(0.8f, 2.5f, 1.6f); // Petit corps plat
     }
 
     @Override

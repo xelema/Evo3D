@@ -19,7 +19,7 @@ public class Scorpion extends Entity {
 
     public Scorpion(double x, double y, double z) {
         super(x, y, z);
-        setSize(1.0f, 0.5f, 1.0f); // Petit et bas
+        setSize(1.0f, 2.5f, 1.0f); // Petit et bas
     }
 
     @Override
