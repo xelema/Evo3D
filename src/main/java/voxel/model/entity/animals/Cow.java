@@ -4,7 +4,7 @@ import voxel.model.entity.Entity;
 
 public class Cow extends Entity {
 
-    public static String MODEL_PATH = "Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Herring_Animations.glb";
+    public static String MODEL_PATH = "Models/Quirky-Series-FREE-Animals-v1.4/3D Files/GLTF/Animations/Herring_Animations.glb";
 
     boolean isRotating = false;
     float targetRotation = 0.0f;
