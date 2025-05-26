@@ -475,7 +475,7 @@ public class WorldRenderer {
         virtualTime += tpf * environmentSpeed;
 
         // Calculer l'étape du cycle basée sur le temps virtuel accumulé
-        int step = (int)((virtualTime * 64 / 60) % 192); // 192 étapes sur le cycle
+        int step = (int)((virtualTime * 64 / 60) + 45 % 192); // 192 étapes sur le cycle
         ColorRGBA skyColor = skyColors[step];
         mainViewport.setBackgroundColor(skyColor);
 
