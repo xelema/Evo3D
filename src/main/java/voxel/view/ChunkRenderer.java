@@ -2,7 +2,6 @@ package voxel.view;
 
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
-import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
@@ -136,92 +135,189 @@ public class ChunkRenderer {
     }
 
     /**
-     * Génère un maillage pour les parties opaques du chunk.
+     * Génère un maillage pour les parties opaques du chunk en utilisant l'algorithme Greedy Meshing.
+     * Fusionne les faces adjacentes identiques pour réduire le nombre de triangles.
      * 
      * @return Le maillage opaque généré
      */
     private Mesh generateOpaqueMesh() {
-        MeshBuilder builder = new MeshBuilder();
-
-        // Parcours de tous les blocs du chunk
-        for (int x = 0; x < ChunkModel.SIZE; x++) {
-            for (int y = 0; y < ChunkModel.SIZE; y++) {
-                for (int z = 0; z < ChunkModel.SIZE; z++) {
-                    int blockId = chunkModel.getBlock(x, y, z);
-                    
-                    // On n'ajoute pas de faces pour les blocs d'air
-                    if (blockId != BlockType.AIR.getId()) {
-                        BlockType blockType = BlockType.fromId(blockId);
-                        ColorRGBA blockColor = blockType.getColor();
-                        
-                        // Ne traiter que les blocs opaques
-                        if (blockColor.a >= 1.0f) {
-                            // Vérifier et ajouter les faces visibles pour chaque direction
-                            for (Direction dir : Direction.values()) {
-                                // Calculer la position du bloc voisin
-                                int nx = x + dir.getOffsetX();
-                                int ny = y + dir.getOffsetY();
-                                int nz = z + dir.getOffsetZ();
-
-                                // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
-                                if (shouldGenerateFace(nx, ny, nz, blockId)) {
-                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode(), worldModel, chunkX, chunkY, chunkZ);
-                                    builder.addFace(face);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return builder.build();
+        return generateGreedyMesh(false);
     }
 
     /**
-     * Génère un maillage pour les parties transparentes du chunk.
+     * Génère un maillage pour les parties transparentes du chunk en utilisant l'algorithme Greedy Meshing.
      * 
      * @return Le maillage transparent généré, ou null s'il n'y a pas de blocs transparents
      */
     private Mesh generateTransparentMesh() {
+        Mesh mesh = generateGreedyMesh(true);
+        // MeshBuilder.build() retourne un mesh même vide, nous devons vérifier s'il contient des sommets
+        if (mesh.getVertexCount() == 0) {
+            return null;
+        }
+        return mesh;
+    }
+
+    /**
+     * Algorithme de Greedy Meshing générique.
+     * Fusionne les faces adjacentes identiques en quads plus grands.
+     * 
+     * @param isTransparent true pour générer le mesh transparent, false pour l'opaque
+     * @return Le maillage généré
+     */
+    private Mesh generateGreedyMesh(boolean isTransparent) {
         MeshBuilder builder = new MeshBuilder();
-        boolean hasTransparentFaces = false;
+        final int SIZE = ChunkModel.SIZE;
+        final boolean lightningMode = worldModel.getLightningMode();
+        
+        // Masque indiquant l'ID du bloc visible à une position (u, v) de la tranche courante
+        // 0 signifie pas de face à générer
+        int[] blockMask = new int[SIZE * SIZE];
+        int[] aoMask = new int[SIZE * SIZE];
+        
+        // Vecteur position mutable pour éviter les allocations
+        int[] pos = new int[3];
 
-        // Parcours de tous les blocs du chunk
-        for (int x = 0; x < ChunkModel.SIZE; x++) {
-            for (int y = 0; y < ChunkModel.SIZE; y++) {
-                for (int z = 0; z < ChunkModel.SIZE; z++) {
-                    int blockId = chunkModel.getBlock(x, y, z);
-                    
-                    // On n'ajoute pas de faces pour les blocs d'air
-                    if (blockId != BlockType.AIR.getId()) {
-                        BlockType blockType = BlockType.fromId(blockId);
-                        ColorRGBA blockColor = blockType.getColor();
+        // Pour chaque direction (6 faces possibles)
+        for (Direction dir : Direction.values()) {
+            
+            // Déterminer les axes de la tranche (u, v) et l'axe de profondeur (d)
+            // alignés avec la logique de Face.createFromDirection
+            int uAxis, vAxis, dAxis;
+            
+            switch (dir) {
+                case POS_Z: case NEG_Z: 
+                    dAxis=2; uAxis=0; vAxis=1; // Z est depth, X est width (u), Y est height (v)
+                    break;
+                case POS_X: case NEG_X: 
+                    dAxis=0; uAxis=2; vAxis=1; // X est depth, Z est width (u), Y est height (v)
+                    break;
+                case POS_Y: case NEG_Y: // Y est depth
+                    // Pour Face.java POS_Y/NEG_Y: width est sur X, height est sur Z
+                    dAxis=1; uAxis=0; vAxis=2; 
+                    break; 
+                default: continue;
+            }
+            
+            // Parcourir toutes les tranches le long de l'axe de profondeur
+            for (int slice = 0; slice < SIZE; slice++) {
+                
+                // 1. Remplir le masque pour cette tranche
+                int n = 0;
+                for (int v = 0; v < SIZE; v++) {
+                    for (int u = 0; u < SIZE; u++) {
+                        // Assigner les coordonnées selon les axes
+                        pos[uAxis] = u;
+                        pos[vAxis] = v;
+                        pos[dAxis] = slice;
                         
-                        // Ne traiter que les blocs transparents
-                        if (blockColor.a < 1.0f) {
-                            // Vérifier et ajouter les faces visibles pour chaque direction
-                            for (Direction dir : Direction.values()) {
-                                // Calculer la position du bloc voisin
-                                int nx = x + dir.getOffsetX();
-                                int ny = y + dir.getOffsetY();
-                                int nz = z + dir.getOffsetZ();
-
-                                // Si le bloc voisin est de l'air ou de l'eau, ajouter une face
-                                if (shouldGenerateFace(nx, ny, nz, blockId)) {
-                                    Face face = Face.createFromDirection(dir, x, y, z, blockColor, worldModel.getLightningMode(), worldModel, chunkX, chunkY, chunkZ);
-                                    builder.addFace(face);
-                                    hasTransparentFaces = true;
+                        int x = pos[0];
+                        int y = pos[1];
+                        int z = pos[2];
+                        
+                        int blockId = chunkModel.getBlock(x, y, z);
+                        boolean visible = false;
+                        
+                        // Filtrer selon le type (transparent/opaque)
+                        if (blockId != BlockType.AIR.getId()) {
+                             BlockType type = BlockType.fromId(blockId);
+                             boolean typeMatch = isTransparent ? (type.getColor().a < 1.0f) : (type.getColor().a >= 1.0f);
+                             
+                             if (typeMatch) {
+                                 // Vérifier le voisin dans la direction de la face
+                                 int nx = x + dir.getOffsetX();
+                                 int ny = y + dir.getOffsetY();
+                                 int nz = z + dir.getOffsetZ();
+                                 
+                                 if (shouldGenerateFace(nx, ny, nz, blockId)) {
+                                     visible = true;
+                                 }
+                             }
+                        }
+                        
+                        if (visible) {
+                            blockMask[n] = blockId;
+                            if (lightningMode) {
+                                int[] aoValues = Face.computeAoValues(dir, pos[0], pos[1], pos[2], 1, 1, worldModel, chunkX, chunkY, chunkZ);
+                                aoMask[n] = encodeAoKey(aoValues);
+                            } else {
+                                aoMask[n] = 0;
+                            }
+                        } else {
+                            blockMask[n] = 0;
+                            aoMask[n] = 0;
+                        }
+                        n++;
+                    }
+                }
+                
+                // 2. Greedy Meshing sur le masque
+                n = 0;
+                for (int v = 0; v < SIZE; v++) {
+                    for (int u = 0; u < SIZE; u++) {
+                        
+                        int blockId = blockMask[n];
+                        
+                        if (blockId != 0) {
+                            // Début d'un nouveau quad
+                            int width = 1;
+                            int height = 1;
+                            int aoKey = aoMask[n];
+                            
+                            // Calculer la largeur (avancer sur u)
+                            while (u + width < SIZE 
+                                    && blockMask[n + width] == blockId
+                                    && (!lightningMode || aoMask[n + width] == aoKey)) {
+                                width++;
+                            }
+                            
+                            // Calculer la hauteur (avancer sur v)
+                            boolean canExtendHeight = true;
+                            while (v + height < SIZE && canExtendHeight) {
+                                for (int k = 0; k < width; k++) {
+                                    int index = n + k + height * SIZE;
+                                    if (blockMask[index] != blockId
+                                            || (lightningMode && aoMask[index] != aoKey)) {
+                                        canExtendHeight = false;
+                                        break;
+                                    }
+                                }
+                                if (canExtendHeight) {
+                                    height++;
                                 }
                             }
+                            
+                            // Créer la face
+                            pos[uAxis] = u;
+                            pos[vAxis] = v;
+                            pos[dAxis] = slice;
+                            
+                            BlockType type = BlockType.fromId(blockId);
+                            Face face = Face.createFromDirection(dir, pos[0], pos[1], pos[2], width, height, 
+                                                                 type.getColor(), lightningMode, 
+                                                                 worldModel, chunkX, chunkY, chunkZ);
+                            builder.addFace(face);
+                            
+                            // Effacer la zone couverte dans le masque
+                            for (int h = 0; h < height; h++) {
+                                for (int w = 0; w < width; w++) {
+                                    int index = n + w + h * SIZE;
+                                    blockMask[index] = 0;
+                                    aoMask[index] = 0;
+                                }
+                            }
+                            
+                            // Optimisation : sauter les blocs traités sur la ligne courante
+                            u += width - 1;
+                            n += width - 1;
                         }
+                        n++;
                     }
                 }
             }
         }
-
-        // Ne retourner le maillage que s'il y a des faces transparentes
-        return hasTransparentFaces ? builder.build() : null;
+        
+        return builder.build();
     }
     
     /**
@@ -281,6 +377,15 @@ public class ChunkRenderer {
         }
         
         return false;
+    }
+
+    private static int encodeAoKey(int[] aoValues) {
+        int key = 0;
+        key |= (aoValues[0] & 0x3);
+        key |= (aoValues[1] & 0x3) << 2;
+        key |= (aoValues[2] & 0x3) << 4;
+        key |= (aoValues[3] & 0x3) << 6;
+        return key;
     }
 
     /**

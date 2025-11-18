@@ -5,6 +5,9 @@ import voxel.model.entity.EntityManager;
 import voxel.model.structure.plant.BasicTree;
 
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Représente le monde de voxels complet, composé de plusieurs chunks.
@@ -39,7 +42,6 @@ public class WorldModel {
 
     /** Valeurs pour definir l'echelle des montagne et des details dans le bruit de Perlin */
     private final int worldSeed = 424242;
-    private final int generation_height = 6; // Hauteur max de la génération avec Perlin
 
     /** Bruit de Perlin pour le monde entier */
     private PerlinNoise worldPerlinNoise;
@@ -150,17 +152,45 @@ public class WorldModel {
             }
         }
 
-        // Génération du terrain uniquement sur le plan X-Z
-        for (int cx = 0; cx < worldSizeX; cx++) {
-            for (int cz = 0; cz < worldSizeZ; cz++) {
-                if (activeBiome.isFloatingIsland()) {
-                    // Créer une île flottante au centre du monde
+        // Calcul du nombre de threads (processeurs - 4, minimum 1)
+        int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 4);
+        System.out.println("Génération du monde avec " + threads + " threads...");
+
+        if (activeBiome.isFloatingIsland()) {
+            // Cas spécial pour l'île flottante (non parallélisé car modifie une zone centrale fixe)
+            for (int cx = 0; cx < worldSizeX; cx++) {
+                for (int cz = 0; cz < worldSizeZ; cz++) {
                     createFloatingIsland();
-                } else if(flat){
-                    generateTerrainFlat(cx,cz);
-                } else {
-                    generateTerrainWithBiome(cx, cz);
                 }
+            }
+        } else {
+            // Génération parallèle pour les mondes normaux
+            ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+            for (int cx = 0; cx < worldSizeX; cx++) {
+                final int currentCx = cx;
+                for (int cz = 0; cz < worldSizeZ; cz++) {
+                    final int currentCz = cz;
+                    executor.submit(() -> {
+                        if(flat){
+                            generateTerrainFlat(currentCx, currentCz);
+                        } else {
+                            generateTerrainWithBiome(currentCx, currentCz);
+                        }
+                    });
+                }
+            }
+
+            executor.shutdown();
+            try {
+                // Attendre la fin de la génération (timeout de 5 minutes par sécurité)
+                if (!executor.awaitTermination(5, TimeUnit.MINUTES)) {
+                    executor.shutdownNow();
+                    System.err.println("Timeout lors de la génération du monde !");
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -170,22 +200,26 @@ public class WorldModel {
 
     /**
      * Génère un terrain basé sur le biome et les paramètres environnementaux.
-     * @param chunkX coordonnée X du chunk
-     * @param chunkZ coordonnée Z du chunk
+     * Optimisé pour réduire les calculs de coordonnées et les accès mémoire.
+     * @param chunkX coordonnée X du chunk dans le tableau
+     * @param chunkZ coordonnée Z du chunk dans le tableau
      */
     private void generateTerrainWithBiome(int chunkX, int chunkZ) {
         // Coordonnées globales du chunk
         float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX * ChunkModel.SIZE) / 2;
         float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ * ChunkModel.SIZE) / 2;
 
-        // Hauteur totale disponible
-        int totalHeight = generation_height * ChunkModel.SIZE;
-        
         // Hauteur max de terrain basée sur le relief (hauteur fixe)
         int maxReliefVariation = RELIEF_HEIGHTS[reliefComplexity];
         
         // Niveau d'eau basé sur la température et l'humidité
         waterLevel = calculateWaterLevel();
+
+        // Pré-chargement des chunks verticaux pour éviter les lookups répétés
+        ChunkModel[] columnChunks = new ChunkModel[worldSizeY];
+        for (int cy = 0; cy < worldSizeY; cy++) {
+            columnChunks[cy] = chunks[chunkX][cy][chunkZ];
+        }
 
         // Générer chaque colonne de blocs
         for (int x = 0; x < ChunkModel.SIZE; x++) {
@@ -198,13 +232,29 @@ public class WorldModel {
                 int terrainHeight = calculateTerrainHeight(worldX, worldZ, maxReliefVariation);
                 
                 // Limiter la hauteur pour éviter de dépasser le monde
-                terrainHeight = Math.min(terrainHeight, totalHeight - 10);
-                terrainHeight = Math.max(terrainHeight, waterLevel - 5);
+                int totalWorldHeight = worldSizeY * ChunkModel.SIZE;
+                terrainHeight = Math.min(terrainHeight, totalWorldHeight - 1);
+                terrainHeight = Math.max(terrainHeight, 0);
+                
+                // Optimisation: ne calculer que jusqu'à la hauteur nécessaire (max terrain ou eau)
+                // Les blocs au-dessus sont déjà de l'AIR par défaut
+                int maxGenHeight = Math.max(terrainHeight, waterLevel);
+                maxGenHeight = Math.min(maxGenHeight, totalWorldHeight - 1);
 
-                // Générer les blocs pour chaque hauteur
-                for (int y = 0; y < totalHeight; y++) {
-                    BlockType blockType = determineBlockType(y, terrainHeight, waterLevel);
-                    setBlockAt((int) worldX, y, (int) worldZ, blockType.getId());
+                // Remplissage optimisé colonne par colonne
+                for (int y = 0; y <= maxGenHeight; y++) {
+                    // Conversion optimisée coordonnées globales -> locales
+                    int cy = y / ChunkModel.SIZE;
+                    int localY = y % ChunkModel.SIZE;
+                    
+                    ChunkModel targetChunk = columnChunks[cy];
+                    if (targetChunk != null) {
+                        BlockType blockType = determineBlockType(y, terrainHeight, waterLevel);
+                        // Écriture directe dans le chunk sans recalcul global
+                        if (blockType != BlockType.AIR) {
+                            targetChunk.setBlock(x, localY, z, blockType.getId());
+                        }
+                    }
                 }
             }
         }
@@ -534,25 +584,30 @@ public class WorldModel {
 
     private void generateTerrainFlat(int chunkX, int chunkZ){
 
-        // Coordonnées globales du chunk
-        float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX *
-                ChunkModel.SIZE) / 2;
-        float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ *
-                ChunkModel.SIZE) / 2;
+        // Pré-chargement des chunks verticaux
+        ChunkModel[] columnChunks = new ChunkModel[worldSizeY];
+        for (int cy = 0; cy < worldSizeY; cy++) {
+            columnChunks[cy] = chunks[chunkX][cy][chunkZ];
+        }
+        
+        int flatHeight = ChunkModel.SIZE / 2;
 
         for (int x = 0; x < ChunkModel.SIZE; x++) {
-            for (int y = 0; y < ChunkModel.SIZE; y++) {
-                for (int z = 0; z < ChunkModel.SIZE; z++) {
-
-                    float worldX = worldXStart + x;
-                    float worldZ = worldZStart + z;
-
-                    if (y <= ChunkModel.SIZE/2) {
-                        if (y == ChunkModel.SIZE/2){
-                            setBlockAt((int) worldX, y, (int) worldZ, BlockType.GRASS.getId());
-                        }
-                        else {
-                            setBlockAt((int) worldX, y, (int) worldZ, BlockType.STONE.getId());
+            for (int z = 0; z < ChunkModel.SIZE; z++) {
+                // Pas besoin de boucler sur tout y, juste la partie remplie
+                // La partie au dessus est déjà AIR
+                
+                // Remplissage optimisé
+                for (int y = 0; y <= flatHeight; y++) {
+                    int cy = y / ChunkModel.SIZE;
+                    int localY = y % ChunkModel.SIZE;
+                    
+                    ChunkModel targetChunk = columnChunks[cy];
+                    if (targetChunk != null) {
+                        if (y == flatHeight){
+                             targetChunk.setBlock(x, localY, z, BlockType.GRASS.getId());
+                        } else {
+                             targetChunk.setBlock(x, localY, z, BlockType.STONE.getId());
                         }
                     }
                 }

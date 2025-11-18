@@ -1,6 +1,5 @@
 package voxel.view;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,7 @@ public class Face {
     /** Les 4 sommets de la face (dans l'ordre pour former deux triangles) */
     private final Vector3f[] vertices = new Vector3f[4];
 
-    private static final int[] aoId = new int[4];
+    // Suppression du champ statique aoId pour thread-safety
     
     /** La normale de la face (perpendiculaire à la surface) */
     private final Vector3f normal;
@@ -73,110 +72,74 @@ public class Face {
 
     /**
      * Crée une face à partir d'une direction, d'une position de bloc et d'une couleur.
-     * 
-     * @param dir Direction de la face
-     * @param x Coordonnée X du bloc
-     * @param y Coordonnée Y du bloc
-     * @param z Coordonnée Z du bloc
-     * @param color Couleur de la face
-     * @param lightning Indique si l'éclairage doit être appliqué à la face
-     * @return Une nouvelle face orientée dans la direction indiquée
+     * Version standard (1x1).
      */
     public static Face createFromDirection(Direction dir, int x, int y, int z, ColorRGBA color, boolean lightning, WorldModel worldModel, int cx, int cy, int cz) {
+        return createFromDirection(dir, x, y, z, 1, 1, color, lightning, worldModel, cx, cy, cz);
+    }
+
+    /**
+     * Crée une face à partir d'une direction, d'une position de bloc, d'une couleur et de dimensions personnalisées.
+     * Utilisé pour le Greedy Meshing.
+     * 
+     * @param width Largeur de la face (sur l'axe U)
+     * @param height Hauteur de la face (sur l'axe V)
+     */
+    public static Face createFromDirection(Direction dir, int x, int y, int z, int width, int height, ColorRGBA color, boolean lightning, WorldModel worldModel, int cx, int cy, int cz) {
         Vector3f v0, v1, v2, v3;
         ColorRGBA[] vertexColors = new ColorRGBA[4];
+        int[] aoId = computeAoValues(dir, x, y, z, width, height, worldModel, cx, cy, cz); // Tableau local pour thread-safety
 
         switch (dir) {
-            case POS_Z: // Face avant (Z+)
-                getAmbientOcclusion(worldModel, cx, cy, cz, x, y, z+1, dir);
+            case POS_Z: // Face avant (Z+) -> Plan XY, Z fixe à gz+1
                 v0 = new Vector3f(x, y, z + 1);
-                v1 = new Vector3f(x + 1, y, z + 1);
-                v2 = new Vector3f(x + 1, y + 1, z + 1);
-                v3 = new Vector3f(x, y + 1, z + 1);
+                v1 = new Vector3f(x + width, y, z + 1);
+                v2 = new Vector3f(x + width, y + height, z + 1);
+                v3 = new Vector3f(x, y + height, z + 1);
                 break;
-            case NEG_Z: // Face arrière (Z-)
-                getAmbientOcclusion(worldModel, cx, cy, cz, x, y, z-1, dir);
-                v0 = new Vector3f(x + 1, y, z);
+                
+            case NEG_Z: // Face arrière (Z-) -> Plan XY, Z fixe à gz-1
+                v0 = new Vector3f(x + width, y, z);
                 v1 = new Vector3f(x, y, z);
-                v2 = new Vector3f(x, y + 1, z);
-                v3 = new Vector3f(x + 1, y + 1, z);
+                v2 = new Vector3f(x, y + height, z);
+                v3 = new Vector3f(x + width, y + height, z);
                 break;
-            case POS_X: // Face droite (X+)
-                getAmbientOcclusion(worldModel, cx, cy, cz, x+1, y, z, dir);
-                v0 = new Vector3f(x + 1, y, z + 1);
+                
+            case POS_X: // Face droite (X+) -> Plan ZY, X fixe à gx+1
+                v0 = new Vector3f(x + 1, y, z + width);
                 v1 = new Vector3f(x + 1, y, z);
-                v2 = new Vector3f(x + 1, y + 1, z);
-                v3 = new Vector3f(x + 1, y + 1, z + 1);
+                v2 = new Vector3f(x + 1, y + height, z);
+                v3 = new Vector3f(x + 1, y + height, z + width);
                 break;
-            case NEG_X: // Face gauche (X-)
-                getAmbientOcclusion(worldModel, cx, cy, cz, x-1, y, z, dir);
+                
+            case NEG_X: // Face gauche (X-) -> Plan ZY, X fixe à gx-1
                 v0 = new Vector3f(x, y, z);
-                v1 = new Vector3f(x, y, z + 1);
-                v2 = new Vector3f(x, y + 1, z + 1);
+                v1 = new Vector3f(x, y, z + width);
+                v2 = new Vector3f(x, y + height, z + width);
+                v3 = new Vector3f(x, y + height, z);
+                break;
+                
+            case POS_Y: // Face supérieure (Y+) -> Plan XZ, Y fixe à gy+1
+                v0 = new Vector3f(x, y + 1, z + height);
+                v1 = new Vector3f(x + width, y + 1, z + height);
+                v2 = new Vector3f(x + width, y + 1, z);
                 v3 = new Vector3f(x, y + 1, z);
                 break;
-            case POS_Y: // Face supérieure (Y+)
-                getAmbientOcclusion(worldModel, cx, cy, cz, x, y + 1, z, dir);
-                v0 = new Vector3f(x, y + 1, z + 1);
-                v1 = new Vector3f(x + 1, y + 1, z + 1);
-                v2 = new Vector3f(x + 1, y + 1, z);
-                v3 = new Vector3f(x, y + 1, z);
-                break;
-            case NEG_Y: // Face inférieure (Y-)
-                getAmbientOcclusion(worldModel, cx, cy, cz, x, y - 1, z, dir);
+                
+            case NEG_Y: // Face inférieure (Y-) -> Plan XZ, Y fixe à gy-1
                 v0 = new Vector3f(x, y, z);
-                v1 = new Vector3f(x + 1, y, z);
-                v2 = new Vector3f(x + 1, y, z + 1);
-                v3 = new Vector3f(x, y, z + 1);
+                v1 = new Vector3f(x + width, y, z);
+                v2 = new Vector3f(x + width, y, z + height);
+                v3 = new Vector3f(x, y, z + height);
                 break;
             default:
                 throw new IllegalArgumentException("Direction invalide");
         }
 
         for (int i = 0; i < 4; i++) {
-            int ao_source_index;
-            if (dir == Direction.POS_Y) {
-                // Pour POS_Y, les sommets v0,v1,v2,v3 de la face correspondent respectivement
-                // aux valeurs d'occlusion stockées dans aoId[3], aoId[2], aoId[1], et aoId[0].
-                if (i == 0) ao_source_index = 3;      // vertexColors[0] (pour v0) utilise aoId[3]
-                else if (i == 1) ao_source_index = 2; // vertexColors[1] (pour v1) utilise aoId[2]
-                else if (i == 2) ao_source_index = 1; // vertexColors[2] (pour v2) utilise aoId[1]
-                else ao_source_index = 0;             // vertexColors[3] (pour v3) utilise aoId[0] (i doit être 3)
-
-            } else if (dir == Direction.POS_Z) {
-                // Mapping for POS_Z: v0->aoId[0], v1->aoId[3], v2->aoId[2], v3->aoId[1]
-                if (i == 0) ao_source_index = 0;
-                else if (i == 1) ao_source_index = 3;
-                else if (i == 2) ao_source_index = 2;
-                else ao_source_index = 1; // i == 3
-
-            } else if (dir == Direction.NEG_Z) {
-                // Corrected mapping for NEG_Z: v0->aoId[3], v1->aoId[0], v2->aoId[1], v3->aoId[2]
-                if (i == 0) ao_source_index = 3;      // v0
-                else if (i == 1) ao_source_index = 0; // v1
-                else if (i == 2) ao_source_index = 1; // v2
-                else ao_source_index = 2;             // v3 (i must be 3)
-
-            } else if (dir == Direction.POS_X) {
-                // Corrected mapping for POS_X: v0->aoId[3], v1->aoId[0], v2->aoId[1], v3->aoId[2]
-                if (i == 0) ao_source_index = 3;      // v0
-                else if (i == 1) ao_source_index = 0; // v1
-                else if (i == 2) ao_source_index = 1; // v2
-                else ao_source_index = 2;             // v3 (i must be 3)
-
-            } else if (dir == Direction.NEG_X) {
-                // Mapping for NEG_X: v0->aoId[0], v1->aoId[3], v2->aoId[2], v3->aoId[1]
-                if (i == 0) ao_source_index = 0;
-                else if (i == 1) ao_source_index = 3;
-                else if (i == 2) ao_source_index = 2;
-                else ao_source_index = 1; // i == 3
-
-            } else { // Implicitly NEG_Y
-                // For NEG_Y, mapping is v0->aoId[0], v1->aoId[1], v2->aoId[2], v3->aoId[3]
-                ao_source_index = i;
-            }
-
-            int ao_sum = aoId[ao_source_index]; // ao_sum est 0, 1, 2, ou 3 (nombre de blocs AIR)
+            // Nous utilisons directement les valeurs calculées pour chaque sommet
+            // aoId[i] contient déjà l'AO pour vertices[i] grâce à l'assignation explicite dans le switch
+            int ao_sum = aoId[i]; 
 
             // Facteurs d'occlusion ambiante plus doux pour un rendu plus smooth
             float[] aoFactors = new float[4];
@@ -202,63 +165,112 @@ public class Face {
         
         // Calcul du flip_id basé sur les valeurs d'ambient occlusion
         // La technique du flip améliore le rendu en choisissant la diagonale optimale pour diviser la face en triangles
-        boolean flipId = aoId[1] + aoId[3] > aoId[0] + aoId[2];
+        // Pour POS_Z/NEG_Z: v0=BG, v1=BD, v2=HD, v3=HG
+        // Diagonales: v0-v2 vs v1-v3.
+        // On veut couper l'AO là où elle diffère le moins.
+        boolean flipId = Math.abs(aoId[0] - aoId[2]) > Math.abs(aoId[1] - aoId[3]);
         
         return new Face(v0, v1, v2, v3, dir.getNormal(), vertexColors, flipId);
     }
 
-    private static void getAmbientOcclusion(WorldModel world, int cx, int cy, int cz,
-                                            int x, int y, int z, Direction dir) {
+    static int[] computeAoValues(Direction dir, int x, int y, int z, int width, int height, WorldModel worldModel, int cx, int cy, int cz) {
+        int[] aoId = new int[4];
 
-        float worldXStart = cx * ChunkModel.SIZE - (float) (world.getWorldSizeX() * ChunkModel.SIZE) / 2;
-        float worldZStart = cz * ChunkModel.SIZE - (float) (world.getWorldSizeZ() * ChunkModel.SIZE) / 2;
+        float worldXStart = cx * ChunkModel.SIZE - (float) (worldModel.getWorldSizeX() * ChunkModel.SIZE) / 2;
+        float worldZStart = cz * ChunkModel.SIZE - (float) (worldModel.getWorldSizeZ() * ChunkModel.SIZE) / 2;
 
-        int globalX = (int) (worldXStart + x);
-        int globalY = (cy * ChunkModel.SIZE) + y;
-        int globalZ = (int) (worldZStart + z);
+        int gx = (int) (worldXStart + x);
+        int gy = (cy * ChunkModel.SIZE) + y;
+        int gz = (int) (worldZStart + z);
 
-        int a = 0;
-        int b = 0;
-        int c = 0;
-        int d = 0;
-        int e = 0;
-        int f = 0;
-        int g = 0;
-        int h = 0;
-
-        if (dir == Direction.POS_Y || dir == Direction.NEG_Y) {
-            a = (world.getBlockAt(globalX, globalY, globalZ - 1) <= (BlockType.AIR.getId())) ? 1 : 0;
-            b = (world.getBlockAt(globalX - 1, globalY, globalZ - 1) <= (BlockType.AIR.getId())) ? 1 : 0;
-            c = (world.getBlockAt(globalX - 1, globalY, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            d = (world.getBlockAt(globalX - 1, globalY, globalZ + 1) <= (BlockType.AIR.getId())) ? 1 : 0;
-            e = (world.getBlockAt(globalX, globalY, globalZ + 1) <= (BlockType.AIR.getId())) ? 1 : 0;
-            f = (world.getBlockAt(globalX + 1, globalY, globalZ + 1) <= (BlockType.AIR.getId())) ? 1 : 0;
-            g = (world.getBlockAt(globalX + 1, globalY, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            h = (world.getBlockAt(globalX + 1, globalY, globalZ - 1) <= (BlockType.AIR.getId())) ? 1 : 0;
-        } else if (dir == Direction.POS_X || dir == Direction.NEG_X) {
-            a = (world.getBlockAt(globalX, globalY, globalZ - 1) == (BlockType.AIR.getId())) ? 1 : 0;
-            b = (world.getBlockAt(globalX, globalY-1, globalZ - 1) == (BlockType.AIR.getId())) ? 1 : 0;
-            c = (world.getBlockAt(globalX, globalY - 1, globalZ) == (BlockType.AIR.getId())) ? 1 : 0;
-            d = (world.getBlockAt(globalX, globalY - 1, globalZ + 1) == (BlockType.AIR.getId())) ? 1 : 0;
-            e = (world.getBlockAt(globalX, globalY, globalZ + 1) == (BlockType.AIR.getId())) ? 1 : 0;
-            f = (world.getBlockAt(globalX, globalY + 1, globalZ + 1) == (BlockType.AIR.getId())) ? 1 : 0;
-            g = (world.getBlockAt(globalX, globalY + 1, globalZ) == (BlockType.AIR.getId())) ? 1 : 0;
-            h = (world.getBlockAt(globalX, globalY + 1, globalZ - 1) == (BlockType.AIR.getId())) ? 1 : 0;
-        } else {
-            a = (world.getBlockAt(globalX - 1, globalY, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            b = (world.getBlockAt(globalX - 1, globalY - 1, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            c = (world.getBlockAt(globalX, globalY - 1, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            d = (world.getBlockAt(globalX + 1, globalY - 1, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            e = (world.getBlockAt(globalX + 1, globalY, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            f = (world.getBlockAt(globalX + 1, globalY + 1, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            g = (world.getBlockAt(globalX, globalY + 1, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
-            h = (world.getBlockAt(globalX - 1, globalY + 1, globalZ) <= (BlockType.AIR.getId())) ? 1 : 0;
+        switch (dir) {
+            case POS_Z:
+                aoId[0] = getAOAt(worldModel, gx, gy, gz + 1, dir, 0);
+                aoId[1] = getAOAt(worldModel, gx + width - 1, gy, gz + 1, dir, 1);
+                aoId[2] = getAOAt(worldModel, gx + width - 1, gy + height - 1, gz + 1, dir, 2);
+                aoId[3] = getAOAt(worldModel, gx, gy + height - 1, gz + 1, dir, 3);
+                break;
+            case NEG_Z:
+                aoId[0] = getAOAt(worldModel, gx + width - 1, gy, gz - 1, dir, 1);
+                aoId[1] = getAOAt(worldModel, gx, gy, gz - 1, dir, 0);
+                aoId[2] = getAOAt(worldModel, gx, gy + height - 1, gz - 1, dir, 3);
+                aoId[3] = getAOAt(worldModel, gx + width - 1, gy + height - 1, gz - 1, dir, 2);
+                break;
+            case POS_X:
+                aoId[0] = getAOAt(worldModel, gx + 1, gy, gz + width - 1, dir, 1);
+                aoId[1] = getAOAt(worldModel, gx + 1, gy, gz, dir, 0);
+                aoId[2] = getAOAt(worldModel, gx + 1, gy + height - 1, gz, dir, 3);
+                aoId[3] = getAOAt(worldModel, gx + 1, gy + height - 1, gz + width - 1, dir, 2);
+                break;
+            case NEG_X:
+                aoId[0] = getAOAt(worldModel, gx - 1, gy, gz, dir, 0);
+                aoId[1] = getAOAt(worldModel, gx - 1, gy, gz + width - 1, dir, 1);
+                aoId[2] = getAOAt(worldModel, gx - 1, gy + height - 1, gz + width - 1, dir, 2);
+                aoId[3] = getAOAt(worldModel, gx - 1, gy + height - 1, gz, dir, 3);
+                break;
+            case POS_Y:
+                aoId[0] = getAOAt(worldModel, gx, gy + 1, gz + height - 1, dir, 3);
+                aoId[1] = getAOAt(worldModel, gx + width - 1, gy + 1, gz + height - 1, dir, 2);
+                aoId[2] = getAOAt(worldModel, gx + width - 1, gy + 1, gz, dir, 1);
+                aoId[3] = getAOAt(worldModel, gx, gy + 1, gz, dir, 0);
+                break;
+            case NEG_Y:
+                aoId[0] = getAOAt(worldModel, gx, gy - 1, gz, dir, 0);
+                aoId[1] = getAOAt(worldModel, gx + width - 1, gy - 1, gz, dir, 1);
+                aoId[2] = getAOAt(worldModel, gx + width - 1, gy - 1, gz + height - 1, dir, 2);
+                aoId[3] = getAOAt(worldModel, gx, gy - 1, gz + height - 1, dir, 3);
+                break;
+            default:
+                throw new IllegalArgumentException("Direction invalide");
         }
 
-        aoId[0] = (a + b + c);
-        aoId[1] = (g + h + a);
-        aoId[2] = (e + f + g);
-        aoId[3] = (c + d + e);
+        return aoId;
+    }
+    
+    private static boolean isTransparentForAO(WorldModel world, int x, int y, int z) {
+         return world.getBlockAt(x, y, z) <= BlockType.AIR.getId();
+    }
+
+    private static int getAOAt(WorldModel world, int globalX, int globalY, int globalZ, Direction dir, int corner) {
+        int s1x=0, s1y=0, s1z=0;
+        int s2x=0, s2y=0, s2z=0;
+        int cx=0, cy=0, cz=0;
+        
+        // corner: 0=BG, 1=BD, 2=HD, 3=HG (dans le système de coordonnées locales de la face U,V)
+        
+        switch(dir) {
+            case POS_Z: 
+            case NEG_Z:
+                // U=X, V=Y
+                if (corner == 0) { s1x=-1; s2y=-1; cx=-1; cy=-1; }
+                else if (corner == 1) { s1x=1; s2y=-1; cx=1; cy=-1; }
+                else if (corner == 2) { s1x=1; s2y=1; cx=1; cy=1; }
+                else { s1x=-1; s2y=1; cx=-1; cy=1; }
+                break;
+            case POS_X: 
+            case NEG_X:
+                // U=Z, V=Y
+                if (corner == 0) { s1z=-1; s2y=-1; cz=-1; cy=-1; }
+                else if (corner == 1) { s1z=1; s2y=-1; cz=1; cy=-1; }
+                else if (corner == 2) { s1z=1; s2y=1; cz=1; cy=1; }
+                else { s1z=-1; s2y=1; cz=-1; cy=1; }
+                break;
+             case POS_Y:
+             case NEG_Y:
+                // U=X, V=Z
+                if (corner == 0) { s1x=-1; s2z=-1; cx=-1; cz=-1; }
+                else if (corner == 1) { s1x=1; s2z=-1; cx=1; cz=-1; }
+                else if (corner == 2) { s1x=1; s2z=1; cx=1; cz=1; }
+                else { s1x=-1; s2z=1; cx=-1; cz=1; }
+                break;
+        }
+
+        boolean side1 = isTransparentForAO(world, globalX + s1x, globalY + s1y, globalZ + s1z);
+        boolean side2 = isTransparentForAO(world, globalX + s2x, globalY + s2y, globalZ + s2z);
+        boolean c = isTransparentForAO(world, globalX + cx, globalY + cy, globalZ + cz);
+        
+        if (!side1 && !side2) return 0; 
+        return (side1?1:0) + (side2?1:0) + (c?1:0);
     }
 
     /**
