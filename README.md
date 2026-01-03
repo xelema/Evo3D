@@ -1,2 +1,2 @@
 # Evo3D
-A Voxel Engine using JME3 for our TOB project.
+Un moteur de rendu Voxel utilisant JME3 pour notre projet long de TOB.

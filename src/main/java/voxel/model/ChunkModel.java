@@ -1,0 +1,174 @@
+package voxel.model;
+
+/**
+ * Représente un chunk (section) du monde de voxels.
+ * Un chunk est un cube de taille fixe contenant des blocs de différents types.
+ * Cette classe stocke uniquement les données du chunk sans le rendu.
+ */
+public class ChunkModel {
+    /** Taille du chunk en nombre de blocs dans chaque dimension */
+    public static final int SIZE = 32 ;
+    
+    /** Tableau contenant les identifiants des blocs du chunk */
+    private final int[] blocks;
+    
+    /** Tableau contenant les IDs de structure de chaque bloc (0 = aucune structure) */
+    private final int[] structureIds;
+
+    boolean needsUpdate = false;
+
+    /** Coordonnées du chunk dans le monde */
+    int cx;
+    int cy;
+    int cz;
+
+    /**
+     * Crée un nouveau chunk.
+     *
+     * @param empty Si true, le chunk sera rempli d'air. Sinon, il sera généré avec un terrain par défaut.
+     */
+    public ChunkModel(boolean empty, int cx, int cy, int cz) {
+        blocks = new int[SIZE * SIZE * SIZE];
+        structureIds = new int[SIZE * SIZE * SIZE];
+        this.cx = cx;
+        this.cy = cy;
+        this.cz = cz;
+        if (empty) {
+            fillWithAir();
+        } else {
+            generateTerrain();
+        }
+    }
+
+    /**
+     * Remplit le chunk entièrement avec des blocs d'air.
+     */
+    private void fillWithAir() {
+        for (int i = 0; i < blocks.length; i++) {
+            blocks[i] = BlockType.AIR.getId();
+        }
+    }
+
+    /**
+     * Génère un environnement de base.
+     */
+    private void generateTerrain() {
+        // Génération de terrain avec collines et vallées
+        for (int x = 0; x < SIZE; x++) {
+            for (int z = 0; z < SIZE; z++) {
+                // Calcul de la hauteur avec une fonction sinusoïdale pour créer des collines
+                int maxHeight = (int)(SIZE / 2 + Math.sin(x/2.0) * 2 + Math.cos(z/2.0) * 2);
+
+                // Remplissage de bas en haut avec différents types de blocs
+                for (int y = 0; y < SIZE; y++) {
+                    if (y < maxHeight - 3) {
+                        // Sous-sol en pierre
+                        setBlock(x, y, z, BlockType.STONE.getId());
+                    } else if (y < maxHeight - 1) {
+                        // Couche de terre
+                        setBlock(x, y, z, BlockType.DIRT.getId());
+                    } else if (y < maxHeight) {
+                        // Surface en herbe
+                        setBlock(x, y, z, BlockType.GRASS.getId());
+                    } else if (y == maxHeight && y < SIZE / 2 - 2) {
+                        // Eau dans les dépressions
+                        setBlock(x, y, z, BlockType.WATER.getId());
+                    } else {
+                        // Air au-dessus
+                        setBlock(x, y, z, BlockType.AIR.getId());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Calcule l'index dans le tableau 1D à partir des coordonnées 3D.
+     * 
+     * @param x Coordonnée X dans le chunk (0-15)
+     * @param y Coordonnée Y dans le chunk (0-15)
+     * @param z Coordonnée Z dans le chunk (0-15)
+     * @return L'index correspondant dans le tableau 1D
+     */
+    private int getIndex(int x, int y, int z) {
+        return x + SIZE * (y + SIZE * z);
+    }
+
+    /**
+     * Récupère le type de bloc à une position donnée dans le chunk.
+     * 
+     * @param x Coordonnée X dans le chunk (0-15)
+     * @param y Coordonnée Y dans le chunk (0-15)
+     * @param z Coordonnée Z dans le chunk (0-15)
+     * @return L'identifiant du type de bloc, ou AIR si hors limites
+     */
+    public int getBlock(int x, int y, int z) {
+        if (x < 0 || x >= SIZE || y < 0 || y >= SIZE || z < 0 || z >= SIZE) {
+            return BlockType.AIR.getId();
+        }
+        return blocks[getIndex(x, y, z)];
+    }
+
+    /**
+     * Modifie le type de bloc à une position donnée dans le chunk.
+     * 
+     * @param x Coordonnée X dans le chunk (0-15)
+     * @param y Coordonnée Y dans le chunk (0-15)
+     * @param z Coordonnée Z dans le chunk (0-15)
+     * @param value Identifiant du type de bloc à placer
+     */
+    public void setBlock(int x, int y, int z, int value) {
+        if (x >= 0 && x < SIZE && y >= 0 && y < SIZE && z >= 0 && z < SIZE) {
+            blocks[getIndex(x, y, z)] = value;
+        }
+    }
+
+    /**
+     * Récupère l'ID de la structure propriétaire d'un bloc.
+     * 
+     * @param x Coordonnée X dans le chunk (0-31)
+     * @param y Coordonnée Y dans le chunk (0-31)
+     * @param z Coordonnée Z dans le chunk (0-31)
+     * @return L'ID de la structure (0 si aucune structure)
+     */
+    public int getStructureId(int x, int y, int z) {
+        if (x < 0 || x >= SIZE || y < 0 || y >= SIZE || z < 0 || z >= SIZE) {
+            return 0; // Aucune structure pour les coordonnées hors limites
+        }
+        return structureIds[getIndex(x, y, z)];
+    }
+    
+    /**
+     * Modifie l'ID de la structure propriétaire d'un bloc.
+     * 
+     * @param x Coordonnée X dans le chunk (0-31)
+     * @param y Coordonnée Y dans le chunk (0-31)
+     * @param z Coordonnée Z dans le chunk (0-31)
+     * @param structureId ID de la structure (0 si aucune structure)
+     */
+    public void setStructureId(int x, int y, int z, int structureId) {
+        if (x >= 0 && x < SIZE && y >= 0 && y < SIZE && z >= 0 && z < SIZE) {
+            structureIds[getIndex(x, y, z)] = structureId;
+        }
+    }
+
+    public void setNeedsUpdate(boolean needsUpdate) {
+        this.needsUpdate = needsUpdate;
+    }
+
+    public boolean getNeedsUpdate() {
+        return needsUpdate;
+    }
+
+    public int getCx() {
+        return cx;
+    }
+
+    public int getCy() {
+        return cy;
+    }
+
+    public int getCz() {
+        return cz;
+    }
+}

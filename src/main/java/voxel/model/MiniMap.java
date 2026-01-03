@@ -1,0 +1,57 @@
+package voxel.model;
+import com.jme3.asset.AssetManager;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
+import com.jme3.renderer.RenderManager;
+import com.jme3.renderer.ViewPort;
+import com.jme3.scene.Node;
+
+public class MiniMap {
+
+    private Camera miniMapCam;
+    private ViewPort miniMapView;
+    private static final float ZOOM = 100f;
+    private static final float HEIGHT = 10f;
+    Vector3f direction = new Vector3f(0.10f, 0.80f, 0.10f);
+
+    public MiniMap(Camera mainCam, RenderManager renderManager, AssetManager assetManager, Node rootNode) {
+        miniMapCam = mainCam.clone();
+        miniMapCam.setParallelProjection(true);
+        miniMapCam.setFrustum(-1000, 1000, -ZOOM, ZOOM, ZOOM, -ZOOM);
+
+        // Position initiale
+        Vector3f startPos = new Vector3f(0, HEIGHT, 0);
+        miniMapCam.setLocation(startPos);
+        miniMapCam.lookAtDirection(direction.negate(), Vector3f.UNIT_Z); // Vue verticale
+
+        float margin = 0.02f; // Marge de 5%
+        float size = 0.2f;     // Taille du carré (20% de l'écran)
+
+        float left = 1f - margin - size;
+        float right = 1f - margin;
+        float bottom = 1f - margin - size;
+        float top = 1f - margin;
+        miniMapCam.setViewPort(0.855f, 0.985f, 0.77f, 0.98f); // Haut à droite
+
+        miniMapView = renderManager.createMainView("MiniMapView", miniMapCam);
+        miniMapView.setClearFlags(true, true, true);
+        miniMapView.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
+        miniMapView.attachScene(rootNode);
+    }
+
+    public void update(Vector3f playerPosition) {
+        if (playerPosition == null) return;
+
+        Vector3f camPos = new Vector3f(playerPosition.x, HEIGHT, playerPosition.z);
+        miniMapCam.setLocation(camPos);
+
+        // Caméra regarde vers le bas 
+        miniMapCam.lookAtDirection(direction.negate(), Vector3f.UNIT_Z);
+        //Vector3f.UNIT_Y.negate()
+
+    }
+}
+
+
+

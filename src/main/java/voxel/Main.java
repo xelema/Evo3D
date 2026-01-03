@@ -1,9 +1,21 @@
 package voxel;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.ScreenshotAppState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.system.AppSettings;
+
+import voxel.controller.GameController;
+import voxel.controller.InputController;
+import voxel.controller.WorldController;
+import voxel.controller.GameStateManager;
+import voxel.model.BiomeType;
+import voxel.model.WorldModel;
+
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 
 /**
  * Classe principale qui est le point d'entrée du programme.
@@ -11,11 +23,8 @@ import com.jme3.system.AppSettings;
  */
 public class Main extends SimpleApplication {
 
-    /** Référence au monde voxel */
-    private VoxelWorld voxelWorld;
-    
-    /** Référence au gestionnaire d'entrées */
-    private InputHandler inputHandler;
+    /** Référence au gestionnaire d'états du jeu */
+    private GameStateManager gameStateManager;
 
     /**
      * Point d'entrée du programme.
@@ -24,14 +33,27 @@ public class Main extends SimpleApplication {
      */
     public static void main(String[] args) {
         Main app = new Main();
-        
+
+        // Obtention de la résolution et du taux de rafraîchissement de l'écran principal
+        GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode displayMode = device.getDisplayMode();
+        int screenWidth = displayMode.getWidth();
+        int screenHeight = displayMode.getHeight();
+        int refreshRate = displayMode.getRefreshRate();
+
         // Configuration des paramètres de l'application
         AppSettings settings = new AppSettings(true);
-        settings.setTitle("Voxel World");
-        settings.setResolution(1600, 900);
-        settings.setFullscreen(false);
-        
+        settings.setTitle("Evo3D");
+        settings.setResolution(screenWidth, screenHeight);
+        settings.setFullscreen(true);
+        settings.setFrequency(refreshRate); // Définir le taux de rafraîchissement
+        settings.setVSync(true);
+        settings.setGammaCorrection(true);
+        settings.setSamples(4); // Anti-aliasing
+
         app.setSettings(settings);
+        app.setDisplayFps(false);
+        app.setDisplayStatView(false);
         app.start();
     }
 
@@ -41,9 +63,23 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleInitApp() {
+        // Permet de faire des screenshots
+        ScreenshotAppState screenShotState = new ScreenshotAppState(".");
+        this.stateManager.attach(screenShotState);
+
         setupCamera();
-        setupVoxelWorld();
-        setupInputHandler();
+
+        // Enmpêche la possibilité de quitter le jeu via 'ESC'
+        inputManager.deleteMapping(INPUT_MAPPING_EXIT);
+
+        // Enmpêche la possibilité d'ouvrir les stats avec 'F5'
+        inputManager.deleteMapping(INPUT_MAPPING_HIDE_STATS);
+
+        // Initialiser le gestionnaire d'états du jeu
+        gameStateManager = new GameStateManager(this);
+
+        // Démarrer avec l'île volante
+        gameStateManager.changeState(GameStateManager.GameState.WORLD_SELECTION);
     }
 
     /**
@@ -54,42 +90,25 @@ public class Main extends SimpleApplication {
      */
     @Override
     public void simpleUpdate(float tpf) {
-        // Mise à jour des mouvements de la caméra
-        inputHandler.updateCameraMovement(tpf);
-        
-        // Mise à jour du monde voxel
-        voxelWorld.update(tpf, cam.getLocation().x, cam.getLocation().y, cam.getLocation().z);
+        // Déléguer la mise à jour au gestionnaire d'états du jeu
+        if (gameStateManager != null) {
+            gameStateManager.update(tpf);
+        }
     }
 
     /**
      * Configure la caméra et les paramètres d'affichage.
      */
     private void setupCamera() {
-        // Positionnement initial de la caméra
-        cam.setLocation(new Vector3f(10f, 10f, 30f));
+        cam.setLocation(new Vector3f(0, 40f, 0));
+
+        // Fond bleu ciel
+        viewPort.setBackgroundColor(new ColorRGBA((float) 135/255, (float) 206/255, (float) 235/255, 1.0F));
         
-        // Fond noir
-        viewPort.setBackgroundColor(ColorRGBA.Black);
-        
-        // Configuration de la caméra volante
+        // Configuration de la caméra volante (de base avec JME3)
         flyCam.setEnabled(true);
-        flyCam.setMoveSpeed(0); // Désactive le mouvement par défaut (géré par InputHandler)
+        flyCam.setMoveSpeed(0);
         flyCam.setRotationSpeed(1f);
         flyCam.setDragToRotate(false);
-    }
-
-    /**
-     * Crée et initialise le monde voxel.
-     */
-    private void setupVoxelWorld() {
-        voxelWorld = new VoxelWorld(this);
-        rootNode.attachChild(voxelWorld.getNode());
-    }
-
-    /**
-     * Crée et initialise le gestionnaire d'entrées.
-     */
-    private void setupInputHandler() {
-        inputHandler = new InputHandler(inputManager, voxelWorld, cam);
     }
 } 
