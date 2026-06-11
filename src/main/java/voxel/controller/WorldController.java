@@ -181,12 +181,14 @@ public class WorldController {
         int offsetCx = worldModel.getWorldSizeX() / 2;
         int offsetCz = worldModel.getWorldSizeZ() / 2;
 
-        int minCx = Math.max(0, Math.floorDiv(minX - 1, ChunkModel.SIZE) + offsetCx);
-        int maxCx = Math.min(worldModel.getWorldSizeX() - 1, Math.floorDiv(maxX + 1, ChunkModel.SIZE) + offsetCx);
+        // Pas de bornes en X/Z (monde infini) : les chunks non générés sont
+        // simplement ignorés (getChunk retourne null)
+        int minCx = Math.floorDiv(minX - 1, ChunkModel.SIZE) + offsetCx;
+        int maxCx = Math.floorDiv(maxX + 1, ChunkModel.SIZE) + offsetCx;
         int minCy = Math.max(0, Math.floorDiv(minY - 1, ChunkModel.SIZE));
         int maxCy = Math.min(worldModel.getWorldSizeY() - 1, Math.floorDiv(maxY + 1, ChunkModel.SIZE));
-        int minCz = Math.max(0, Math.floorDiv(minZ - 1, ChunkModel.SIZE) + offsetCz);
-        int maxCz = Math.min(worldModel.getWorldSizeZ() - 1, Math.floorDiv(maxZ + 1, ChunkModel.SIZE) + offsetCz);
+        int minCz = Math.floorDiv(minZ - 1, ChunkModel.SIZE) + offsetCz;
+        int maxCz = Math.floorDiv(maxZ + 1, ChunkModel.SIZE) + offsetCz;
 
         for (int cx = minCx; cx <= maxCx; cx++) {
             for (int cy = minCy; cy <= maxCy; cy++) {

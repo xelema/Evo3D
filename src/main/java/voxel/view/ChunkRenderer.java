@@ -57,25 +57,47 @@ public class ChunkRenderer {
      * @param chunkY Position Y du chunk dans le monde
      * @param chunkZ Position Z du chunk dans le monde
      */
-    public ChunkRenderer(ChunkModel chunkModel, WorldModel worldModel, AssetManager assetManager, 
+    public ChunkRenderer(ChunkModel chunkModel, WorldModel worldModel, AssetManager assetManager,
                          int chunkX, int chunkY, int chunkZ) {
+        this(chunkModel, worldModel, assetManager, chunkX, chunkY, chunkZ, false);
+    }
+
+    /**
+     * Crée un nouveau renderer pour un chunk, avec meshing différé optionnel.
+     *
+     * @param deferMeshing Si true, les géométries sont créées avec des maillages
+     *                     vides : le maillage réel devra être construit ensuite
+     *                     (par exemple en arrière-plan via le ChunkMeshingService).
+     *                     Utilisé pour le streaming de chunks du monde infini.
+     */
+    public ChunkRenderer(ChunkModel chunkModel, WorldModel worldModel, AssetManager assetManager,
+                         int chunkX, int chunkY, int chunkZ, boolean deferMeshing) {
         this.chunkModel = chunkModel;
         this.worldModel = worldModel;
         this.assetManager = assetManager;
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
-        
-        createGeometries();
+
+        createGeometries(deferMeshing);
+    }
+
+    /**
+     * Récupère le modèle du chunk rendu par ce renderer.
+     */
+    public ChunkModel getChunkModel() {
+        return chunkModel;
     }
 
     /**
      * Crée les géométries pour ce chunk.
+     *
+     * @param deferMeshing Si true, des maillages vides sont utilisés
      */
-    private void createGeometries() {
+    private void createGeometries(boolean deferMeshing) {
         // Génération des maillages séparés
-        Mesh opaqueMesh = buildOpaqueMesh();
-        Mesh transparentMesh = buildTransparentMesh();
+        Mesh opaqueMesh = deferMeshing ? new MeshBuilder().build() : buildOpaqueMesh();
+        Mesh transparentMesh = deferMeshing ? null : buildTransparentMesh();
         
         // Création de la géométrie opaque
         String chunkNameOpaque = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_opaque";

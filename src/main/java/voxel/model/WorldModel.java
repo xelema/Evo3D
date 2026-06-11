@@ -5,6 +5,7 @@ import voxel.model.entity.EntityManager;
 import voxel.model.structure.plant.BasicTree;
 
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -17,9 +18,14 @@ public class WorldModel {
     /** Taille par défaut du monde en nombre de chunks sur les axes X et Z */
     public static final int DEFAULT_WORLD_SIZE = 16;
     
-    /** Tableau 3D contenant tous les chunks du monde */
-    private ChunkModel[][][] chunks;
-    
+    /**
+     * Colonnes de chunks du monde, indexées par clé compactée (cx, cz) en
+     * espace d'index (mêmes index que l'ancien tableau, mais sans bornes).
+     * Une map permet un monde infini : les colonnes hors de la zone initiale
+     * sont générées à la volée au fur et à mesure des déplacements du joueur.
+     */
+    private final ConcurrentHashMap<Long, ChunkModel[]> chunkColumns = new ConcurrentHashMap<>();
+
     /** Taille du monde en nombre de chunks sur l'axe X */
     private int worldSizeX;
     
@@ -123,8 +129,6 @@ public class WorldModel {
             this.activeBiome = BiomeType.createBiome(this.temperature, this.humidity, this.reliefComplexity);
         }
 
-        chunks = new ChunkModel[worldSizeX][worldSizeY][worldSizeZ];
-
         // Initialisation des bruits de Perlin pour tout le monde
         worldPerlinNoise = new PerlinNoise(worldSeed); // Bruit principal
         detailPerlinNoise = new PerlinNoise(worldSeed + 1000); // Bruit de détail
@@ -139,45 +143,33 @@ public class WorldModel {
     }
 
     /**
-     * Génère le monde complet avec tous ses chunks.
+     * Génère la zone initiale du monde (worldSizeX x worldSizeZ chunks).
+     * Le reste du monde est généré à la volée, colonne par colonne, au fur
+     * et à mesure des déplacements du joueur (monde infini).
      */
     private void generateWorld(Boolean flat) {
-
-        // Créer tous les chunks vides
-        for (int cx = 0; cx < worldSizeX; cx++) {
-            for (int cy = 0; cy < worldSizeY; cy++) {
-                for (int cz = 0; cz < worldSizeZ; cz++) {
-                    chunks[cx][cy][cz] = new ChunkModel(true, cx, cy, cz); // Créer des chunks vides
-                }
-            }
-        }
 
         // Calcul du nombre de threads (processeurs - 4, minimum 1)
         int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 4);
         System.out.println("Génération du monde avec " + threads + " threads...");
 
         if (activeBiome.isFloatingIsland()) {
-            // Cas spécial pour l'île flottante (non parallélisé car modifie une zone centrale fixe)
+            // Cas spécial pour l'île flottante : créer des colonnes vides puis sculpter l'île
             for (int cx = 0; cx < worldSizeX; cx++) {
                 for (int cz = 0; cz < worldSizeZ; cz++) {
-                    createFloatingIsland();
+                    createEmptyColumn(cx, cz);
                 }
             }
+            createFloatingIsland();
         } else {
-            // Génération parallèle pour les mondes normaux
+            // Génération parallèle de la zone initiale pour les mondes normaux
             ExecutorService executor = Executors.newFixedThreadPool(threads);
 
             for (int cx = 0; cx < worldSizeX; cx++) {
                 final int currentCx = cx;
                 for (int cz = 0; cz < worldSizeZ; cz++) {
                     final int currentCz = cz;
-                    executor.submit(() -> {
-                        if(flat){
-                            generateTerrainFlat(currentCx, currentCz);
-                        } else {
-                            generateTerrainWithBiome(currentCx, currentCz);
-                        }
-                    });
+                    executor.submit(() -> generateColumn(currentCx, currentCz, flat));
                 }
             }
 
@@ -198,28 +190,79 @@ public class WorldModel {
         addClouds();
     }
 
+    /** Compacte des coordonnées de colonne (cx, cz) en une clé unique */
+    private static long packColumn(int cx, int cz) {
+        return ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
+    }
+
+    /**
+     * Vérifie si la colonne de chunks (cx, cz) a déjà été générée.
+     *
+     * @param cx Index X de la colonne
+     * @param cz Index Z de la colonne
+     * @return true si la colonne existe
+     */
+    public boolean hasColumn(int cx, int cz) {
+        return chunkColumns.containsKey(packColumn(cx, cz));
+    }
+
+    /**
+     * Crée et publie une colonne de chunks vides (remplis d'air).
+     */
+    private ChunkModel[] createEmptyColumn(int cx, int cz) {
+        ChunkModel[] column = new ChunkModel[worldSizeY];
+        for (int cy = 0; cy < worldSizeY; cy++) {
+            column[cy] = new ChunkModel(true, cx, cy, cz);
+        }
+        chunkColumns.put(packColumn(cx, cz), column);
+        return column;
+    }
+
+    /**
+     * Génère une colonne de chunks avec le terrain du biome actif.
+     * Sûr d'être appelé depuis un thread d'arrière-plan : la colonne est
+     * construite localement puis publiée d'un seul coup, les autres threads
+     * ne voient jamais une colonne à moitié générée.
+     *
+     * @param cx Index X de la colonne (peut être hors de la zone initiale)
+     * @param cz Index Z de la colonne (peut être hors de la zone initiale)
+     */
+    public void generateColumn(int cx, int cz) {
+        generateColumn(cx, cz, false);
+    }
+
+    private void generateColumn(int cx, int cz, boolean flat) {
+        ChunkModel[] column = new ChunkModel[worldSizeY];
+        for (int cy = 0; cy < worldSizeY; cy++) {
+            column[cy] = new ChunkModel(true, cx, cy, cz);
+        }
+
+        if (flat) {
+            generateTerrainFlat(cx, cz, column);
+        } else {
+            generateTerrainWithBiome(cx, cz, column);
+        }
+
+        chunkColumns.put(packColumn(cx, cz), column);
+    }
+
     /**
      * Génère un terrain basé sur le biome et les paramètres environnementaux.
      * Optimisé pour réduire les calculs de coordonnées et les accès mémoire.
-     * @param chunkX coordonnée X du chunk dans le tableau
-     * @param chunkZ coordonnée Z du chunk dans le tableau
+     * @param chunkX index X de la colonne (en espace d'index, sans bornes)
+     * @param chunkZ index Z de la colonne (en espace d'index, sans bornes)
+     * @param columnChunks Les chunks verticaux de la colonne à remplir
      */
-    private void generateTerrainWithBiome(int chunkX, int chunkZ) {
+    private void generateTerrainWithBiome(int chunkX, int chunkZ, ChunkModel[] columnChunks) {
         // Coordonnées globales du chunk
         float worldXStart = chunkX * ChunkModel.SIZE - (float) (worldSizeX * ChunkModel.SIZE) / 2;
         float worldZStart = chunkZ * ChunkModel.SIZE - (float) (worldSizeZ * ChunkModel.SIZE) / 2;
 
         // Hauteur max de terrain basée sur le relief (hauteur fixe)
         int maxReliefVariation = RELIEF_HEIGHTS[reliefComplexity];
-        
+
         // Niveau d'eau basé sur la température et l'humidité
         waterLevel = calculateWaterLevel();
-
-        // Pré-chargement des chunks verticaux pour éviter les lookups répétés
-        ChunkModel[] columnChunks = new ChunkModel[worldSizeY];
-        for (int cy = 0; cy < worldSizeY; cy++) {
-            columnChunks[cy] = chunks[chunkX][cy][chunkZ];
-        }
 
         // Générer chaque colonne de blocs
         for (int x = 0; x < ChunkModel.SIZE; x++) {
@@ -582,14 +625,8 @@ public class WorldModel {
         return new Vector3f(cx, cy, cz);
     }
 
-    private void generateTerrainFlat(int chunkX, int chunkZ){
+    private void generateTerrainFlat(int chunkX, int chunkZ, ChunkModel[] columnChunks){
 
-        // Pré-chargement des chunks verticaux
-        ChunkModel[] columnChunks = new ChunkModel[worldSizeY];
-        for (int cy = 0; cy < worldSizeY; cy++) {
-            columnChunks[cy] = chunks[chunkX][cy][chunkZ];
-        }
-        
         int flatHeight = ChunkModel.SIZE / 2;
 
         for (int x = 0; x < ChunkModel.SIZE; x++) {
@@ -936,13 +973,14 @@ public class WorldModel {
         int cy = chunkY;
         int cz = chunkZ + worldSizeZ / 2;
 
-        // Vérification que les coordonnées sont dans les limites du monde
-        if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
-            return BlockType.AIR.getId(); // AIR pour tout ce qui est en dehors du monde
+        // Chunk absent (hors hauteur du monde ou colonne non générée) : AIR
+        ChunkModel chunk = getChunk(cx, cy, cz);
+        if (chunk == null) {
+            return BlockType.AIR.getId();
         }
 
         // Récupération du type de bloc dans le chunk
-        return chunks[cx][cy][cz].getBlock(localX, localY, localZ);
+        return chunk.getBlock(localX, localY, localZ);
     }
     
     /**
@@ -970,14 +1008,14 @@ public class WorldModel {
         int cy = chunkY;
         int cz = chunkZ + worldSizeZ / 2;
 
-        // Vérification que les coordonnées sont dans les limites du monde
-        if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
-            // System.out.println("Bloc : " + BlockType.fromId(blockType) + " hors des limites du monde, globalX: " + globalX + ", globalY: " + globalY + ", globalZ: " + globalZ);
+        // Chunk absent (hors hauteur du monde ou colonne non générée) : échec
+        ChunkModel chunk = getChunk(cx, cy, cz);
+        if (chunk == null) {
             return false;
         }
 
         // Modification du bloc dans le chunk
-        chunks[cx][cy][cz].setBlock(localX, localY, localZ, blockType);
+        chunk.setBlock(localX, localY, localZ, blockType);
         return true;
     }
 
@@ -1020,20 +1058,21 @@ public class WorldModel {
     }
 
     /**
-     * Récupère le chunk aux coordonnées spécifiées.
-     * 
+     * Récupère le chunk aux coordonnées spécifiées (en espace d'index).
+     * Les index X et Z ne sont pas bornés (monde infini) : le chunk est null
+     * tant que sa colonne n'a pas été générée.
+     *
      * @param chunkX Position X du chunk
      * @param chunkY Position Y du chunk
      * @param chunkZ Position Z du chunk
-     * @return Le chunk à cette position, ou null si hors limites
+     * @return Le chunk à cette position, ou null si hors hauteur du monde ou non généré
      */
     public ChunkModel getChunk(int chunkX, int chunkY, int chunkZ) {
-        if (chunkX >= 0 && chunkX < worldSizeX && 
-            chunkY >= 0 && chunkY < worldSizeY && 
-            chunkZ >= 0 && chunkZ < worldSizeZ) {
-            return chunks[chunkX][chunkY][chunkZ];
+        if (chunkY < 0 || chunkY >= worldSizeY) {
+            return null;
         }
-        return null;
+        ChunkModel[] column = chunkColumns.get(packColumn(chunkX, chunkZ));
+        return (column != null) ? column[chunkY] : null;
     }
 
     /**
@@ -1258,14 +1297,15 @@ public class WorldModel {
         int cy = chunkY;
         int cz = chunkZ + worldSizeZ / 2;
 
-        // Vérification que les coordonnées sont dans les limites du monde
-        if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
+        // Chunk absent (hors hauteur du monde ou colonne non générée) : échec
+        ChunkModel chunk = getChunk(cx, cy, cz);
+        if (chunk == null) {
             return false;
         }
 
         // Modification du bloc et de l'ID de structure dans le chunk
-        chunks[cx][cy][cz].setBlock(localX, localY, localZ, blockType);
-        chunks[cx][cy][cz].setStructureId(localX, localY, localZ, structureId);
+        chunk.setBlock(localX, localY, localZ, blockType);
+        chunk.setStructureId(localX, localY, localZ, structureId);
         return true;
     }
     
@@ -1293,12 +1333,13 @@ public class WorldModel {
         int cy = chunkY;
         int cz = chunkZ + worldSizeZ / 2;
 
-        // Vérification que les coordonnées sont dans les limites du monde
-        if (cx < 0 || cx >= worldSizeX || cy < 0 || cy >= worldSizeY || cz < 0 || cz >= worldSizeZ) {
-            return 0; // Aucune structure pour tout ce qui est en dehors du monde
+        // Chunk absent (hors hauteur du monde ou colonne non générée) : aucune structure
+        ChunkModel chunk = getChunk(cx, cy, cz);
+        if (chunk == null) {
+            return 0;
         }
 
         // Récupération de l'ID de structure dans le chunk
-        return chunks[cx][cy][cz].getStructureId(localX, localY, localZ);
+        return chunk.getStructureId(localX, localY, localZ);
     }
 }

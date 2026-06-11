@@ -47,11 +47,36 @@ public class WorldRenderer {
     /** Nœud racine contenant tous les chunks du monde */
     private Node worldNode;
     
-    /** Tableau des renderers pour chaque chunk */
-    private ChunkRenderer[][][] chunkRenderers;
+    /**
+     * Renderers des chunks, indexés par clé compactée (cx, cy, cz).
+     * Une map permet un monde infini : des renderers sont ajoutés à la volée
+     * quand de nouvelles colonnes de chunks sont générées par le streaming.
+     * Concurrente car lue par les threads de meshing en arrière-plan.
+     */
+    private final java.util.concurrent.ConcurrentHashMap<Long, ChunkRenderer> chunkRenderers =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     /** Pipeline asynchrone de reconstruction des maillages de chunks */
     private ChunkMeshingService meshingService;
+
+    /** Rayon de chargement des colonnes de chunks autour du joueur (monde infini) */
+    private static final int LOAD_RADIUS = 3;
+
+    /** Thread d'arrière-plan qui génère les nouvelles colonnes de terrain */
+    private final java.util.concurrent.ExecutorService columnGenExecutor =
+            java.util.concurrent.Executors.newSingleThreadExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "column-generator");
+                thread.setDaemon(true);
+                thread.setPriority(Thread.NORM_PRIORITY - 1);
+                return thread;
+            });
+
+    /** Colonnes en cours de génération ou en attente d'attache (clés compactées) */
+    private final java.util.Set<Long> columnsInFlight = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Colonnes générées, en attente d'attache au scene graph par le thread de rendu */
+    private final java.util.concurrent.ConcurrentLinkedQueue<int[]> completedColumns =
+            new java.util.concurrent.ConcurrentLinkedQueue<>();
 
     private EntityRendererManager entityRendererManager;
 
@@ -124,56 +149,63 @@ public class WorldRenderer {
         guiNode.attachChild(coordinatesText);
     }
 
-    /**
-     * Récupère le tableau des renderers de chunks.
-     * 
-     * @return Tableau 3D contenant tous les renderers de chunks
-     */
-    public ChunkRenderer[][][] getChunkRenderers() {
-        return chunkRenderers;
+    /** Compacte des coordonnées de chunk en une clé unique (21 bits par axe) */
+    private static long packChunk(int chunkX, int chunkY, int chunkZ) {
+        return ((long) (chunkX & 0x1FFFFF) << 42)
+             | ((long) (chunkY & 0x1FFFFF) << 21)
+             | (chunkZ & 0x1FFFFF);
+    }
+
+    /** Compacte des coordonnées de colonne (cx, cz) en une clé unique */
+    private static long packColumn(int chunkX, int chunkZ) {
+        return ((long) chunkX << 32) ^ (chunkZ & 0xFFFFFFFFL);
     }
 
     /**
-     * Initialise tous les renderers de chunks.
+     * Initialise les renderers des chunks de la zone initiale du monde.
      */
     private void initializeChunkRenderers() {
         int sizeX = worldModel.getWorldSizeX();
         int sizeY = worldModel.getWorldSizeY();
         int sizeZ = worldModel.getWorldSizeZ();
-        
-        chunkRenderers = new ChunkRenderer[sizeX][sizeY][sizeZ];
-        
-        // Création des renderers pour tous les chunks
+
+        // Création des renderers pour tous les chunks de la zone initiale
         for (int cx = 0; cx < sizeX; cx++) {
             for (int cy = 0; cy < sizeY; cy++) {
                 for (int cz = 0; cz < sizeZ; cz++) {
-                    createChunkRenderer(cx, cy, cz);
+                    createChunkRenderer(cx, cy, cz, false);
                 }
             }
         }
     }
 
     /**
-     * Crée un renderer pour un chunk spécifique.
-     * 
+     * Crée un renderer pour un chunk spécifique et l'attache au scene graph.
+     * Doit être appelé depuis le thread de rendu (ou avant le démarrage du rendu).
+     *
      * @param chunkX Position X du chunk
      * @param chunkY Position Y du chunk
      * @param chunkZ Position Z du chunk
+     * @param deferMeshing Si true, le renderer est créé avec des maillages vides
+     *                     qui seront construits en arrière-plan ensuite
      */
-    private void createChunkRenderer(int chunkX, int chunkY, int chunkZ) {
-        // Récupérer le modèle du chunk
-        if (worldModel.getChunk(chunkX, chunkY, chunkZ) != null) {
+    private void createChunkRenderer(int chunkX, int chunkY, int chunkZ, boolean deferMeshing) {
+        long key = packChunk(chunkX, chunkY, chunkZ);
+
+        // Récupérer le modèle du chunk (et éviter les doublons)
+        if (worldModel.getChunk(chunkX, chunkY, chunkZ) != null && !chunkRenderers.containsKey(key)) {
             // Créer le renderer pour ce chunk
             ChunkRenderer renderer = new ChunkRenderer(
                 worldModel.getChunk(chunkX, chunkY, chunkZ),
                 worldModel,
                 assetManager,
-                chunkX, chunkY, chunkZ
+                chunkX, chunkY, chunkZ,
+                deferMeshing
             );
-            
+
             // Stocker le renderer
-            chunkRenderers[chunkX][chunkY][chunkZ] = renderer;
-            
+            chunkRenderers.put(key, renderer);
+
             // Attacher la géométrie opaque au nœud monde
             worldNode.attachChild(renderer.getGeometry());
 
@@ -190,15 +222,88 @@ public class WorldRenderer {
      * @param chunkX Position X du chunk
      * @param chunkY Position Y du chunk
      * @param chunkZ Position Z du chunk
-     * @return Le renderer du chunk, ou null si hors limites
+     * @return Le renderer du chunk, ou null s'il n'existe pas
      */
     public ChunkRenderer getChunkRenderer(int chunkX, int chunkY, int chunkZ) {
-        if (chunkX >= 0 && chunkX < worldModel.getWorldSizeX() &&
-            chunkY >= 0 && chunkY < worldModel.getWorldSizeY() &&
-            chunkZ >= 0 && chunkZ < worldModel.getWorldSizeZ()) {
-            return chunkRenderers[chunkX][chunkY][chunkZ];
+        return chunkRenderers.get(packChunk(chunkX, chunkY, chunkZ));
+    }
+
+    /**
+     * Streaming de chunks pour le monde infini : génère en arrière-plan les
+     * colonnes de terrain manquantes autour du joueur, puis les attache au
+     * scene graph (au plus une colonne par frame) et déclenche la construction
+     * de leurs maillages via le pipeline asynchrone.
+     */
+    private void updateChunkStreaming() {
+        // Pas de streaming sans caméra ni pour l'île flottante (monde fini spécial)
+        if (camera == null || worldModel.getActiveBiome().isFloatingIsland()) {
+            return;
         }
-        return null;
+
+        // Colonne occupée par la caméra, en espace d'index
+        Vector3f location = camera.getLocation();
+        int camCx = Math.floorDiv((int) Math.floor(location.x), ChunkModel.SIZE) + worldModel.getWorldSizeX() / 2;
+        int camCz = Math.floorDiv((int) Math.floor(location.z), ChunkModel.SIZE) + worldModel.getWorldSizeZ() / 2;
+
+        // Demander la génération des colonnes manquantes autour du joueur
+        for (int dx = -LOAD_RADIUS; dx <= LOAD_RADIUS; dx++) {
+            for (int dz = -LOAD_RADIUS; dz <= LOAD_RADIUS; dz++) {
+                final int cx = camCx + dx;
+                final int cz = camCz + dz;
+
+                if (!worldModel.hasColumn(cx, cz)) {
+                    final long key = packColumn(cx, cz);
+                    if (columnsInFlight.add(key)) {
+                        columnGenExecutor.submit(() -> {
+                            try {
+                                worldModel.generateColumn(cx, cz);
+                                completedColumns.add(new int[]{cx, cz});
+                            } catch (Exception e) {
+                                columnsInFlight.remove(key);
+                                System.err.println("Erreur de génération de la colonne (" + cx + ", " + cz + ") : " + e);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        // Attacher au plus une colonne générée par frame (budget) :
+        // renderers créés avec des maillages vides, remplis en arrière-plan
+        int[] column = completedColumns.poll();
+        if (column != null) {
+            int cx = column[0];
+            int cz = column[1];
+
+            for (int cy = 0; cy < worldModel.getWorldSizeY(); cy++) {
+                createChunkRenderer(cx, cy, cz, true);
+            }
+
+            // Mesher la nouvelle colonne, et remesher les 8 colonnes voisines
+            // existantes : leurs faces de bordure contre l'ancien vide, et
+            // l'occlusion ambiante qui échantillonne aussi en diagonale
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    remeshColumn(cx + dx, cz + dz);
+                }
+            }
+
+            columnsInFlight.remove(packColumn(cx, cz));
+        }
+    }
+
+    /**
+     * Demande la reconstruction asynchrone des maillages de tous les chunks
+     * existants d'une colonne.
+     */
+    private void remeshColumn(int chunkX, int chunkZ) {
+        for (int cy = 0; cy < worldModel.getWorldSizeY(); cy++) {
+            ChunkModel chunk = worldModel.getChunk(chunkX, cy, chunkZ);
+            if (chunk != null) {
+                chunk.markDirty();
+                meshingService.requestRemesh(chunkX, cy, chunkZ);
+            }
+        }
     }
 
     /**
@@ -246,13 +351,16 @@ public class WorldRenderer {
     }
 
     /**
-     * Arrête les threads de meshing en arrière-plan.
+     * Arrête les threads de meshing et de génération en arrière-plan.
      * À appeler quand le monde est détruit.
      */
     public void shutdownMeshing() {
         if (meshingService != null) {
             meshingService.shutdown();
         }
+        columnGenExecutor.shutdownNow();
+        completedColumns.clear();
+        columnsInFlight.clear();
     }
 
     /**
@@ -260,92 +368,10 @@ public class WorldRenderer {
      * À appeler quand le mode d'éclairage ou le wireframe change.
      */
     public void updateAllMeshes() {
-        int sizeX = worldModel.getWorldSizeX();
-        int sizeY = worldModel.getWorldSizeY();
-        int sizeZ = worldModel.getWorldSizeZ();
-
-        for (int cx = 0; cx < sizeX; cx++) {
-            for (int cy = 0; cy < sizeY; cy++) {
-                for (int cz = 0; cz < sizeZ; cz++) {
-                    if (chunkRenderers[cx][cy][cz] != null) {
-                        ChunkRenderer renderer = chunkRenderers[cx][cy][cz];
-
-                        // Invalider les éventuels maillages en cours de construction
-                        // en arrière-plan, construits avec l'ancien mode de rendu
-                        if (worldModel.getChunk(cx, cy, cz) != null) {
-                            worldModel.getChunk(cx, cy, cz).markDirty();
-                        }
-
-                        // Conserver la référence à l'ancienne géométrie transparente
-                        Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
-
-                        // Mettre à jour le mesh
-                        renderer.updateMesh();
-
-                        // Gérer la nouvelle géométrie transparente
-                        Geometry newTransparentGeometry = renderer.getTransparentGeometry();
-
-                        // Si une nouvelle géométrie transparente a été créée
-                        if (oldTransparentGeometry == null && newTransparentGeometry != null) {
-                            worldNode.attachChild(newTransparentGeometry);
-                        }
-                        // Si la géométrie transparente a été supprimée
-                        else if (oldTransparentGeometry != null && newTransparentGeometry == null) {
-                            worldNode.detachChild(oldTransparentGeometry);
-                        }
-                    }
-                }
-            }
-        }
-        
-        needsMeshUpdate = false;
-    }
-
-    /**
-     * Applique l'état actuel du mode filaire (défini dans WorldModel) 
-     * aux matériaux de tous les chunks sans reconstruire les maillages.
-     */
-    public void applyWireframeModeToMaterials() {
-        boolean wireframeEnabled = worldModel.getWireframeMode();
-        for (int cx = 0; cx < worldModel.getWorldSizeX(); cx++) {
-            for (int cy = 0; cy < worldModel.getWorldSizeY(); cy++) {
-                for (int cz = 0; cz < worldModel.getWorldSizeZ(); cz++) {
-                    if (chunkRenderers[cx][cy][cz] != null) {
-                        // Appliquer le mode filaire au maillage opaque
-                        if (chunkRenderers[cx][cy][cz].getMaterial() != null) {
-                            chunkRenderers[cx][cy][cz].getMaterial()
-                                    .getAdditionalRenderState()
-                                    .setWireframe(wireframeEnabled);
-                        }
-
-                        // Appliquer le mode filaire au maillage transparent s'il existe
-                        Geometry transparentGeometry = chunkRenderers[cx][cy][cz].getTransparentGeometry();
-                        if (transparentGeometry != null && transparentGeometry.getMaterial() != null) {
-                            transparentGeometry.getMaterial()
-                                    .getAdditionalRenderState()
-                                    .setWireframe(wireframeEnabled);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    /**
-     * Met à jour le maillage d'un chunk spécifique.
-     * À appeler quand un bloc est modifié.
-     * 
-     * @param chunkX Position X du chunk
-     * @param chunkY Position Y du chunk
-     * @param chunkZ Position Z du chunk
-     */
-    public void updateChunkMesh(int chunkX, int chunkY, int chunkZ) {
-        if (chunkX >= 0 && chunkX < worldModel.getWorldSizeX() &&
-            chunkY >= 0 && chunkY < worldModel.getWorldSizeY() &&
-            chunkZ >= 0 && chunkZ < worldModel.getWorldSizeZ() &&
-            chunkRenderers[chunkX][chunkY][chunkZ] != null) {
-            
-            ChunkRenderer renderer = chunkRenderers[chunkX][chunkY][chunkZ];
+        for (ChunkRenderer renderer : chunkRenderers.values()) {
+            // Invalider les éventuels maillages en cours de construction
+            // en arrière-plan, construits avec l'ancien mode de rendu
+            renderer.getChunkModel().markDirty();
 
             // Conserver la référence à l'ancienne géométrie transparente
             Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
@@ -363,6 +389,32 @@ public class WorldRenderer {
             // Si la géométrie transparente a été supprimée
             else if (oldTransparentGeometry != null && newTransparentGeometry == null) {
                 worldNode.detachChild(oldTransparentGeometry);
+            }
+        }
+
+        needsMeshUpdate = false;
+    }
+
+    /**
+     * Applique l'état actuel du mode filaire (défini dans WorldModel)
+     * aux matériaux de tous les chunks sans reconstruire les maillages.
+     */
+    public void applyWireframeModeToMaterials() {
+        boolean wireframeEnabled = worldModel.getWireframeMode();
+        for (ChunkRenderer renderer : chunkRenderers.values()) {
+            // Appliquer le mode filaire au maillage opaque
+            if (renderer.getMaterial() != null) {
+                renderer.getMaterial()
+                        .getAdditionalRenderState()
+                        .setWireframe(wireframeEnabled);
+            }
+
+            // Appliquer le mode filaire au maillage transparent s'il existe
+            Geometry transparentGeometry = renderer.getTransparentGeometry();
+            if (transparentGeometry != null && transparentGeometry.getMaterial() != null) {
+                transparentGeometry.getMaterial()
+                        .getAdditionalRenderState()
+                        .setWireframe(wireframeEnabled);
             }
         }
     }
@@ -542,6 +594,9 @@ public class WorldRenderer {
         if (needsMeshUpdate) {
             updateAllMeshes();
         }
+
+        // Monde infini : générer et attacher les colonnes de chunks autour du joueur
+        updateChunkStreaming();
 
         // Appliquer les maillages de chunks construits en arrière-plan (budget par frame)
         meshingService.applyCompletedMeshes();
