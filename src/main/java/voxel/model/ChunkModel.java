@@ -1,5 +1,7 @@
 package voxel.model;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Représente un chunk (section) du monde de voxels.
  * Un chunk est un cube de taille fixe contenant des blocs de différents types.
@@ -8,14 +10,19 @@ package voxel.model;
 public class ChunkModel {
     /** Taille du chunk en nombre de blocs dans chaque dimension */
     public static final int SIZE = 32 ;
-    
+
     /** Tableau contenant les identifiants des blocs du chunk */
     private final int[] blocks;
-    
+
     /** Tableau contenant les IDs de structure de chaque bloc (0 = aucune structure) */
     private final int[] structureIds;
 
-    boolean needsUpdate = false;
+    /**
+     * Version des données du chunk, incrémentée à chaque fois que le chunk est
+     * marqué comme modifié. Permet au pipeline de meshing asynchrone de détecter
+     * qu'un maillage construit en arrière-plan est devenu obsolète.
+     */
+    private final AtomicInteger version = new AtomicInteger();
 
     /** Coordonnées du chunk dans le monde */
     int cx;
@@ -152,12 +159,21 @@ public class ChunkModel {
         }
     }
 
-    public void setNeedsUpdate(boolean needsUpdate) {
-        this.needsUpdate = needsUpdate;
+    /**
+     * Marque le chunk comme modifié en incrémentant sa version.
+     * À appeler après toute modification de blocs qui nécessite une
+     * reconstruction du maillage.
+     */
+    public void markDirty() {
+        version.incrementAndGet();
     }
 
-    public boolean getNeedsUpdate() {
-        return needsUpdate;
+    /**
+     * Récupère la version courante des données du chunk.
+     * @return La version, incrémentée à chaque modification signalée
+     */
+    public int getVersion() {
+        return version.get();
     }
 
     public int getCx() {

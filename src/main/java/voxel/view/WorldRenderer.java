@@ -50,6 +50,9 @@ public class WorldRenderer {
     /** Tableau des renderers pour chaque chunk */
     private ChunkRenderer[][][] chunkRenderers;
 
+    /** Pipeline asynchrone de reconstruction des maillages de chunks */
+    private ChunkMeshingService meshingService;
+
     private EntityRendererManager entityRendererManager;
 
     /** Caméra pour obtenir la position du joueur */
@@ -90,6 +93,7 @@ public class WorldRenderer {
         this.worldNode = new Node("world");
         this.skyNode = new Node("sky");
         initializeChunkRenderers();
+        this.meshingService = new ChunkMeshingService(worldModel, this);
         initSkyColors();
         initSun(assetManager);
         this.startTime = System.currentTimeMillis() - 30_000; // Décale de 30 secondes en arrière
@@ -181,6 +185,77 @@ public class WorldRenderer {
     }
 
     /**
+     * Récupère le renderer d'un chunk spécifique.
+     *
+     * @param chunkX Position X du chunk
+     * @param chunkY Position Y du chunk
+     * @param chunkZ Position Z du chunk
+     * @return Le renderer du chunk, ou null si hors limites
+     */
+    public ChunkRenderer getChunkRenderer(int chunkX, int chunkY, int chunkZ) {
+        if (chunkX >= 0 && chunkX < worldModel.getWorldSizeX() &&
+            chunkY >= 0 && chunkY < worldModel.getWorldSizeY() &&
+            chunkZ >= 0 && chunkZ < worldModel.getWorldSizeZ()) {
+            return chunkRenderers[chunkX][chunkY][chunkZ];
+        }
+        return null;
+    }
+
+    /**
+     * Demande la reconstruction asynchrone du maillage d'un chunk.
+     * Le maillage sera construit en arrière-plan puis appliqué lors d'une
+     * prochaine frame, sans bloquer le thread de rendu.
+     *
+     * @param chunkX Position X du chunk
+     * @param chunkY Position Y du chunk
+     * @param chunkZ Position Z du chunk
+     */
+    public void requestChunkRemesh(int chunkX, int chunkY, int chunkZ) {
+        meshingService.requestRemesh(chunkX, chunkY, chunkZ);
+    }
+
+    /**
+     * Applique des maillages construits en arrière-plan à la géométrie d'un chunk.
+     * Doit être appelé depuis le thread de rendu.
+     *
+     * @param chunkX Position X du chunk
+     * @param chunkY Position Y du chunk
+     * @param chunkZ Position Z du chunk
+     * @param opaqueMesh Le nouveau maillage opaque
+     * @param transparentMesh Le nouveau maillage transparent, ou null
+     */
+    public void applyChunkMeshes(int chunkX, int chunkY, int chunkZ, Mesh opaqueMesh, Mesh transparentMesh) {
+        ChunkRenderer renderer = getChunkRenderer(chunkX, chunkY, chunkZ);
+        if (renderer == null) {
+            return;
+        }
+
+        // Conserver la référence à l'ancienne géométrie transparente
+        Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
+
+        renderer.applyMeshes(opaqueMesh, transparentMesh);
+
+        // Gérer la nouvelle géométrie transparente
+        Geometry newTransparentGeometry = renderer.getTransparentGeometry();
+
+        if (oldTransparentGeometry == null && newTransparentGeometry != null) {
+            worldNode.attachChild(newTransparentGeometry);
+        } else if (oldTransparentGeometry != null && newTransparentGeometry == null) {
+            worldNode.detachChild(oldTransparentGeometry);
+        }
+    }
+
+    /**
+     * Arrête les threads de meshing en arrière-plan.
+     * À appeler quand le monde est détruit.
+     */
+    public void shutdownMeshing() {
+        if (meshingService != null) {
+            meshingService.shutdown();
+        }
+    }
+
+    /**
      * Met à jour tous les maillages des chunks.
      * À appeler quand le mode d'éclairage ou le wireframe change.
      */
@@ -188,12 +263,18 @@ public class WorldRenderer {
         int sizeX = worldModel.getWorldSizeX();
         int sizeY = worldModel.getWorldSizeY();
         int sizeZ = worldModel.getWorldSizeZ();
-        
+
         for (int cx = 0; cx < sizeX; cx++) {
             for (int cy = 0; cy < sizeY; cy++) {
                 for (int cz = 0; cz < sizeZ; cz++) {
                     if (chunkRenderers[cx][cy][cz] != null) {
                         ChunkRenderer renderer = chunkRenderers[cx][cy][cz];
+
+                        // Invalider les éventuels maillages en cours de construction
+                        // en arrière-plan, construits avec l'ancien mode de rendu
+                        if (worldModel.getChunk(cx, cy, cz) != null) {
+                            worldModel.getChunk(cx, cy, cz).markDirty();
+                        }
 
                         // Conserver la référence à l'ancienne géométrie transparente
                         Geometry oldTransparentGeometry = renderer.getTransparentGeometry();
@@ -461,6 +542,9 @@ public class WorldRenderer {
         if (needsMeshUpdate) {
             updateAllMeshes();
         }
+
+        // Appliquer les maillages de chunks construits en arrière-plan (budget par frame)
+        meshingService.applyCompletedMeshes();
 
         // Met à jour le texte des coordonnées si nécessaire
         if (displayCoordinates) {

@@ -5,24 +5,43 @@ import voxel.model.structure.Structure;
 import java.util.Random;
 
 public class BasicTree extends Structure {
+    /**
+     * Graine fixe de la forme de l'arbre : la régénération est déterministe,
+     * donc la croissance apparaît comme une expansion continue de la même forme
+     * au lieu d'un re-tirage aléatoire complet à chaque étape (moins de blocs
+     * modifiés, donc moins de chunks à reconstruire, et un rendu plus naturel).
+     */
+    private final long shapeSeed;
+
+    /** Aléatoire de la forme, réinitialisé avec shapeSeed à chaque régénération */
     private Random random;
-    
+
+    /** Aléatoire indépendant de la forme, pour les décisions de croissance */
+    private final Random growthRandom = new Random();
+
     // Système de maturité et disparition
     private float maturityTimer = -1f; // -1 signifie pas encore mature
     private boolean hasMaturityTimer = false;
-    
+
     public BasicTree(int width, int height) {
         super(width, height, width);
-        random = new Random();
-        // Configurer les paramètres de croissance pour les arbres
-        this.growthInterval = 3.0f; // 3.0 seconde entre les tentatives
+        this.shapeSeed = growthRandom.nextLong();
+        // Configurer les paramètres de croissance pour les arbres :
+        // des tentatives fréquentes avec une croissance d'un seul bloc donnent
+        // une pousse continue (même vitesse moyenne qu'avant, par petits pas)
+        this.growthInterval = 1.5f; // 1.5 seconde entre les tentatives
         this.growthProbability = 0.3f; // 30% de chance de grandir
         this.maxWidth = 40;
         this.maxHeight = 35;
+        // Désynchroniser les arbres entre eux pour éviter qu'ils tentent
+        // tous de grandir dans la même frame
+        this.timeSinceLastGrowth = growthRandom.nextFloat() * growthInterval;
         createBasicTree();
     }
 
     public void createBasicTree() {
+        // Forme déterministe : même graine à chaque régénération
+        random = new Random(shapeSeed);
         fillWithVoid();
         // Utiliser une approche différente selon la taille
         if (width <= 5 || height <= 5) {
@@ -289,14 +308,14 @@ public class BasicTree extends Structure {
         if (timeSinceLastGrowth >= growthInterval) {
             // Réinitialiser le timer
             timeSinceLastGrowth = 0f;
-            
+
             // Tenter de faire grandir l'arbre selon la probabilité
-            if (random.nextDouble() < growthProbability) {
+            if (growthRandom.nextDouble() < growthProbability) {
                 grow();
             }
         }
     }
-    
+
     /**
      * Fait grandir l'arbre en augmentant ses dimensions et en régénérant sa structure.
      * @return true si la croissance a eu lieu, false sinon
@@ -306,34 +325,28 @@ public class BasicTree extends Structure {
         if (!canGrowInSize()) {
             return false; // L'arbre a atteint sa taille maximale
         }
-        
-        // Calculer les nouvelles dimensions (augmentation de 1-3 blocs)
-        int newWidth = Math.min(maxWidth, width + 1 + random.nextInt(3));
-        int newHeight = Math.min(maxHeight, height + 1 + random.nextInt(3));
-        
+
+        // Croissance d'un seul bloc à la fois : la pousse est plus continue
+        // et chaque étape modifie moins de blocs (donc moins de chunks à reconstruire)
+        int newWidth = Math.min(maxWidth, width + 1);
+        int newHeight = Math.min(maxHeight, height + 1);
+
         // Vérifier si les dimensions ont vraiment changé
         if (newWidth == width && newHeight == height) {
             return false; // Pas de croissance
         }
-        
-        // Sauvegarder les anciennes dimensions
-        int oldWidth = width;
-        int oldHeight = height;
-        
+
         // Mettre à jour les dimensions
         width = newWidth;
         height = newHeight;
         depth = newWidth; // L'arbre est carré
-        
+
         // Créer un nouveau tableau de blocs avec les nouvelles dimensions
         blocks = new int[width][height][depth];
-        fillWithVoid();
-        
-        // Régénérer l'arbre avec les nouvelles dimensions
+
+        // Régénérer l'arbre avec les nouvelles dimensions (forme déterministe)
         createBasicTree();
-        
-//        System.out.println("Arbre grandi de " + oldWidth + "x" + oldHeight + " à " + width + "x" + height + " à la position (" + worldX + ", " + worldY + ", " + worldZ + ")");
-        
+
         return true;
     }
     

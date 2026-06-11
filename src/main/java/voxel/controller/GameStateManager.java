@@ -357,6 +357,9 @@ public class GameStateManager {
      */
     private void cleanupCurrentWorld() {
         if (worldRenderer != null) {
+            // Arrêter les threads de meshing en arrière-plan
+            worldRenderer.shutdownMeshing();
+
             // Détacher les nœuds de rendu
             app.getRootNode().detachChild(worldRenderer.getNode());
             app.getRootNode().detachChild(worldRenderer.getSkyNode());

@@ -74,8 +74,8 @@ public class ChunkRenderer {
      */
     private void createGeometries() {
         // Génération des maillages séparés
-        Mesh opaqueMesh = generateOpaqueMesh();
-        Mesh transparentMesh = generateTransparentMesh();
+        Mesh opaqueMesh = buildOpaqueMesh();
+        Mesh transparentMesh = buildTransparentMesh();
         
         // Création de la géométrie opaque
         String chunkNameOpaque = "chunk_" + chunkX + "_" + chunkY + "_" + chunkZ + "_opaque";
@@ -137,19 +137,21 @@ public class ChunkRenderer {
     /**
      * Génère un maillage pour les parties opaques du chunk en utilisant l'algorithme Greedy Meshing.
      * Fusionne les faces adjacentes identiques pour réduire le nombre de triangles.
-     * 
+     * Ne touche pas au scene graph : peut être appelé depuis un thread d'arrière-plan.
+     *
      * @return Le maillage opaque généré
      */
-    private Mesh generateOpaqueMesh() {
+    public Mesh buildOpaqueMesh() {
         return generateGreedyMesh(false);
     }
 
     /**
      * Génère un maillage pour les parties transparentes du chunk en utilisant l'algorithme Greedy Meshing.
-     * 
+     * Ne touche pas au scene graph : peut être appelé depuis un thread d'arrière-plan.
+     *
      * @return Le maillage transparent généré, ou null s'il n'y a pas de blocs transparents
      */
-    private Mesh generateTransparentMesh() {
+    public Mesh buildTransparentMesh() {
         Mesh mesh = generateGreedyMesh(true);
         // MeshBuilder.build() retourne un mesh même vide, nous devons vérifier s'il contient des sommets
         if (mesh.getVertexCount() == 0) {
@@ -389,28 +391,35 @@ public class ChunkRenderer {
     }
 
     /**
-     * Met à jour le maillage du chunk.
+     * Met à jour le maillage du chunk de façon synchrone (construction + application).
      */
     public void updateMesh() {
+        applyMeshes(buildOpaqueMesh(), buildTransparentMesh());
+    }
+
+    /**
+     * Applique des maillages déjà construits (par exemple par le ChunkMeshingService
+     * sur un thread d'arrière-plan). Doit être appelé depuis le thread de rendu.
+     *
+     * @param newOpaqueMesh Le nouveau maillage opaque
+     * @param newTransparentMesh Le nouveau maillage transparent, ou null s'il n'y en a pas
+     */
+    public void applyMeshes(Mesh newOpaqueMesh, Mesh newTransparentMesh) {
         // Mise à jour du mesh opaque
-        Mesh newOpaqueMesh = generateOpaqueMesh();
         opaqueGeometry.setMesh(newOpaqueMesh);
         opaqueMaterial.getAdditionalRenderState().setWireframe(worldModel.getWireframeMode());
-        
-        // Mise à jour du mesh transparent
-        Mesh newTransparentMesh = generateTransparentMesh();
-        
+
         if (newTransparentMesh != null) {
             if (transparentGeometry == null) {
                 // Créer une nouvelle géométrie transparente si nécessaire
                 int offsetX = worldModel.getWorldSizeX() * ChunkModel.SIZE / 2;
                 int offsetY = 0;
                 int offsetZ = worldModel.getWorldSizeZ() * ChunkModel.SIZE / 2;
-                
+
                 float posX = (chunkX * ChunkModel.SIZE) - offsetX;
                 float posY = chunkY * ChunkModel.SIZE;
                 float posZ = (chunkZ * ChunkModel.SIZE) - offsetZ;
-                
+
                 createTransparentGeometry(newTransparentMesh, posX, posY, posZ);
             } else {
                 // Mettre à jour le mesh transparent existant
